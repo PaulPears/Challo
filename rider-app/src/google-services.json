@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "562039955122",
+    "project_id": "ride-andhra",
+    "storage_bucket": "ride-andhra.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:562039955122:android:97f2ebd54a399c63cfb3ab",
+        "android_client_info": {
+          "package_name": "com.rideandhra.rider"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBdkflMIl12TXV06gEiYLgw1pLozL_vOME"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

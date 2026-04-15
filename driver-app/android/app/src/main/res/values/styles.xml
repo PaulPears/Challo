@@ -1,0 +1,19 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+  <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <!-- Disable contrast enforcement which causes gray overlays -->
+    <item name="android:enforceNavigationBarContrast" tools:targetApi="29">true</item>
+    <item name="android:statusBarColor">#ffffff</item>
+    
+    <!-- Disable forced dark mode which can wash out colors on some devices -->
+    <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
+
+    <!-- Force solid window properties -->
+    <item name="android:windowBackground">@color/splashscreen_background</item>
+    
+    <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+    <item name="colorPrimary">@color/colorPrimary</item>
+  </style>
+  <style name="Theme.App.SplashScreen" parent="AppTheme">
+    <item name="android:windowBackground">@drawable/ic_launcher_background</item>
+  </style>
+</resources>

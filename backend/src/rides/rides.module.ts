@@ -1,0 +1,32 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { RidesController } from './rides.controller';
+import { RidesService } from './rides.service';
+import { Ride } from './ride.entity';
+import { RideRoute } from './ride-route.entity';
+import { FareSetting } from './fare-setting.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { FareTier } from './fare-tier.entity';
+import { UsersModule } from '../users/users.module';
+import { PaymentsModule } from '../payments/payments.module';
+import { RideRejection } from './ride-rejection.entity';
+import { SurgeEvent } from './surge-event.entity';
+import { PricingService } from './pricing.service';
+import { MatchingService } from './matching.service';
+import { RidePolicyService } from './ride-policy.service';
+import { DriverProfile } from '../drivers/driver-profile.entity';
+import { IncentivesModule } from '../incentives/incentives.module';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([Ride, RideRoute, FareSetting, FareTier, RideRejection, SurgeEvent, DriverProfile]),
+    NotificationsModule,
+    UsersModule,
+    PaymentsModule,
+    IncentivesModule,
+  ],
+  controllers: [RidesController],
+  providers: [RidesService, PricingService, MatchingService, RidePolicyService],
+  exports: [RidesService, PricingService, MatchingService, RidePolicyService],
+})
+export class RidesModule { }

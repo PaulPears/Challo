@@ -1,0 +1,41 @@
+{
+  "name": "RideAndhra",
+  "displayName": "Ride Andhra",
+  "expo": {
+    "name": "Ride Andhra",
+    "slug": "ride-andhra-rider",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/adaptive-icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyAcJpazQWf4j468g9DnxMsJZzjW0Yp0iSM"
+      }
+    },
+    "android": {
+      "userInterfaceStyle": "light",
+      "edgeToEdgeEnabled": false,
+      "package": "com.rideandhra.rider",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAcJpazQWf4j468g9DnxMsJZzjW0Yp0iSM"
+        }
+      },
+      "versionCode": 2
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "858b598e-9511-45c7-beb7-ae4c3e7b56c0"
+      }
+    }
+  }
+}

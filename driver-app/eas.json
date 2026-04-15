@@ -1,0 +1,48 @@
+{
+    "cli": {
+        "version": ">= 5.9.0"
+    },
+    "build": {
+        "development": {
+            "developmentClient": true,
+            "distribution": "internal",
+            "android": {
+                "buildType": "apk"
+            }
+        },
+        "preview": {
+            "distribution": "internal",
+            "android": {
+                "buildType": "apk"
+            },
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://ride-andhra-baceknd-final.onrender.com"
+            }
+        },
+        "production": {
+            "android": {
+                "buildType": "app-bundle"
+            },
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://ride-andhra-baceknd-final.onrender.com"
+            }
+        },
+        "production-apk": {
+            "android": {
+                "buildType": "apk"
+            },
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://ride-andhra-baceknd-final.onrender.com",
+                "local_url": "https://ride-andhra-unified-db.onrender.com"
+            }
+        }
+    },
+    "submit": {
+        "production": {
+            "android": {
+                "serviceAccountKeyPath": "./google-play-service-account.json",
+                "track": "internal"
+            }
+        }
+    }
+}
