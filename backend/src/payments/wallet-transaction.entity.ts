@@ -13,6 +13,8 @@ export enum TransactionType {
   DEBIT = 'debit',
   FEE_DEDUCTION = 'fee_deduction',
   FEE_SETTLEMENT = 'fee_settlement',
+  SUPER_KM_COMPENSATION = 'super_km_compensation',
+  WITHDRAWAL = 'withdrawal',
 }
 
 @Entity('wallet_transactions')

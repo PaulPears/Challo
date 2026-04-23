@@ -17,6 +17,10 @@ export interface FareBreakdown {
   gst: number;
   totalFare: number;
   breakdown: string;
+  superKmApplied?: number;
+  superKmDiscount?: number;
+  riderPayable?: number;
+  companyPayable?: number;
 }
 
 @Injectable()
@@ -36,6 +40,7 @@ export class PricingService {
     vehicleType: VehicleType,
     lat?: number,
     lng?: number,
+    superKmBalance?: number,
   ): Promise<FareBreakdown> {
     const distanceInKm = distance / 1000;
     const durationInMinutes = duration / 60;
@@ -145,7 +150,7 @@ export class PricingService {
     const gstValue = finalFare * 0.05;
     const totalWithGst = finalFare + gstValue;
 
-    return {
+    const estimate: FareBreakdown = {
       vehicleType,
       baseFare: parseFloat(baseFare.toFixed(2)),
       distanceFare: parseFloat(distanceCost.toFixed(2)),
@@ -155,7 +160,32 @@ export class PricingService {
       subtotal: parseFloat(finalFare.toFixed(2)),
       gst: parseFloat(gstValue.toFixed(2)),
       totalFare: parseFloat(totalWithGst.toFixed(2)),
-      breakdown: `Base ₹${baseFare.toFixed(2)} + Dist ₹${distanceCost.toFixed(2)} + Time ₹${timeCost.toFixed(2)}${surgeMultiplier > 1 ? ` × Surge ${surgeMultiplier.toFixed(1)}` : ''}`
+      breakdown: `Base ₹${baseFare.toFixed(2)} + Dist ₹${distanceCost.toFixed(2)} + Time ₹${timeCost.toFixed(2)}${surgeMultiplier > 1 ? ` × Surge ${surgeMultiplier.toFixed(1)}` : ''}`,
+      superKmApplied: 0,
+      superKmDiscount: 0,
+      riderPayable: parseFloat(totalWithGst.toFixed(2)),
+      companyPayable: 0,
     };
+
+    if (superKmBalance && superKmBalance > 0) {
+      const balance = Number(superKmBalance);
+      const appliedKm = Math.min(distanceInKm, balance);
+      // In the super kilometer system, the discount is strictly (Sk * ckm)
+      // We use basePerKmRate as the 'ckm' reference
+      const discount = appliedKm * basePerKmRate;
+      
+      estimate.superKmApplied = parseFloat(appliedKm.toFixed(2));
+      estimate.superKmDiscount = parseFloat(discount.toFixed(2));
+      
+      // Force mathematical consistency: Total = Rider + Company
+      estimate.companyPayable = estimate.superKmDiscount;
+      estimate.riderPayable = parseFloat(Math.max(0, totalWithGst - estimate.companyPayable).toFixed(2));
+      
+      // The total must be the exact sum of the portions to avoid 0.01 discrepancies
+      estimate.totalFare = parseFloat((estimate.riderPayable + estimate.companyPayable).toFixed(2));
+    }
+
+
+    return estimate;
   }
 }

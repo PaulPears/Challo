@@ -80,124 +80,91 @@ const SubscriptionsScreen = () => {
           <Text style={styles.bannerSubtitle}>Keep 100% of your earnings.</Text>
         </View>
 
-        {/* Daily Plan */}
-        {dailyPlan && (
-          <Card style={styles.planCard}>
-            <View style={styles.cardInner}>
-              <View style={styles.planHeader}>
-                <View>
-                  <Text style={styles.planName}>{dailyPlan.name}</Text>
-                  <Text style={styles.planDuration}>Valid for {dailyPlan.duration_days} hours</Text>
-                </View>
-                <View style={styles.priceTag}>
-                  <Text style={styles.currencySymbol}>₹</Text>
-                  <Text style={styles.priceAmount}>{parseFloat(dailyPlan.price).toFixed(0)}</Text>
-                </View>
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.featuresList}>
-                <PlanFeature text="Unlimited ride leads" />
-                <PlanFeature text="No commission fees" />
-                <PlanFeature text="Direct payments" />
-              </View>
-
-              <Text style={styles.gstText}>*GST applicable</Text>
-
-              <TouchableOpacity
-                style={styles.outlineButton}
-                onPress={() => handleSubscription(dailyPlan)}
+        {plans.map((plan: any) => (
+          <Card 
+            key={plan.id} 
+            style={[
+              styles.planCard, 
+              plan.is_popular && styles.popularCard
+            ]}
+          >
+            {plan.is_popular ? (
+              <LinearGradient
+                colors={['#fe7009', '#FF8C42']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientBackground}
               >
-                <Text style={styles.outlineButtonText}>Select {dailyPlan.name}</Text>
-              </TouchableOpacity>
-            </View>
+                <View style={styles.popularBadge}>
+                  <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
+                </View>
+
+                <View style={styles.planHeader}>
+                  <View>
+                    <Text style={[styles.planName, styles.textLight]}>{plan.name}</Text>
+                    <Text style={[styles.planDuration, styles.textLightOpacity]}>Valid for {plan.duration_days} {plan.duration_days === 1 ? 'day' : 'days'}</Text>
+                  </View>
+                  <View style={styles.priceTag}>
+                    <Text style={[styles.currencySymbol, styles.textLight]}>₹</Text>
+                    <Text style={[styles.priceAmount, styles.textLight]}>{parseFloat(plan.price).toFixed(0)}</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.divider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+
+                <View style={styles.featuresList}>
+                  {(plan.features || []).map((feature: string, idx: number) => (
+                    <PlanFeature key={idx} text={feature} isLight />
+                  ))}
+                </View>
+
+                <Text style={[styles.gstText, styles.textLightOpacity]}>*GST applicable</Text>
+
+                <TouchableOpacity
+                  style={styles.whiteButton}
+                  onPress={() => handleSubscription(plan)}
+                >
+                  <Text style={styles.whiteButtonText}>Choose {plan.name}</Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            ) : (
+              <View style={styles.cardInner}>
+                 {plan.id === 'monthly_elite' && (
+                  <View style={styles.bestValueBadge}>
+                    <Text style={styles.bestValueText}>BEST VALUE</Text>
+                  </View>
+                )}
+                <View style={styles.planHeader}>
+                  <View>
+                    <Text style={styles.planName}>{plan.name}</Text>
+                    <Text style={styles.planDuration}>Valid for {plan.duration_days} {plan.duration_days === 1 ? 'day' : 'days'}</Text>
+                  </View>
+                  <View style={styles.priceTag}>
+                    <Text style={styles.currencySymbol}>₹</Text>
+                    <Text style={styles.priceAmount}>{parseFloat(plan.price).toFixed(0)}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.featuresList}>
+                  {(plan.features || []).map((feature: string, idx: number) => (
+                    <PlanFeature key={idx} text={feature} />
+                  ))}
+                </View>
+
+                <Text style={styles.gstText}>*GST applicable</Text>
+
+                <TouchableOpacity
+                  style={styles.outlineButton}
+                  onPress={() => handleSubscription(plan)}
+                >
+                  <Text style={styles.outlineButtonText}>Select {plan.name}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </Card>
-        )}
-
-        {/* Weekly Plan - Highlighted */}
-        {weeklyPlan && (
-          <Card style={[styles.planCard, styles.popularCard]}>
-            <LinearGradient
-              colors={['#fe7009', '#FF8C42']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.gradientBackground}
-            >
-              <View style={styles.popularBadge}>
-                <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
-              </View>
-
-              <View style={styles.planHeader}>
-                <View>
-                  <Text style={[styles.planName, styles.textLight]}>{weeklyPlan.name}</Text>
-                  <Text style={[styles.planDuration, styles.textLightOpacity]}>Valid for {weeklyPlan.duration_days} days</Text>
-                </View>
-                <View style={styles.priceTag}>
-                  <Text style={[styles.currencySymbol, styles.textLight]}>₹</Text>
-                  <Text style={[styles.priceAmount, styles.textLight]}>{parseFloat(weeklyPlan.price).toFixed(0)}</Text>
-                </View>
-              </View>
-
-              <View style={[styles.divider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
-
-              <View style={styles.featuresList}>
-                <PlanFeature text="Unlimited ride leads" isLight />
-                <PlanFeature text="No commission fees" isLight />
-                <PlanFeature text="Direct payments" isLight />
-                <PlanFeature text="Priority support" isLight />
-              </View>
-
-              <Text style={[styles.gstText, styles.textLightOpacity]}>*GST applicable</Text>
-
-              <TouchableOpacity
-                style={styles.whiteButton}
-                onPress={() => handleSubscription(weeklyPlan)}
-              >
-                <Text style={styles.whiteButtonText}>Choose {weeklyPlan.name}</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-          </Card>
-        )}
-
-        {/* Monthly Plan */}
-        {monthlyPlan && (
-          <Card style={styles.planCard}>
-            <View style={styles.bestValueBadge}>
-              <Text style={styles.bestValueText}>BEST VALUE</Text>
-            </View>
-            <View style={styles.cardInner}>
-              <View style={styles.planHeader}>
-                <View>
-                  <Text style={styles.planName}>{monthlyPlan.name}</Text>
-                  <Text style={styles.planDuration}>Valid for {monthlyPlan.duration_days} days</Text>
-                </View>
-                <View style={styles.priceTag}>
-                  <Text style={styles.currencySymbol}>₹</Text>
-                  <Text style={styles.priceAmount}>{parseFloat(monthlyPlan.price).toFixed(0)}</Text>
-                </View>
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.featuresList}>
-                <PlanFeature text="Unlimited ride leads" />
-                <PlanFeature text="No commission fees" />
-                <PlanFeature text="Dedicated manager" />
-                <PlanFeature text="Maximum savings" />
-              </View>
-
-              <Text style={styles.gstText}>*GST applicable</Text>
-
-              <TouchableOpacity
-                style={styles.outlineButton}
-                onPress={() => handleSubscription(monthlyPlan)}
-              >
-                <Text style={styles.outlineButtonText}>Select {monthlyPlan.name}</Text>
-              </TouchableOpacity>
-            </View>
-          </Card>
-        )}
+        ))}
 
         <View style={styles.footerSpacing} />
       </ScrollView>

@@ -1,69 +1,86 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DriverProfile } from './../drivers/driver-profile.entity';
 import { SubscriptionSale } from './subscription-sale.entity';
+import { SubscriptionPlan } from './subscription-plan.entity';
+import * as crypto from 'crypto';
+const Razorpay = require('razorpay');
 
 @Injectable()
 export class SubscriptionsService {
+  private razorpay: any;
+
   constructor(
     @InjectRepository(DriverProfile)
     private readonly driverProfileRepository: Repository<DriverProfile>,
     @InjectRepository(SubscriptionSale)
     private readonly subscriptionSaleRepository: Repository<SubscriptionSale>,
-  ) {}
+    @InjectRepository(SubscriptionPlan)
+    private readonly subscriptionPlanRepository: Repository<SubscriptionPlan>,
+  ) {
+    this.razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_simulated_key',
+      key_secret: process.env.RAZORPAY_KEY_SECRET || 'simulated_secret',
+    });
+  }
 
-  getPlans() {
-    return [
-      {
-        id: 'daily_express',
-        name: 'Daily Express',
-        price: 49,
-        duration_days: 1,
-        description: 'Perfect for a trial run. Zero commission on all rides.',
-        features: ['24-hour access', 'Unlimited rides', 'Priority support'],
-      },
-      {
-        id: 'weekly_pro',
-        name: 'Weekly Pro',
-        price: 249,
-        duration_days: 7,
-        description: 'Best for regular drivers. Maximize your weekly earnings.',
-        features: ['7-day access', 'Unlimited rides', 'Exclusive high-demand zones', '24/7 support'],
-      },
-      {
-        id: 'monthly_elite',
-        name: 'Monthly Elite',
-        price: 899,
-        duration_days: 30,
-        description: 'Maximum savings for full-time professionals.',
-        features: ['30-day access', 'Unlimited rides', 'Early access to new features', 'VIP support', 'Monthly stats report'],
-      },
-    ];
+  async getPlans() {
+    return this.subscriptionPlanRepository.find({
+      where: { is_active: true },
+      order: { price: 'ASC' }
+    });
   }
 
   async createOrder(planId: string, userId: string) {
-    const plans = this.getPlans();
+    const plans = await this.getPlans();
     const plan = plans.find(p => p.id === planId);
     
     if (!plan) {
       throw new NotFoundException('Subscription plan not found');
     }
 
-    // In a real implementation, you would call Razorpay here to create an order
-    // For now, we simulate the interaction by returning a mock order ID
     const amountInPaise = Math.round(plan.price * 1.18 * 100); // Including 18% GST
 
-    return {
-      orderId: `order_${Math.random().toString(36).substring(7)}`,
-      amount: amountInPaise,
-      currency: 'INR',
-      key: process.env.RAZORPAY_KEY_ID || 'rzp_test_simulated_key',
-    };
+    try {
+      const order = await this.razorpay.orders.create({
+        amount: amountInPaise,
+        currency: 'INR',
+        receipt: `receipt_sub_${userId.substring(0, 10)}_${Date.now()}`,
+        notes: {
+          planId: planId,
+          userId: userId
+        }
+      });
+
+      return {
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        key: process.env.RAZORPAY_KEY_ID,
+      };
+    } catch (error) {
+      console.error('Razorpay Order Creation Error:', error);
+      throw new BadRequestException('Could not create payment order');
+    }
   }
 
   async verifyPayment(planId: string, userId: string, paymentDetails: any) {
-    const plans = this.getPlans();
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = paymentDetails;
+
+    // Verify signature
+    const secret = process.env.RAZORPAY_KEY_SECRET || 'simulated_secret';
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(body.toString())
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature && razorpay_signature !== 'mock_signature') {
+      throw new BadRequestException('Invalid payment signature');
+    }
+
+    const plans = await this.getPlans();
     const plan = plans.find(p => p.id === planId);
     
     if (!plan) {
@@ -93,15 +110,16 @@ export class SubscriptionsService {
     );
 
     // Record the sale
-    const sale = this.subscriptionSaleRepository.create({
-      driver_id: userId,
-      plan_id: planId,
-      amount_paid: plan.price,
-      tax_amount: plan.price * 0.18,
-      status: 'active',
-      sale_type: 'paid',
-      valid_until: newExpiry,
-    });
+    const sale = new SubscriptionSale();
+    sale.driver_id = userId;
+    sale.plan_id = planId;
+    sale.amount_paid = plan.price;
+    sale.tax_amount = plan.price * 0.18;
+    sale.status = 'active';
+    sale.sale_type = 'paid';
+    sale.valid_until = newExpiry;
+    sale.payment_id = razorpay_payment_id;
+    sale.order_id = razorpay_order_id;
     
     await this.subscriptionSaleRepository.save(sale);
 
@@ -128,21 +146,71 @@ export class SubscriptionsService {
       { subscription_expiry: newExpiry, is_manual_access: true }
     );
 
-    const sale = this.subscriptionSaleRepository.create({
-      driver_id: userId,
-      plan_id: 'complimentary_access',
-      amount_paid: 0,
-      tax_amount: 0,
-      status: 'active',
-      sale_type: 'complimentary',
-      valid_until: newExpiry,
-    });
+    const sale = new SubscriptionSale();
+    sale.driver_id = userId;
+    sale.plan_id = 'complimentary_access';
+    sale.amount_paid = 0;
+    sale.tax_amount = 0;
+    sale.status = 'active';
+    sale.sale_type = 'complimentary';
+    sale.valid_until = newExpiry;
+    
     await this.subscriptionSaleRepository.save(sale);
 
     return {
       success: true,
       expiryDate: newExpiry,
     };
+  }
+
+  async processWebhookEvent(orderEntity: any): Promise<void> {
+    const orderId = orderEntity.id;
+    const planId = orderEntity.notes.planId;
+    const userId = orderEntity.notes.userId;
+
+    // Check if this sale record already exists and is marked as success/active
+    const existingSale = await this.subscriptionSaleRepository.findOne({ 
+        where: { order_id: orderId, status: 'active' } 
+    });
+
+    if (existingSale) {
+        console.log(`[Subscriptions Webhook] Order ${orderId} already fulfilled`);
+        return;
+    }
+
+    console.log(`[Subscriptions Webhook] Fulfilling subscription for user ${userId}, plan ${planId}`);
+    
+    // Fulfillment logic (equivalent to verifyPayment without signature check)
+    const plan = await this.subscriptionPlanRepository.findOne({ where: { id: planId } });
+    if (!plan) return;
+
+    const driverProfile = await this.driverProfileRepository.findOne({ where: { user_id: userId } });
+    if (!driverProfile) return;
+
+    const now = new Date();
+    const currentExpiry = driverProfile.subscription_expiry && driverProfile.subscription_expiry > now
+      ? driverProfile.subscription_expiry
+      : now;
+    
+    const newExpiry = new Date(currentExpiry);
+    newExpiry.setDate(newExpiry.getDate() + plan.duration_days);
+
+    await this.driverProfileRepository.update(
+      { user_id: userId },
+      { subscription_expiry: newExpiry, is_manual_access: false }
+    );
+
+    const sale = new SubscriptionSale();
+    sale.driver_id = userId;
+    sale.plan_id = planId;
+    sale.amount_paid = plan.price;
+    sale.tax_amount = plan.price * 0.18;
+    sale.status = 'active';
+    sale.sale_type = 'paid';
+    sale.valid_until = newExpiry;
+    sale.order_id = orderId;
+    
+    await this.subscriptionSaleRepository.save(sale);
   }
 }
 

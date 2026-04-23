@@ -63,6 +63,7 @@ export default {
         android: {
             userInterfaceStyle: "light",
             edgeToEdgeEnabled: true,
+            googleServicesFile: "./android/app/google-services.json",
             adaptiveIcon: {
                 foregroundImage: "./assets/adaptive-icon.png",
                 backgroundColor: "#ffffff"

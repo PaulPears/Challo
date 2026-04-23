@@ -57,7 +57,14 @@ const BookingCard = ({ item, navigation }: any) => {
         </View>
 
         <View style={styles.cardFooter}>
-          <Text style={styles.rideFare}>Estimated Fare: ₹{item.finalFare || item.fare || '0.00'}</Text>
+          <View>
+            <Text style={styles.rideFare}>₹{Number(item.riderPayable || item.finalFare || item.fare || 0).toFixed(2)}</Text>
+            {Number(item.super_km_applied) > 0 && (
+              <View style={styles.listSavingsBadge}>
+                 <Text style={styles.listSavingsText}>Super KM Applied ✨</Text>
+              </View>
+            )}
+          </View>
 
           <TouchableOpacity style={styles.reportButton}>
             <FontAwesome name="flag" size={16} color="#ef4444" />
@@ -250,6 +257,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#111827',
+  },
+  listSavingsBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  listSavingsText: {
+    color: '#4F46E5',
+    fontSize: 9,
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
   reportButton: {
     flexDirection: 'row',

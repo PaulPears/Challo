@@ -42,6 +42,7 @@ async function simulate() {
         console.log('✅ Success! Ride Request Created.');
         console.log('Ride ID:', response.data.id);
         console.log('Status:', response.data.status);
+        console.log('OTP (PIN):', response.data.otp);
         console.log(`Open the Driver App and stay "Online" near ${LAT}, ${LNG} to receive it.`);
     } catch (error) {
         console.error('❌ Simulation failed:', error.response?.data?.message || error.message);

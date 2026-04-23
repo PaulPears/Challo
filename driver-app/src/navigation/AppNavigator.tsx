@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '../context/AuthContext';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import { DriverRegistrationProvider } from '../context/DriverRegistrationContext';
 
 // Import all screens
@@ -32,12 +34,18 @@ import SettleDuesScreen from '../screens/SettleDuesScreen';
 import LoadingScreen from '../screens/LoadingScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import SettlementHistoryScreen from '../screens/SettlementHistoryScreen';
+import WalletScreen from '../screens/WalletScreen';
+import RideDetailsScreen from '../screens/RideDetailsScreen';
+import WithdrawScreen from '../screens/WithdrawScreen';
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const RegistrationStack = createNativeStackNavigator();
 
 const HomeTabs = () => {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -45,8 +53,8 @@ const HomeTabs = () => {
           let iconName: string = '';
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Notifications') {
-            iconName = focused ? 'bell' : 'bell-outline';
+          } else if (route.name === 'Wallet') {
+            iconName = focused ? 'wallet' : 'wallet-outline';
           } else if (route.name === 'History') {
             iconName = focused ? 'history' : 'history';
           } else if (route.name === 'Profile') {
@@ -56,10 +64,29 @@ const HomeTabs = () => {
         },
         tabBarActiveTintColor: '#fe7009',
         tabBarInactiveTintColor: 'gray',
+        tabBarStyle: {
+          height: Platform.OS === 'ios' ? 88 : 65 + insets.bottom,
+          paddingBottom: Platform.OS === 'ios' ? 30 : Math.max(insets.bottom, 10),
+          paddingTop: 10,
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#f1f1f1',
+          elevation: 25,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginBottom: Platform.OS === 'ios' ? 0 : 4,
+        },
+        tabBarHideOnKeyboard: true,
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Wallet" component={WalletScreen} options={{ headerShown: false }} />
       <Tab.Screen name="History" component={MyRidesScreen} options={{ headerShown: false, title: 'History' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
@@ -81,15 +108,20 @@ const DriverRegistrationStack = () => {
   );
 };
 
+import { navigationRef } from '../utils/NavigationService';
+
 const AppNavigator = () => {
-  const { driverStatus } = useAuth();
+  const { driverStatus, user } = useAuth();
+
+  // Initialize Push Notifications
+  usePushNotifications(user?.id || null);
 
   if (driverStatus === 'LOADING') {
     return <LoadingScreen />;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'white' } }}>
         {driverStatus === 'UNAUTHENTICATED' ? (
           <>
@@ -113,12 +145,17 @@ const AppNavigator = () => {
             <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
             <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
             <Stack.Screen name="MyRides" component={MyRidesScreen} />
+            <Stack.Screen name="RideDetails" component={RideDetailsScreen} />
             <Stack.Screen name="Support" component={SupportScreen} />
+
             <Stack.Screen name="ContactUs" component={ContactUsScreen} />
             <Stack.Screen name="Help" component={HelpScreen} />
             <Stack.Screen name="Payment" component={PaymentScreen} />
+            <Stack.Screen name="Wallet" component={WalletScreen} />
+            <Stack.Screen name="Withdraw" component={WithdrawScreen} />
             <Stack.Screen name="SettleDues" component={SettleDuesScreen} />
             <Stack.Screen name="SettlementHistory" component={SettlementHistoryScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
           </>
         )}
       </Stack.Navigator>

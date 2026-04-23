@@ -69,6 +69,9 @@ export class DriverProfile {
   rc_document: string;
 
   @Column({ type: 'text', nullable: true })
+  rc_back_document: string;
+
+  @Column({ type: 'text', nullable: true })
   insurance_document: string;
 
   @Column('decimal', { precision: 2, scale: 1, default: 5.0 })

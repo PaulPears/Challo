@@ -29,9 +29,26 @@ export class NotificationsService {
     this.notificationsGateway.sendDriverLocation(driverUserId, location, rideId);
   }
 
-  sendNewRideToDriver(driverUserId: string, ride: any) {
+  async sendNewRideToDriver(driverUserId: string, ride: any) {
     this.notificationsGateway.sendNewRideToDriver(driverUserId, ride);
-    this.saveNotification(driverUserId, NotificationType.RIDE_REQUEST, 'New Ride Request', `Pickup: ${ride.pickupLocation || 'Unknown'} — ₹${ride.estimated_fare || ride.fare || '?'}`, ride);
+    
+    const title = 'New Ride Request';
+    const body = `Pickup: ${ride.pickupLocation || ride.pickup_address || 'Unknown'} — ₹${ride.estimated_fare || ride.fare || '?'}`;
+    
+    // 1. Persist In-App Notification
+    await this.saveNotification(driverUserId, NotificationType.RIDE_REQUEST, title, body, ride);
+
+    // 2. Send Push Notification immediately
+    const user = await this.userRepository.findOne({ where: { id: driverUserId }, select: { push_token: true } });
+    if (user && Expo.isExpoPushToken(user.push_token)) {
+      await this.sendPushBatch(
+        [user.push_token], 
+        title, 
+        body, 
+        { rideId: ride.id, type: NotificationType.RIDE_REQUEST },
+        'ride-requests' // Explicit channel for sound/priority
+      );
+    }
   }
 
   sendNewRideToAll(ride: any) {
@@ -47,14 +64,14 @@ export class NotificationsService {
       if (target === 'all') {
         users = await this.userRepository.find({ select: { id: true, push_token: true } });
       } else if (target === 'riders') {
-        // Correctly handle Postgres array overlap/contains
+        // Correctly handle Postgres array overlap/contains with quoted alias
         users = await this.userRepository.createQueryBuilder('user')
-          .where('user.roles @\u003e ARRAY[:role]::text[]', { role: UserRole.RIDER })
+          .where('"user"."roles"::text[] @> ARRAY[:role]::text[]', { role: UserRole.RIDER })
           .select(['user.id', 'user.push_token'])
           .getMany();
       } else if (target === 'drivers') {
         users = await this.userRepository.createQueryBuilder('user')
-          .where('user.roles @\u003e ARRAY[:role]::text[]', { role: UserRole.DRIVER })
+          .where('"user"."roles"::text[] @> ARRAY[:role]::text[]', { role: UserRole.DRIVER })
           .select(['user.id', 'user.push_token'])
           .getMany();
       } else {
@@ -109,24 +126,28 @@ export class NotificationsService {
 
   async getBroadcastHistory(limit = 20) {
     // Return distinct notifications by title and message to show unique "broadcasts"
-    // Using QueryBuilder for a specific GROUP BY / DISTINCT
+    // getRawMany is safer for GROUP BY queries in Postgres to avoid ID column errors
     return this.notificationRepository.createQueryBuilder('n')
-      .select(['n.title', 'n.message', 'n.created_at', 'n.type'])
+      .select('n.title', 'title')
+      .addSelect('n.message', 'message')
+      .addSelect('MAX(n.created_at)', 'created_at')
+      .addSelect('n.type', 'type')
       .where('n.type = :type', { type: NotificationType.SYSTEM })
-      .orderBy('n.created_at', 'DESC')
-      .groupBy('n.title, n.message, n.created_at, n.type')
-      .take(limit)
-      .getMany();
+      .groupBy('n.title, n.message, n.type')
+      .orderBy('MAX(n.created_at)', 'DESC')
+      .limit(limit)
+      .getRawMany();
   }
 
-  private async sendPushBatch(tokens: string[], title: string, body: string, data?: any) {
+  private async sendPushBatch(tokens: string[], title: string, body: string, data?: any, channelId: string = 'default') {
     const messages: ExpoPushMessage[] = tokens.map(token => ({
       to: token,
       sound: 'default',
       title,
       body,
       data: data || {},
-      channelId: 'default', // Explicitly specify channel for Android sound
+      channelId, // Dynamic channel for priority
+      priority: 'high',     // Required for Android "Heads-up" / Pop-up banner
     }));
 
     const chunks = this.expo.chunkPushNotifications(messages);
@@ -159,6 +180,14 @@ export class NotificationsService {
 
   async markAllRead(userId: string): Promise<void> {
     await this.notificationRepository.update({ user_id: userId, is_read: false }, { is_read: true });
+  }
+
+  async markRead(id: string, userId: string): Promise<void> {
+    await this.notificationRepository.update({ id, user_id: userId }, { is_read: true });
+  }
+
+  async getUnreadCount(userId: string): Promise<number> {
+    return this.notificationRepository.count({ where: { user_id: userId, is_read: false } });
   }
 
   private async saveNotification(userId: string, type: NotificationType, title: string, message: string, data?: any): Promise<void> {

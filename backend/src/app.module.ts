@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { DriversModule } from './drivers/drivers.module';
@@ -14,6 +16,7 @@ import { StorageModule } from './common/storage/storage.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { IncentivesModule } from './incentives/incentives.module';
+import { AppConfigModule } from './config/config.module';
 
 @Module({
   imports: [
@@ -22,7 +25,7 @@ import { IncentivesModule } from './incentives/incentives.module';
       type: 'postgres',
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
-      synchronize: false, // NEVER use true in production
+      synchronize: process.env.DB_SYNC === 'true', // Use true ONLY for initial deployment or carefully in non-prod environments
 
       // Connection Pooling
       extra: {
@@ -49,10 +52,12 @@ import { IncentivesModule } from './incentives/incentives.module';
     }),
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // Time window in milliseconds (60 seconds)
-        limit: 100, // Max requests per time window
+        ttl: 60000,
+        limit: 100,
       },
     ]),
+    ScheduleModule.forRoot(),
+
     AuthModule,
     UsersModule,
     DriversModule,
@@ -65,6 +70,7 @@ import { IncentivesModule } from './incentives/incentives.module';
     SubscriptionsModule,
     RatingsModule,
     IncentivesModule,
+    AppConfigModule,
   ],
 })
 export class AppModule { }

@@ -25,6 +25,9 @@ export class Wallet {
   balance: number;
 
   @Column('decimal', { precision: 10, scale: 2, default: 0.0 })
+  super_km_balance: number;
+
+  @Column('decimal', { precision: 10, scale: 2, default: 0.0 })
   pending_platform_fees: number;
 
   @Column({ type: 'varchar', length: 10, default: 'INR' })

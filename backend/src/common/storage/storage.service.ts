@@ -10,14 +10,21 @@ export class StorageService {
   private readonly region: string;
 
   constructor(private configService: ConfigService) {
-    this.storageZoneName = this.configService.get<string>('BUNNY_STORAGE_ZONE') || 'rideandhra-storage';
-    this.accessKey = this.configService.get<string>('BUNNY_ACCESS_KEY') || 'placeholder_access_key';
-    this.cdnUrl = this.configService.get<string>('BUNNY_CDN_URL') || 'https://rideandhra.b-cdn.net';
-    this.region = this.configService.get<string>('BUNNY_REGION') || ''; // 'ny', 'sg', etc.
+    this.storageZoneName = (this.configService.get<string>('BUNNY_STORAGE_ZONE') || 'rideandhra-storage').trim();
+    this.accessKey = (this.configService.get<string>('BUNNY_ACCESS_KEY') || 'placeholder_access_key').trim();
+    
+    // Ensure CDN URL doesn't have trailing slash for consistent path joining
+    const rawCdnUrl = this.configService.get<string>('BUNNY_CDN_URL') || 'https://rideandhra.b-cdn.net';
+    this.cdnUrl = rawCdnUrl.replace(/\/+$/, '');
+    
+    // Clean up region (remove quotes if any)
+    const rawRegion = this.configService.get<string>('BUNNY_REGION') || '';
+    this.region = rawRegion.replace(/['"]+/g, '').trim();
   }
 
   private getStorageHost(): string {
-    return this.region ? `${this.region}.storage.bunnycdn.com` : 'storage.bunnycdn.com';
+    const regionPrefix = this.region && this.region.toLowerCase() !== 'de' ? `${this.region}.` : '';
+    return `${regionPrefix}storage.bunnycdn.com`;
   }
 
   /**

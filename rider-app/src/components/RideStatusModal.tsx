@@ -116,10 +116,10 @@ const RideStatusModal = () => {
                             <Text style={styles.message}>{activeAlert.message}</Text>
                         </View>
 
-                        {user?.rider_pin && (
+                        {currentRide?.otp && (
                             <View style={styles.pinContainer}>
-                                <Text style={styles.pinLabel}>Rider PIN</Text>
-                                <Text style={styles.pinValue}>{user.rider_pin}</Text>
+                                <Text style={styles.pinLabel}>Trip PIN</Text>
+                                <Text style={styles.pinValue}>{currentRide.otp}</Text>
                             </View>
                         )}
 

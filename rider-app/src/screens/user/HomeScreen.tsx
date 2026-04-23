@@ -12,7 +12,9 @@ import PermissionRationaleModal from '../../components/PermissionRationaleModal'
 import RegionalRestrictionModal from '../../components/RegionalRestrictionModal';
 import { isLocationInAndhraPradesh } from '../../utils/locationUtils';
 import useRideStore from '../../store/rideStore';
+import useUserStore from '../../store/userStore';
 import api from '../../api/axiosClient';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 
 const searchXml = `<svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 48 48" width="100px" height="100px"><path fill="#616161" d="M34.6 28.1H38.6V45.1H34.6z" transform="rotate(-45.001 36.586 36.587)"/><path fill="#616161" d="M20 4A16 16 0 1 0 20 36A16 16 0 1 0 20 4Z"/><path fill="#37474F" d="M36.2 32.1H40.2V44.400000000000006H36.2z" transform="rotate(-45.001 38.24 38.24)"/><path fill="#64B5F6" d="M20 7A13 13 0 1 0 20 33A13 13 0 1 0 20 7Z"/><path fill="#BBDEFB" d="M26.9,14.2c-1.7-2-4.2-3.2-6.9-3.2s-5.2,1.2-6.9,3.2c-0.4,0.4-0.3,1.1,0.1,1.4c0.4,0.4,1.1,0.3,1.4-0.1C16,13.9,17.9,13,20,13s4,0.9,5.4,2.5c0.2,0.2,0.5,0.4,0.8,0.4c0.2,0,0.5-0.1,0.6-0.2C27.2,15.3,27.2,14.6,26.9,14.2z"/></svg>`;
 
@@ -25,15 +27,50 @@ const HomeScreen = ({ navigation }: any) => {
   const [isLocationReady, setIsLocationReady] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const { locationStatus, requestLocation, checkAllPermissions } = usePermissions();
+  const { unreadCount } = usePushNotifications(useUserStore((state) => state.user?.id || null));
   const [rationaleVisible, setRationaleVisible] = useState(false);
   const [isInsideAP, setIsInsideAP] = useState(true);
-  const { currentRide, driverLocation, clearRide } = useRideStore();
+  const { currentRide, driverLocation, clearRide, setRide } = useRideStore();
 
   // Rating States
   const [ratingModalVisible, setRatingModalVisible] = useState(false);
   const [ratingValue, setRatingValue] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+
+  // ─── Active Ride Recovery ─────────────────────────────────────────────────
+  // On every focus, check if there is an active ride the rider is mid-trip on.
+  // This handles app relaunches during an in-progress or accepted trip.
+  useFocusEffect(
+    React.useCallback(() => {
+      const recoverActiveRide = async () => {
+        try {
+          const response = await api.get('/rides/my-active-ride');
+          if (response.data && response.data.id) {
+            const ride = response.data;
+            setRide({
+              id: ride.id,
+              pickup_address: ride.pickup_address,
+              dropoff_address: ride.dropoff_address,
+              estimated_fare: ride.estimated_fare,
+              status: ride.status?.toUpperCase() as any,
+              otp: ride.otp,
+              driver: ride.driver ? {
+                name: ride.driver.name,
+                phone: ride.driver.phone_number,
+                vehicle_number: ride.driver.vehicle_number,
+                vehicle_model: ride.driver.vehicle_model,
+                rating: ride.driver.rating,
+              } : undefined,
+            });
+          }
+        } catch (_) {
+          // No active ride or network error — stay on home screen silently
+        }
+      };
+      recoverActiveRide();
+    }, [])
+  );
 
   useEffect(() => {
     if (currentRide?.status === 'COMPLETED' && !ratingModalVisible) {
@@ -144,7 +181,10 @@ const HomeScreen = ({ navigation }: any) => {
         onRequestClose={() => setIsDrawerVisible(false)}
       >
         <View style={styles.drawerContainer}>
-          <ProfileDrawer onClose={() => setIsDrawerVisible(false)} />
+          <ProfileDrawer
+            onClose={() => setIsDrawerVisible(false)}
+            onReadCountChange={fetchUnreadCount}
+          />
         </View>
       </Modal>
 
@@ -197,6 +237,9 @@ const HomeScreen = ({ navigation }: any) => {
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.NotificationBell} onPress={() => setIsDrawerVisible(true)}>
           <Image source={require('../../../assets/bell_icon.png')} style={{ width: 24, height: 24 }} />
+          {unreadCount > 0 && (
+            <View style={styles.unreadDot} />
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.searchContainer} onPress={() => navigation.navigate('Search')}>
@@ -340,6 +383,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 5,
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF5722',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
   searchContainer: {
     flex: 1,

@@ -9,6 +9,7 @@ const vehicleOptions = [
   { id: '2', label: 'Auto', description: '3-seater open vehicle for local trips', value: 'Auto', icon: 'rickshaw' },
   { id: '3', label: 'Cab', description: 'Comfortable 4-seater hatchback/sedan', value: 'Car', icon: 'car-hatchback' },
   { id: '4', label: 'Bike Lite', description: 'Electric or small engine bikes', value: 'bike-lite', icon: 'bike-fast' },
+  { id: '5', label: 'Luxury Bike', description: 'Premium sports/cruise bikes (300cc+)', value: 'luxury_bike', icon: 'racing-helmet' },
 ];
 
 const { width } = Dimensions.get('window');

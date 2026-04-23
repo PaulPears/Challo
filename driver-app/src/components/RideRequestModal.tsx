@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal,
-  Animated, Dimensions, ActivityIndicator, Alert, Easing, Linking
+  Animated, Dimensions, ActivityIndicator, Alert, Easing, Linking, Vibration
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useRideRequest } from '../context/RideRequestContext';
 import { useSound } from '../context/SoundContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -87,6 +88,7 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
 
   useEffect(() => {
     if (isVisible) {
+      console.log('[RideRequestModal] Showing modal for ride:', rideRequest?.rideId);
       setCountdown(COUNTDOWN_SECONDS);
       slideY.setValue(CARD_HEIGHT);
       backdropOpacity.setValue(0);
@@ -114,6 +116,7 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
   const handleDismiss = useCallback(() => {
     if (countdownRef.current) clearInterval(countdownRef.current);
     stopAlert();
+    Vibration.cancel();
     animateOut(() => clearRideRequest());
   }, [stopAlert, clearRideRequest, animateOut]);
 
@@ -141,9 +144,11 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
 
     setActionLoading('accept');
     await stopAlert();
+    Vibration.cancel();
     if (countdownRef.current) clearInterval(countdownRef.current);
     try {
       await api.patch(`/rides/${rideRequest.rideId}/accept`);
+      
       animateOut(() => {
         clearRideRequest();
         onAccepted();
@@ -160,6 +165,7 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
   const handleReject = async () => {
     if (!rideRequest) return;
     await stopAlert();
+    Vibration.cancel();
     setActionLoading('reject');
     try {
       await api.patch(`/rides/${rideRequest.rideId}/reject`);
@@ -257,7 +263,7 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
           <View style={styles.divider} />
 
           {/* Rider info */}
-          {(rideRequest.riderName || rideRequest.riderPhone) && (
+          {rideRequest.riderName && (
             <View style={styles.riderRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
                 <View style={styles.riderAvatar}>
@@ -265,15 +271,10 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
                 </View>
                 <Text style={styles.riderName}>{rideRequest.riderName || 'Rider'}</Text>
               </View>
-              {rideRequest.riderPhone && (
-                <TouchableOpacity 
-                  style={styles.callButton} 
-                  onPress={() => Linking.openURL(`tel:${rideRequest.riderPhone}`)}
-                >
-                  <Ionicons name="call" size={18} color="#fff" />
-                  <Text style={styles.callButtonText}>Call</Text>
-                </TouchableOpacity>
-              )}
+              <View style={styles.riderBadge}>
+                <Ionicons name="star" size={12} color="#fe7009" />
+                <Text style={styles.riderBadgeText}>New Rider</Text>
+              </View>
             </View>
           )}
 
@@ -328,34 +329,40 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
                 {
                   shadowRadius: glowShadowRadius,
                   opacity: glowOpacity,
-                  transform: [{ scale: pulseAnim }],
                   flex: 1,
                   marginLeft: 12,
                 },
               ]}
             >
-              <TouchableOpacity
-                style={styles.acceptBtn}
-                onPress={handleAccept}
-                disabled={!!actionLoading}
-                activeOpacity={0.85}
+              <Animated.View
+                style={{
+                  flex: 1,
+                  transform: [{ scale: pulseAnim }],
+                }}
               >
-                <LinearGradient
-                  colors={['#ff8c00', '#fe7009', '#e55a00']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.acceptGradient}
+                <TouchableOpacity
+                  style={styles.acceptBtn}
+                  onPress={handleAccept}
+                  disabled={!!actionLoading}
+                  activeOpacity={0.85}
                 >
-                  {actionLoading === 'accept' ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <>
-                      <Ionicons name="checkmark-circle" size={22} color="#fff" />
-                      <Text style={styles.acceptText}>Accept Ride</Text>
-                    </>
-                  )}
-                </LinearGradient>
-              </TouchableOpacity>
+                  <LinearGradient
+                    colors={['#ff8c00', '#fe7009', '#e55a00']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.acceptGradient}
+                  >
+                    {actionLoading === 'accept' ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="checkmark-circle" size={22} color="#fff" />
+                        <Text style={styles.acceptText}>Accept Ride</Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </Animated.View>
             </Animated.View>
           </View>
         </Animated.View>
@@ -509,19 +516,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#334155',
   },
-  callButton: {
+  riderBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#22c55e',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
+    backgroundColor: '#fff5ed',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
   },
-  callButtonText: {
-    color: '#fff',
+  riderBadgeText: {
+    fontSize: 11,
     fontWeight: '700',
-    fontSize: 13,
+    color: '#fe7009',
   },
 
   // Route

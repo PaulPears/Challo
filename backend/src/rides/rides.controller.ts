@@ -11,6 +11,7 @@ import {
   ValidationPipe,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { RidesService } from './rides.service';
 import { PricingService } from './pricing.service';
@@ -40,12 +41,12 @@ export class RidesController {
   ) { }
 
   @Post('fare-estimate')
-  async getFareEstimate(@Body() body: { distance: number; duration: number; lat?: number; lng?: number }) {
+  async getFareEstimate(@Body() body: { distance: number; duration: number; lat?: number; lng?: number; superKmBalance?: number }) {
     const vehicleTypes = Object.values(VehicleType);
     const estimates = await Promise.all(
       vehicleTypes.map(async (type) => {
         try {
-          return await this.pricingService.getFareEstimate(body.distance, body.duration, type, body.lat, body.lng);
+          return await this.pricingService.getFareEstimate(body.distance, body.duration, type, body.lat, body.lng, body.superKmBalance);
         } catch (e) {
           return null;
         }
@@ -55,14 +56,14 @@ export class RidesController {
   }
 
   @Post('fare') // Keep old endpoint for backward compatibility but use new service
-  getFare(@Body() body: { distance: number; duration: number; vehicleType: string }) {
+  getFare(@Body() body: { distance: number; duration: number; vehicleType: string; superKmBalance?: number }) {
     const vehicleType = body.vehicleType.replace('-', '_').toLowerCase() as VehicleType;
-    return this.pricingService.getFareEstimate(body.distance, body.duration, vehicleType);
+    return this.pricingService.getFareEstimate(body.distance, body.duration, vehicleType, undefined, undefined, body.superKmBalance);
   }
 
   @Get('high-booking-zones')
-  getHighBookingZones() {
-    return this.ridesService.getHighBookingZones();
+  getHighBookingZones(@Query('district') district?: string) {
+    return this.ridesService.getHighBookingZones(district);
   }
 
   @Get('pending')
@@ -81,6 +82,12 @@ export class RidesController {
   @Get('my-rides')
   getMyRides(@Req() req: AuthenticatedRequest) {
     return this.ridesService.getMyRides(req.user.id);
+  }
+
+  @Get('my-active-ride')
+  @Roles(UserRole.RIDER)
+  getMyActiveRide(@Req() req: AuthenticatedRequest) {
+    return this.ridesService.getActiveRideForRider(req.user.id);
   }
 
   @Get('driver-history')
@@ -116,8 +123,8 @@ export class RidesController {
 
   @Patch(':id/start')
   @Roles(UserRole.DRIVER)
-  startRide(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    return this.ridesService.startRide(id, req.user.id);
+  startRide(@Param('id') id: string, @Req() req: AuthenticatedRequest, @Body() body: { pin: string }) {
+    return this.ridesService.startRide(id, req.user.id, body.pin);
   }
 
   @Patch(':id/complete')

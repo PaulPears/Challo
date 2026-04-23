@@ -25,7 +25,7 @@ const getApiUrl = () => {
 
     // 3. Absolute Fallback to your PC's current Wi-Fi IP
     // This ensures it works on your physical device even if Expo doesn't report the IP.
-    const pcIpFallback = 'http://192.168.31.122:3000';
+    const pcIpFallback = 'http://192.168.29.18:3000';
     console.log(`[API Debug] Falling back to known PC IP: ${pcIpFallback}`);
     return pcIpFallback;
   }
@@ -39,7 +39,7 @@ console.log('API Base URL:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000, // 15-second timeout for slow connections
+  timeout: 30000, // 30-second global timeout
 });
 
 // ─── Request Interceptor ─────────────────────────────────────────────────────

@@ -24,77 +24,107 @@ export class RatingsService {
     ) { }
 
     async submitRating(raterUserId: string, dto: SubmitRatingDto): Promise<Rating> {
-        return this.dataSource.transaction(async (manager) => {
-            const ratingRepo = manager.getRepository(Rating);
-            const rideRepo = manager.getRepository(Ride);
+        try {
+            return await this.dataSource.transaction(async (manager) => {
+                const ratingRepo = manager.getRepository(Rating);
+                const rideRepo = manager.getRepository(Ride);
 
-            // Validate ride exists and is completed
-            const ride = await rideRepo.findOne({ where: { id: dto.ride_id } });
-            if (!ride) throw new NotFoundException('Ride not found');
-            if (ride.status !== RideStatus.COMPLETED) {
-                throw new BadRequestException('Can only rate completed rides');
-            }
+                // Validate ride exists and is completed
+                const ride = await rideRepo.findOne({ where: { id: dto.ride_id } });
+                if (!ride) throw new NotFoundException('Ride not found');
+                if (ride.status !== RideStatus.COMPLETED) {
+                    throw new BadRequestException(`Can only rate completed rides. Current status: ${ride.status}`);
+                }
 
-            // Validate rater is part of this ride
-            const isRider = ride.rider_id === raterUserId;
-            const isDriver = ride.driver_id === raterUserId;
-            if (!isRider && !isDriver) {
-                throw new BadRequestException('You are not part of this ride');
-            }
+                // Validate rater is part of this ride
+                const isRider = ride.rider_id === raterUserId;
+                const isDriver = ride.driver_id === raterUserId;
+                if (!isRider && !isDriver) {
+                    throw new BadRequestException('You are not part of this ride');
+                }
 
-            // Validate rater is rating the correct role
-            if (isRider && dto.rated_user_role !== RatingRole.DRIVER) {
-                throw new BadRequestException('Riders can only rate the driver');
-            }
-            if (isDriver && dto.rated_user_role !== RatingRole.RIDER) {
-                throw new BadRequestException('Drivers can only rate the rider');
-            }
+                // Map 'rating' to 'stars' if 'stars' is missing but 'rating' was passed (common frontend mismatch)
+                const starCount = dto.stars || (dto as any).rating || 5;
 
-            // Prevent duplicate ratings
-            const existing = await ratingRepo.findOne({
-                where: { ride_id: dto.ride_id, rated_by_user_id: raterUserId },
+                // Infer rated user and role if missing
+                const ratedUserId = dto.rated_user_id || (isDriver ? ride.rider_id : ride.driver_id);
+                const ratedUserRole = dto.rated_user_role || (isDriver ? RatingRole.RIDER : RatingRole.DRIVER);
+
+                console.log(`[Ratings] Submitting: Ride=${dto.ride_id}, Rater=${raterUserId}, Rated=${ratedUserId}, Role=${ratedUserRole}, Stars=${starCount}`);
+
+                if (!ratedUserId) {
+                    throw new BadRequestException('Could not identify the user to be rated');
+                }
+
+                // Validate rater is rating the correct role
+                if (isRider && ratedUserRole !== RatingRole.DRIVER) {
+                    throw new BadRequestException('Riders can only rate the driver');
+                }
+                if (isDriver && ratedUserRole !== RatingRole.RIDER) {
+                    throw new BadRequestException('Drivers can only rate the rider');
+                }
+
+                // Prevent duplicate ratings
+                const existing = await ratingRepo.findOne({
+                    where: { ride_id: dto.ride_id, rated_by_user_id: raterUserId },
+                });
+                if (existing) throw new BadRequestException('You have already rated this ride');
+
+                // Save rating
+                const rating = ratingRepo.create({
+                    ride_id: dto.ride_id,
+                    rated_by_user_id: raterUserId,
+                    rated_user_id: ratedUserId,
+                    rated_user_role: ratedUserRole,
+                    stars: starCount,
+                    comment: dto.comment,
+                    tags: dto.tags,
+                });
+                const saved = await ratingRepo.save(rating);
+
+                // Update average rating for rated user
+                await this.updateAverageRating(manager, rating.rated_user_id, rating.rated_user_role);
+
+                return saved;
             });
-            if (existing) throw new BadRequestException('You have already rated this ride');
-
-            // Save rating
-            const rating = ratingRepo.create({
-                ride_id: dto.ride_id,
-                rated_by_user_id: raterUserId,
-                rated_user_id: dto.rated_user_id,
-                rated_user_role: dto.rated_user_role,
-                stars: dto.stars,
-                comment: dto.comment,
-                tags: dto.tags,
-            });
-            const saved = await ratingRepo.save(rating);
-
-            // Update average rating for rated user
-            await this.updateAverageRating(manager, dto.rated_user_id, dto.rated_user_role);
-
-            return saved;
-        });
+        } catch (error) {
+            this.logger.error(`Failed to submit rating: ${error.message}`, error.stack);
+            if (error instanceof BadRequestException || error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new BadRequestException(error.message || 'Failed to submit rating');
+        }
     }
 
     private async updateAverageRating(manager: any, userId: string, role: RatingRole) {
-        const ratingRepo = manager.getRepository(Rating);
-        const result = await ratingRepo
-            .createQueryBuilder('r')
-            .select('AVG(r.stars)', 'avg')
-            .where('r.rated_user_id = :userId', { userId })
-            .getRawOne();
+        try {
+            const ratingRepo = manager.getRepository(Rating);
+            const result = await ratingRepo
+                .createQueryBuilder('r')
+                .select('AVG(r.stars)', 'avg')
+                .where('r.rated_user_id = :userId', { userId })
+                .getRawOne();
 
-        const newAvg = parseFloat(result?.avg || '5.0');
+            const rawAvg = result?.avg;
+            const newAvg = parseFloat(rawAvg || '5.0');
+            const roundedAvg = Math.round(newAvg * 10) / 10;
+            
+            console.log(`[Ratings] Updating ${role} ${userId}: RawAvg=${rawAvg}, NewAvg=${newAvg}, Rounded=${roundedAvg}`);
 
-        if (role === RatingRole.DRIVER) {
-            await manager.getRepository(DriverProfile).update(
-                { user_id: userId },
-                { driver_rating: Math.round(newAvg * 10) / 10 },
-            );
-        } else {
-            await manager.getRepository(RiderProfile).update(
-                { user_id: userId },
-                { rider_rating: Math.round(newAvg * 10) / 10 },
-            );
+            if (role === RatingRole.DRIVER) {
+                await manager.getRepository(DriverProfile).update(
+                    { user_id: userId },
+                    { driver_rating: roundedAvg },
+                );
+            } else {
+                await manager.getRepository(RiderProfile).update(
+                    { user_id: userId },
+                    { rider_rating: roundedAvg },
+                );
+            }
+        } catch (error) {
+            console.error(`[Ratings] Error updating average for ${userId}:`, error);
+            throw error; // Re-throw to fail the transaction
         }
     }
 

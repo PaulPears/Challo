@@ -1,4 +1,5 @@
-import { IsNumber, IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsNumber, IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { PaymentMethod } from '../ride.entity';
 
 export class CreateRideDto {
   @IsNumber()
@@ -44,4 +45,11 @@ export class CreateRideDto {
   @IsOptional()
   @IsNumber()
   apply_super_coins?: number;
+
+  @IsOptional()
+  apply_super_km?: boolean;
+
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  payment_method?: PaymentMethod;
 }

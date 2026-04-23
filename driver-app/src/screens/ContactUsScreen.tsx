@@ -1,18 +1,37 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons'; // Assuming these icon libraries are available
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, ActivityIndicator } from 'react-native';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Title } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useAppConfig } from '../context/ConfigContext';
+
 const ContactUsScreen = () => {
   const navigation = useNavigation();
+  const { config, isLoading } = useAppConfig();
+
+  // Fallback values
+  const supportEmail = config?.support_email || 'help.rideandhra@gmail.com';
+  const supportPhone = config?.support_phone || '+91 8374277617';
+  const officeAddress = config?.support_office_address || 'RideAndhra HQ, Kadapa, Andhra Pradesh, India';
+
   const handleEmailPress = () => {
-    Linking.openURL('help.rideandhra@gmail.com');
+    Linking.openURL(`mailto:${supportEmail}`);
   };
 
   const handlePhonePress = () => {
-    Linking.openURL('tel:+91 8374277617');
+    // Remove spaces and special chars for dialer
+    const dialNum = supportPhone.replace(/[^0-9+]/g, '');
+    Linking.openURL(`tel:${dialNum}`);
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#fe7009" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -20,7 +39,7 @@ const ContactUsScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#1a202c" />
         </TouchableOpacity>
-        <Title style={styles.headerTitle}>Contact US </Title>
+        <Title style={styles.headerTitle}>Contact Us</Title>
       </View>
 
       <ScrollView style={styles.outerContainer} contentContainerStyle={styles.contentContainer}>
@@ -38,7 +57,7 @@ const ContactUsScreen = () => {
             <MaterialCommunityIcons name="email-outline" size={24} color="#333" />
             <View style={styles.contactTextContainer}>
               <Text style={styles.contactLabel}>Email Us</Text>
-              <Text style={styles.contactDetail}>help.rideandhra@gmail.com</Text>
+              <Text style={styles.contactDetail}>{supportEmail}</Text>
             </View>
           </TouchableOpacity>
 
@@ -46,7 +65,7 @@ const ContactUsScreen = () => {
             <MaterialCommunityIcons name="phone-outline" size={24} color="#333" />
             <View style={styles.contactTextContainer}>
               <Text style={styles.contactLabel}>Call Our Helpline</Text>
-              <Text style={styles.contactDetail}>+91 8374277617</Text>
+              <Text style={styles.contactDetail}>{supportPhone}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -56,22 +75,8 @@ const ContactUsScreen = () => {
           <View style={styles.contactItem}>
             <MaterialCommunityIcons name="map-marker-outline" size={24} color="#333" />
             <View style={styles.contactTextContainer}>
-              <Text style={styles.contactLabel}>Our Locations</Text>
-              <Text style={styles.contactDetail}>RideAndhra HQ, Kadapa, Andhra Pradesh, India</Text>
-            </View>
-          </View>
-          <View style={styles.contactItem}>
-            <MaterialCommunityIcons name="map-marker-outline" size={24} color="#333" />
-            <View style={styles.contactTextContainer}>
-
-              <Text style={styles.contactDetail}>RideAndhra HQ, Kurnool, Andhra Pradesh, India</Text>
-            </View>
-          </View>
-          <View style={styles.contactItem}>
-            <MaterialCommunityIcons name="map-marker-outline" size={24} color="#333" />
-            <View style={styles.contactTextContainer}>
-
-              <Text style={styles.contactDetail}>RideAndhra HQ, Anantapur, Andhra Pradesh, India</Text>
+              <Text style={styles.contactLabel}>Main Headquarters</Text>
+              <Text style={styles.contactDetail}>{officeAddress}</Text>
             </View>
           </View>
         </View>
@@ -108,7 +113,12 @@ const ContactUsScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f0f2f5', // Light grey background
+    backgroundColor: '#f0f2f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   outerContainer: {
     flex: 1,

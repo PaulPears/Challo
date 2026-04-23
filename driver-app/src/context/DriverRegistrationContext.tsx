@@ -20,6 +20,9 @@ interface RegistrationData {
   aadhaarPhoto?: string;
   panNumber?: string;
   panPhoto?: string;
+  rcPhoto?: string;
+  rcBackPhoto?: string;
+  insurancePhoto?: string;
 }
 
 // Define the context type

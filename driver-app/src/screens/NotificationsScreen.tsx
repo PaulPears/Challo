@@ -67,6 +67,16 @@ const NotificationsScreen = ({ navigation }: { navigation: any }) => {
     } catch (_) { /* best-effort */ }
   };
 
+  const handleNotificationPress = async (item: NotificationItem) => {
+    if (item.is_read) return;
+    try {
+      await api.patch(`/notifications/${item.id}/mark-read`);
+      setNotifications(prev =>
+        prev.map(n => (n.id === item.id ? { ...n, is_read: true } : n))
+      );
+    } catch (_) { /* best-effort */ }
+  };
+
   const formatTime = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
@@ -87,7 +97,11 @@ const NotificationsScreen = ({ navigation }: { navigation: any }) => {
   const renderNotification = ({ item }: { item: NotificationItem }) => {
     const iconInfo = ICON_MAP[item.type] || ICON_MAP.system;
     return (
-      <View style={[styles.notificationCard, !item.is_read && styles.unreadCard]}>
+      <TouchableOpacity 
+        style={[styles.notificationCard, !item.is_read && styles.unreadCard]}
+        onPress={() => handleNotificationPress(item)}
+        activeOpacity={0.7}
+      >
         <View style={styles.cardHeader}>
           <View style={[styles.iconBubble, { backgroundColor: iconInfo.color + '15' }]}>
             <MaterialCommunityIcons name={iconInfo.name as any} size={22} color={iconInfo.color} />
@@ -96,7 +110,7 @@ const NotificationsScreen = ({ navigation }: { navigation: any }) => {
         </View>
         <Text style={styles.notifTitle}>{item.title}</Text>
         <Text style={styles.notifBody}>{item.message}</Text>
-      </View>
+      </TouchableOpacity>
     );
   };
 

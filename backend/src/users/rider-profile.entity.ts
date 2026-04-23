@@ -30,6 +30,9 @@ export class RiderProfile {
   @Column('integer', { default: 0 })
   super_coins_balance: number;
 
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  super_km_balance: number;
+
   @Column({ type: 'boolean', default: true })
   pin_required: boolean;
 

@@ -11,6 +11,8 @@ interface FareBreakdownProps {
   gst: number;
   totalFare: number;
   subtotal: number;
+  superKmDiscount?: number;
+  riderPayable?: number;
 }
 
 const FareBreakdownCard: React.FC<FareBreakdownProps> = ({
@@ -22,6 +24,8 @@ const FareBreakdownCard: React.FC<FareBreakdownProps> = ({
   gst,
   totalFare,
   subtotal,
+  superKmDiscount,
+  riderPayable,
 }) => {
   return (
     <View style={styles.container}>
@@ -37,17 +41,17 @@ const FareBreakdownCard: React.FC<FareBreakdownProps> = ({
 
       <View style={styles.row}>
         <Text style={styles.label}>Base Fare</Text>
-        <Text style={styles.value}>₹{baseFare.toFixed(2)}</Text>
+        <Text style={styles.value}>₹{Number(baseFare).toFixed(2)}</Text>
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>Distance Fare</Text>
-        <Text style={styles.value}>₹{distanceFare.toFixed(2)}</Text>
+        <Text style={styles.value}>₹{Number(distanceFare).toFixed(2)}</Text>
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>Time Fare</Text>
-        <Text style={styles.value}>₹{timeFare.toFixed(2)}</Text>
+        <Text style={styles.value}>₹{Number(timeFare).toFixed(2)}</Text>
       </View>
 
       {surgeMultiplier > 1 && (
@@ -66,18 +70,32 @@ const FareBreakdownCard: React.FC<FareBreakdownProps> = ({
 
       <View style={styles.row}>
         <Text style={styles.label}>Subtotal</Text>
-        <Text style={styles.value}>₹{subtotal.toFixed(2)}</Text>
+        <Text style={styles.value}>₹{Number(subtotal).toFixed(2)}</Text>
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>GST (5%)</Text>
-        <Text style={styles.value}>₹{gst.toFixed(2)}</Text>
+        <Text style={styles.value}>₹{Number(gst).toFixed(2)}</Text>
       </View>
 
       <View style={[styles.row, { marginTop: 8 }]}>
         <Text style={styles.totalLabel}>Total Fare</Text>
-        <Text style={styles.totalValue}>₹{totalFare.toFixed(2)}</Text>
+        <Text style={styles.totalValue}>₹{Number(totalFare).toFixed(2)}</Text>
       </View>
+
+      {superKmDiscount && Number(superKmDiscount) > 0 ? (
+        <>
+          <View style={styles.row}>
+            <Text style={[styles.label, { color: '#2196F3', fontWeight: 'bold' }]}>Super KM Discount</Text>
+            <Text style={[styles.value, { color: '#2196F3', fontWeight: 'bold' }]}>-₹{Number(superKmDiscount).toFixed(2)}</Text>
+          </View>
+          <View style={styles.separator} />
+          <View style={styles.row}>
+            <Text style={[styles.totalLabel, { color: '#4CAF50' }]}>Rider Payable</Text>
+            <Text style={[styles.totalValue, { color: '#4CAF50' }]}>₹{Number(riderPayable || 0).toFixed(2)}</Text>
+          </View>
+        </>
+      ) : null}
     </View>
   );
 };

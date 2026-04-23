@@ -1,0 +1,19 @@
+let 
+Taf = totalptice of the ride after the super kilometer offer applied 
+Tab = totalptice of the ride before the super kilometer offer applied 
+Sk = super kilometers user have earned 
+ckm = Cost for kilometer 
+Tc = Time charges 
+
+Tab = Basic + (km * ckm) + Tc 
+
+Taf = Tab - (Sk * ckm)
+
+let 
+Tab = 100 = 25 + (10 * 5) + 25
+Sk = 10
+ckm = 5
+
+Taf = 100 - (10 * 5) = 100 - 50 = 50
+
+Taf = 50 = Basic + Tc = 25 + 25 

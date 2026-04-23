@@ -38,6 +38,12 @@ export class SubscriptionSale {
   @Column({ type: 'timestamp', nullable: true })
   valid_until: Date;
 
+  @Column({ type: 'varchar', nullable: true })
+  payment_id: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  order_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 }

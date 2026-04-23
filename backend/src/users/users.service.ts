@@ -7,6 +7,7 @@ import { DriverProfile } from './../drivers/driver-profile.entity';
 import { FavoriteDriver } from './favorite-driver.entity';
 import { Wallet } from './../payments/wallet.entity';
 import { NotificationsService } from '../notifications/notifications.service';
+import { Ride, RideStatus } from '../rides/ride.entity';
 
 @Injectable()
 export class UsersService {
@@ -21,6 +22,8 @@ export class UsersService {
     private favoriteDriverRepository: Repository<FavoriteDriver>,
     @InjectRepository(Wallet)
     private walletRepository: Repository<Wallet>,
+    @InjectRepository(Ride)
+    private ridesRepository: Repository<Ride>,
     private notificationsService: NotificationsService,
   ) { }
 
@@ -40,16 +43,19 @@ export class UsersService {
       roles: user.roles,
       rating: driverProfile ? Number(driverProfile.driver_rating) : (riderProfile ? Number(riderProfile.rider_rating) : 5.0),
       super_coins_balance: riderProfile ? Number(riderProfile.super_coins_balance || 0) : 0,
+      super_km_balance: riderProfile ? Number(riderProfile.super_km_balance || 0) : 0,
       trips: driverProfile ? driverProfile.total_rides : (riderProfile ? riderProfile.total_rides : 0),
       memberSince: user.created_at.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
       vehicleModel: driverProfile?.vehicle_model || 'N/A',
       vehiclePlateNumber: driverProfile?.vehicle_plate_number || 'N/A',
+      vehicleColor: driverProfile?.vehicle_color || 'N/A',
       avatar: user.profile_image || null,
       is_verified: driverProfile?.status === 'active',
       driver_id: driverProfile ? user.id : null,
       driver_status: driverProfile?.status || null,
       isOnline: driverProfile?.is_online || false,
       subscriptionExpiry: driverProfile?.subscription_expiry || null,
+      currentAddress: driverProfile?.current_address || 'Not available',
       location: driverProfile ? {
         latitude: Number(driverProfile.current_latitude),
         longitude: Number(driverProfile.current_longitude),
@@ -123,6 +129,7 @@ export class UsersService {
     return Number(riderProfile.rider_rating);
   }
 
+
   async awardSuperCoins(userId: string, amount: number, manager?: any): Promise<void> {
     const repo = manager ? manager.getRepository(RiderProfile) : this.riderProfileRepository;
 
@@ -139,6 +146,20 @@ export class UsersService {
     }
 
     await repo.decrement({ user_id: userId }, 'super_coins_balance', Math.floor(amount));
+  }
+
+  async awardSuperKm(userId: string, amount: number, manager?: any): Promise<void> {
+    const repo = manager ? manager.getRepository(RiderProfile) : this.riderProfileRepository;
+    await repo.increment({ user_id: userId }, 'super_km_balance', amount);
+  }
+
+  async deductSuperKm(userId: string, amount: number, manager?: any): Promise<void> {
+    const repo = manager ? manager.getRepository(RiderProfile) : this.riderProfileRepository;
+    const profile = await repo.findOne({ where: { user_id: userId } });
+    if (!profile || Number(profile.super_km_balance || 0) < amount) {
+      throw new BadRequestException('Insufficient Super KM balance');
+    }
+    await repo.decrement({ user_id: userId }, 'super_km_balance', amount);
   }
 
   async addFavoriteDriver(riderId: string, driverId: number): Promise<FavoriteDriver> {
@@ -161,10 +182,24 @@ export class UsersService {
   }
 
   async updateDriverStatus(userId: string, statusData: { online: boolean; location?: { latitude: number; longitude: number } }): Promise<void> {
+    if (!statusData.online) {
+      // Check if driver has any active rides
+      const activeRide = await this.ridesRepository.findOne({
+        where: [
+          { driver_id: userId, status: RideStatus.ACCEPTED },
+          { driver_id: userId, status: RideStatus.IN_PROGRESS },
+        ],
+      });
+
+      if (activeRide) {
+        throw new BadRequestException('You cannot go offline while you have an active ride. Complete it first.');
+      }
+    }
+
     if (statusData.online) {
       const wallet = await this.walletRepository.findOne({ where: { user_id: userId } });
       if (wallet && Number(wallet.pending_platform_fees) >= 100) {
-        throw new BadRequestException(`Blocked: Outstanding platform fees of ₹${wallet.pending_platform_fees}. Please settle dues to go online.`);
+        throw new BadRequestException(`Blocked: Outstanding Service tax (GST) dues of ₹${wallet.pending_platform_fees}. Please settle dues to go online.`);
       }
     }
 

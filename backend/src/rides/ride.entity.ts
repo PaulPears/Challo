@@ -9,6 +9,11 @@ import {
 } from 'typeorm';
 import { User, UserRole } from '../users/user.entity';
 
+export enum PaymentMethod {
+  CASH = 'cash',
+  ONLINE = 'online',
+}
+
 // These enums should ideally be in their own files and shared,
 // but for now, defining them here to match ride_andhra.sql
 export enum VehicleType {
@@ -18,6 +23,7 @@ export enum VehicleType {
   BIKE_LITE = 'bike_lite',
   PARCEL = 'parcel',
   PREMIUM = 'premium',
+  LUXURY_BIKE = 'luxury_bike',
 }
 
 export enum RideStatus {
@@ -150,6 +156,39 @@ export class Ride {
 
   @Column({ type: 'text', nullable: true })
   driver_review: string;
+
+  @Column({ type: 'text', nullable: true })
+  otp: string;
+
+  // Payment details
+  @Column({
+    type: 'enum',
+    enum: PaymentMethod,
+    enumName: 'payment_method_enum',
+    default: PaymentMethod.CASH,
+  })
+  payment_method: PaymentMethod;
+
+  @Column('decimal', { precision: 8, scale: 2, nullable: true, default: 0 })
+  gst_amount: number;
+
+  @Column('decimal', { precision: 8, scale: 2, nullable: true, default: 0 })
+  platform_fee: number;
+
+  @Column('decimal', { precision: 8, scale: 2, nullable: true, default: 0 })
+  driver_earnings: number;
+
+  @Column('decimal', { name: 'super_km_applied', precision: 8, scale: 2, default: 0 })
+  super_km_applied: number;
+
+  @Column('decimal', { name: 'super_km_discount', precision: 8, scale: 2, default: 0 })
+  super_km_discount: number;
+
+  @Column('decimal', { name: 'rider_payable', precision: 8, scale: 2, nullable: true })
+  rider_payable: number;
+
+  @Column('decimal', { name: 'company_payable', precision: 8, scale: 2, nullable: true })
+  company_payable: number;
 
   @CreateDateColumn()
   created_at: Date;

@@ -14,7 +14,7 @@ import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ProfileStackParamList } from '../../navigation/ProfileNavigator';
-import { getWallet, getWalletTransactions } from '../../api/authAPI';
+import { getWallet, getWalletTransactions, getMe } from '../../api/authAPI';
 
 type MyWalletScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'MyWallet'>;
 
@@ -30,18 +30,21 @@ const { width } = Dimensions.get('window');
 
 const MyWalletScreen = ({ navigation }: { navigation: MyWalletScreenNavigationProp }) => {
     const [balance, setBalance] = useState(0);
+    const [superKmBalance, setSuperKmBalance] = useState(0);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const fetchWalletData = useCallback(async () => {
         try {
-            const [walletData, transactionsData] = await Promise.all([
+            const [walletData, transactionsData, profileData] = await Promise.all([
                 getWallet(),
                 getWalletTransactions(),
+                getMe(),
             ]);
             setBalance(walletData.balance);
             setTransactions(transactionsData);
+            setSuperKmBalance(profileData?.super_km_balance || 0);
         } catch (error) {
             console.error('Failed to fetch wallet data:', error);
         } finally {
@@ -49,6 +52,7 @@ const MyWalletScreen = ({ navigation }: { navigation: MyWalletScreenNavigationPr
             setRefreshing(false);
         }
     }, []);
+
 
     useEffect(() => {
         fetchWalletData();
@@ -105,6 +109,27 @@ const MyWalletScreen = ({ navigation }: { navigation: MyWalletScreenNavigationPr
                         </View>
                     </View>
                 </LinearGradient>
+
+                {/* Super KM Balance Card */}
+                <LinearGradient
+                    colors={['#0ea5e9', '#0284c7', '#0369a1']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.balanceCard, { marginTop: -8 }]}
+                >
+                    <View style={styles.balanceCardContent}>
+                        <View style={styles.balanceHeader}>
+                            <MaterialIcons name="speed" size={32} color="white" />
+                            <View style={styles.promoBadge}>
+                                <Text style={styles.promoText}>SUPER KM</Text>
+                            </View>
+                        </View>
+                        <Text style={styles.balanceLabel}>Available Super KM</Text>
+                        <Text style={styles.balanceAmount}>{superKmBalance.toFixed(2)} KM</Text>
+                        <Text style={styles.balanceHint}>Use these KM for ride discounts</Text>
+                    </View>
+                </LinearGradient>
+
 
             
 
@@ -245,6 +270,22 @@ const styles = StyleSheet.create({
         fontSize: 42,
         fontWeight: 'bold',
         letterSpacing: 1,
+    },
+    balanceHint: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 12,
+        marginTop: 4,
+    },
+    promoBadge: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    promoText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
     cardDecoration: {
         position: 'absolute',

@@ -15,6 +15,9 @@ export class DriversController {
     { name: 'licenseBackPhoto', maxCount: 1 },
     { name: 'aadhaarPhoto', maxCount: 1 },
     { name: 'panPhoto', maxCount: 1 },
+    { name: 'rcPhoto', maxCount: 1 },
+    { name: 'rcBackPhoto', maxCount: 1 },
+    { name: 'insurancePhoto', maxCount: 1 },
   ]))
   async registerDriver(
     @Request() req,

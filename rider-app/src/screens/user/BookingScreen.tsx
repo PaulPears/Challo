@@ -25,6 +25,7 @@ const BookingScreen = ({ navigation, route }: any) => {
   console.log('Dropoff:', dropoff);
   const [distance, setDistance] = React.useState(0);
   const [useCoins, setUseCoins] = React.useState(false);
+  const [useSuperKm, setUseSuperKm] = React.useState(false);
   const [duration, setDuration] = React.useState(0);
   const [selectedVehicle, setSelectedVehicle] = React.useState('Auto');
 
@@ -40,6 +41,7 @@ const BookingScreen = ({ navigation, route }: any) => {
     if (type.includes('bike')) return require('../../../assets/bike_icon.png');
     if (type.includes('auto')) return require('../../../assets/auto_icon.png');
     if (type.includes('parcel')) return require('../../../assets/parcel_icon.png');
+    if (type.includes('luxury_bike') || type.includes('luxury bike')) return require('../../../assets/bike_icon.png'); // Fallback icon
     return require('../../../assets/cab_icon.png');
   };
 
@@ -82,10 +84,16 @@ const BookingScreen = ({ navigation, route }: any) => {
         setError(null);
         try {
           // Call the fare-estimate endpoint once to get all vehicle fares
-          const fareEstimates = await rideAPI.getFare(distance * 1000, duration * 60, pickup.lat, pickup.lng);
+          const fareEstimates = await rideAPI.getFare(
+            distance * 1000, 
+            duration * 60, 
+            pickup.lat, 
+            pickup.lng,
+            useSuperKm ? user?.super_km_balance : 0
+          );
 
           // Define the desired order
-          const vehicleOrder = ['auto', 'bike', 'bike_lite', 'cab', 'parcel'];
+          const vehicleOrder = ['auto', 'bike', 'luxury_bike', 'bike_lite', 'cab', 'parcel'];
 
           // Map and Filter the response
           const options: VehicleOption[] = fareEstimates
@@ -100,8 +108,10 @@ const BookingScreen = ({ navigation, route }: any) => {
               }
 
               // Normalize vehicle type for display
-              // 'bike_lite' -> 'Bike-lite', 'auto' -> 'Auto', etc.
-              const displayVehicle = vehicleType === 'bike_lite' ? 'Bike-lite' :
+              // 'bike_lite' -> 'Bike-lite', 'luxury_bike' -> 'Luxury Bike', etc.
+              const displayVehicle = 
+                vehicleType === 'bike_lite' ? 'Bike-lite' :
+                vehicleType === 'luxury_bike' ? 'Luxury Bike' :
                 vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1);
 
               return {
@@ -142,7 +152,7 @@ const BookingScreen = ({ navigation, route }: any) => {
       const interval = setInterval(getVehicleOptions, 30000);
       return () => clearInterval(interval);
     }
-  }, [distance, duration, pickup.lat, pickup.lng]);
+  }, [distance, duration, pickup.lat, pickup.lng, useSuperKm]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -196,6 +206,24 @@ const BookingScreen = ({ navigation, route }: any) => {
             </View>
           ) : null}
 
+          {user?.super_km_balance && user.super_km_balance > 0 ? (
+            <View style={[styles.coinsCard, { backgroundColor: '#E3F2FD', borderColor: '#BBDEFB' }]}>
+              <View style={styles.coinsHeader}>
+                <Text style={styles.coinIcon}>🚀</Text>
+                <View style={{flex: 1}}>
+                  <Text style={[styles.coinsTitle, { color: '#0D47A1' }]}>Super Kilometer Balance</Text>
+                  <Text style={[styles.coinsSubtitle, { color: '#1565C0' }]}>You have {user.super_km_balance} KM available</Text>
+                </View>
+                <Switch
+                  value={useSuperKm}
+                  onValueChange={setUseSuperKm}
+                  trackColor={{ false: '#767577', true: '#2196F3' }}
+                  thumbColor={useSuperKm ? '#f4f3f4' : '#f4f3f4'}
+                />
+              </View>
+            </View>
+          ) : null}
+
           {isLoading && (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#FF5722" />
@@ -242,18 +270,24 @@ const BookingScreen = ({ navigation, route }: any) => {
                     <Text style={styles.arrivalTime}>Rider arrives in {option.estimatedTime ? option.estimatedTime.toFixed(0) : '0'} min</Text>
                   </View>
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  {(useCoins && user?.super_coins_balance && user.super_coins_balance > 0) ? (
-                    <>
-                      <Text style={[styles.costText, { textDecorationLine: 'line-through', color: '#999', fontSize: 13 }]}>₹{option.cost.toFixed(2)}</Text>
-                      <Text style={[styles.costText, { color: '#FF5722' }]}>
-                        ₹{Math.max(0, option.cost - user.super_coins_balance).toFixed(2)}
-                      </Text>
-                    </>
-                  ) : (
-                    <Text style={styles.costText}>₹{option.cost ? option.cost.toFixed(2) : '0.00'}</Text>
-                  )}
-                </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    {useSuperKm && option.breakdown?.superKmDiscount > 0 ? (
+                      <>
+                        <Text style={[styles.costText, { textDecorationLine: 'line-through', color: '#999', fontSize: 13 }]}>₹{option.cost.toFixed(2)}</Text>
+                        <Text style={[styles.costText, { color: '#2196F3' }]}>₹{(option.breakdown.riderPayable || 0).toFixed(2)}</Text>
+                        <Text style={{ fontSize: 10, color: '#4CAF50' }}>-{option.breakdown.superKmApplied} KM used</Text>
+                      </>
+                    ) : (useCoins && user?.super_coins_balance && user.super_coins_balance > 0) ? (
+                      <>
+                        <Text style={[styles.costText, { textDecorationLine: 'line-through', color: '#999', fontSize: 13 }]}>₹{option.cost.toFixed(2)}</Text>
+                        <Text style={[styles.costText, { color: '#FF5722' }]}>
+                          ₹{Math.max(0, option.cost - user.super_coins_balance).toFixed(2)}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text style={styles.costText}>₹{option.cost ? option.cost.toFixed(2) : '0.00'}</Text>
+                    )}
+                  </View>
               </TouchableOpacity>
               
               {selectedVehicle === option.vehicle && option.breakdown && (
@@ -278,6 +312,10 @@ const BookingScreen = ({ navigation, route }: any) => {
             
             if (useCoins && user?.super_coins_balance) {
                rideData.apply_super_coins = Math.min(baseFare, user.super_coins_balance);
+            }
+
+            if (useSuperKm) {
+              rideData.apply_super_km = true;
             }
 
             rideData.distance = distance;

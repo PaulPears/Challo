@@ -1,13 +1,23 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, ScrollView, Image } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, ScrollView, ActivityIndicator } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import useNotificationStore from '../store/notificationStore';
+import axiosClient from '../api/axiosClient';
 
 const { width, height } = Dimensions.get('window');
 
-const ProfileDrawer = ({ onClose }: { onClose: () => void }) => {
+interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+  type: string;
+}
+
+const ProfileDrawer = ({ onClose, onReadCountChange }: { onClose: () => void; onReadCountChange?: () => void }) => {
   const slideAnim = useRef(new Animated.Value(-width)).current;
-  const { notifications, markAllAsRead } = useNotificationStore();
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -15,7 +25,40 @@ const ProfileDrawer = ({ onClose }: { onClose: () => void }) => {
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [slideAnim]);
+
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosClient.get('/notifications');
+      setNotifications(response.data || []);
+    } catch (error) {
+      console.error('[ProfileDrawer] Failed to fetch notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await axiosClient.post('/notifications/mark-read');
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      onReadCountChange?.();
+    } catch (error) {
+      console.error('[ProfileDrawer] Failed to mark all read:', error);
+    }
+  };
+
+  const handleNotificationPress = async (item: NotificationItem) => {
+    if (item.is_read) return;
+    try {
+      await axiosClient.patch(`/notifications/${item.id}/mark-read`);
+      setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, is_read: true } : n));
+      onReadCountChange?.();
+    } catch (_) { /* best-effort */ }
+  };
 
   const handleClose = () => {
     Animated.timing(slideAnim, {
@@ -25,36 +68,60 @@ const ProfileDrawer = ({ onClose }: { onClose: () => void }) => {
     }).start(() => onClose());
   };
 
+  const unread = notifications.filter(n => !n.is_read).length;
+
   return (
     <Animated.View style={[styles.container, { transform: [{ translateX: slideAnim }] }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          {unread > 0 && (
+            <View style={styles.headerBadge}>
+              <Text style={styles.headerBadgeText}>{unread}</Text>
+            </View>
+          )}
+        </View>
         <TouchableOpacity onPress={handleClose}>
           <FontAwesome name="close" size={24} color="#6b7280" />
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
-        <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
-          <Text style={styles.markAllButtonText}>Mark all as read</Text>
-        </TouchableOpacity>
+        {notifications.length > 0 && (
+          <TouchableOpacity style={styles.markAllButton} onPress={handleMarkAllRead}>
+            <Text style={styles.markAllButtonText}>Mark all as read</Text>
+          </TouchableOpacity>
+        )}
 
-        {notifications.length > 0 ? (
+        {loading ? (
+          <ActivityIndicator size="large" color="#FF5722" style={{ marginTop: 40 }} />
+        ) : notifications.length > 0 ? (
           notifications.map(notification => (
-            <View key={notification.id} style={[styles.notificationCard, !notification.read && styles.unreadCard]}>
-              <FontAwesome name={notification.icon as any || 'bell'} size={24} color={notification.read ? "#9ca3af" : "#FF5722"} style={styles.notificationIcon} />
+            <TouchableOpacity
+              key={notification.id}
+              style={[styles.notificationCard, !notification.is_read && styles.unreadCard]}
+              onPress={() => handleNotificationPress(notification)}
+              activeOpacity={0.75}
+            >
+              <FontAwesome
+                name="bell"
+                size={22}
+                color={notification.is_read ? '#9ca3af' : '#FF5722'}
+                style={styles.notificationIcon}
+              />
               <View style={styles.notificationTextContainer}>
-                <Text style={[styles.notificationTitle, !notification.read && styles.unreadText]}>{notification.title}</Text>
+                <Text style={[styles.notificationTitle, !notification.is_read && styles.unreadText]}>
+                  {notification.title}
+                </Text>
                 <Text style={styles.notificationMessage}>{notification.message}</Text>
-                {/* <Text style={styles.notificationTimestamp}>{notification.timestamp}</Text> */}
               </View>
-              {!notification.read && <View style={styles.unreadDot} />}
-            </View>
+              {!notification.is_read && <View style={styles.unreadDot} />}
+            </TouchableOpacity>
           ))
         ) : (
           <View style={styles.emptyContainer}>
             <FontAwesome name="bell-slash-o" size={60} color="#d1d5db" />
-            <Text style={styles.emptyText}>No new notifications</Text>
+            <Text style={styles.emptyText}>No notifications yet</Text>
           </View>
         )}
       </ScrollView>
@@ -80,13 +147,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 62,
     backgroundColor: 'transparent',
-
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+  },
+  headerBadge: {
+    backgroundColor: '#FF5722',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    minWidth: 20,
+    alignItems: 'center',
+  },
+  headerBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   content: {
     padding: 16,
@@ -104,25 +182,29 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  unreadCard: {
+    backgroundColor: '#fff7ed',
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF5722',
   },
   notificationIcon: {
-    marginRight: 16,
+    marginRight: 14,
   },
   notificationTextContainer: {
     flex: 1,
   },
   notificationTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
+    color: '#374151',
   },
   notificationMessage: {
     color: '#6b7280',
-    marginVertical: 4,
-  },
-  notificationTimestamp: {
-    color: '#9ca3af',
-    fontSize: 12,
+    marginTop: 3,
+    fontSize: 13,
   },
   emptyContainer: {
     flex: 1,
@@ -135,21 +217,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
   },
-  unreadCard: {
-    backgroundColor: '#fff7ed',
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF5722',
-  },
   unreadText: {
     color: '#FF5722',
   },
   unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
     backgroundColor: '#FF5722',
     marginLeft: 8,
-    alignSelf: 'center',
   },
 });
 

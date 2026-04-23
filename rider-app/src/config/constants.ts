@@ -8,5 +8,5 @@ export const MSG91_TOKEN_AUTH = process.env.EXPO_PUBLIC_MSG91_TOKEN_AUTH || '479
 export const BIOMETRIC_AUTH_ENABLED = false; // Set to false to disable biometric authentication
 
 // Backend API URL
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.29.18:3000';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 // export const API_URL = 'https://ride-andhra-unified-db.onrender.com';

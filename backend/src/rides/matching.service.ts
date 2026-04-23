@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { DriverProfile, DriverStatus } from '../drivers/driver-profile.entity';
-import { VehicleType } from './ride.entity';
+import { VehicleType, Ride, RideStatus } from './ride.entity';
 
 export interface NearbyDriver {
     user_id: string;
@@ -69,17 +69,29 @@ export class MatchingService {
                 .where('dp.is_online = true')
                 .andWhere('dp.status = :status', { status: DriverStatus.ACTIVE })
                 .andWhere('dp.current_latitude IS NOT NULL')
-                .andWhere('dp.current_longitude IS NOT NULL')
-                .having(
-                    `(
+                .andWhere(`(
             6371 * acos(
               cos(radians(:lat)) * cos(radians(dp.current_latitude)) *
               cos(radians(dp.current_longitude) - radians(:lng)) +
               sin(radians(:lat)) * sin(radians(dp.current_latitude))
             )
-          ) <= :radius`,
-                )
-                .setParameters({ lat: latitude, lng: longitude, radius: radiusKm })
+          ) <= :radius`)
+                .andWhere((qb) => {
+                    const subQuery = qb
+                        .subQuery()
+                        .select('ride.driver_id')
+                        .from(Ride, 'ride')
+                        .where('ride.status IN (:...activeStatuses)')
+                        .andWhere('ride.driver_id IS NOT NULL')
+                        .getQuery();
+                    return 'dp.user_id NOT IN ' + subQuery;
+                })
+                .setParameters({ 
+                    lat: latitude, 
+                    lng: longitude, 
+                    radius: radiusKm,
+                    activeStatuses: [RideStatus.ACCEPTED, RideStatus.IN_PROGRESS]
+                })
                 .orderBy('distance_km', 'ASC')
                 .limit(limit);
 

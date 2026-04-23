@@ -5,16 +5,25 @@ export class SubmitRatingDto {
     @IsUUID()
     ride_id: string;
 
+    @IsOptional()
     @IsUUID()
-    rated_user_id: string;
+    rated_user_id?: string;
 
+    @IsOptional()
     @IsEnum(RatingRole)
-    rated_user_role: RatingRole;
+    rated_user_role?: RatingRole;
 
+    @IsOptional()
     @IsNumber()
     @Min(1)
     @Max(5)
-    stars: number;
+    stars?: number;
+
+    @IsOptional()
+    @IsNumber()
+    @Min(1)
+    @Max(5)
+    rating?: number;
 
     @IsOptional()
     @IsString()

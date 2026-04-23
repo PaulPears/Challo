@@ -31,14 +31,25 @@ interface Ride {
   estimated_duration_min?: number;
   actual_distance_km?: number;
   actual_duration_min?: number;
+  super_km_applied?: number;
 }
 
 const RideItem = ({ item }: { item: Ride }) => {
+  const navigation = useNavigation<any>();
   const displayDistance = item.actual_distance_km || item.estimated_distance_km;
   const displayDuration = item.actual_duration_min || item.estimated_duration_min;
 
   return (
-    <View style={styles.rideCard}>
+    <TouchableOpacity 
+      style={styles.rideCard} 
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate('RideDetails', { ride: item })}
+    >
+      {Number(item.super_km_applied) > 0 && (
+         <View style={styles.platformRewardBadge}>
+            <Text style={styles.platformRewardText}>Platform Reward Coverage 🚀</Text>
+         </View>
+      )}
       <View style={styles.rideHeader}>
         <Text style={styles.rideDate}>{formatDate(item.created_at)}</Text>
         <View style={{ alignItems: 'flex-end' }}>
@@ -72,14 +83,17 @@ const RideItem = ({ item }: { item: Ride }) => {
 
       <View style={styles.rideFooter}>
         <Text style={styles.rideTime}>{formatTime(item.created_at)}</Text>
-        <Text style={[styles.rideStatus, {
-          color: item.status === 'completed' ? '#28a745' :
-            item.status === 'cancelled' ? '#dc3545' : '#4a5568'
-        }]}>
-          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={[styles.rideStatus, {
+            color: item.status === 'completed' ? '#28a745' :
+              item.status === 'cancelled' ? '#dc3545' : '#4a5568'
+          }]}>
+            {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color="#cbd5e0" style={{ marginLeft: 4 }} />
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -109,7 +123,7 @@ const MyRidesScreen = () => {
   const cancelledRides = rides.filter(ride => ride.status === 'cancelled');
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#1a202c" />
@@ -149,11 +163,6 @@ const MyRidesScreen = () => {
               </View>
             }
           />
-          <View style={styles.disclaimerFooter}>
-            <Text style={styles.disclaimerFooterText}>
-              💡 Ride payments are settled directly between driver and rider. The app does not track or store payment data.
-            </Text>
-          </View>
         </>
       )}
     </SafeAreaView>
@@ -225,6 +234,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 10,
     elevation: 5,
+  },
+  platformRewardBadge: {
+    backgroundColor: '#0ea5e9',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+  },
+  platformRewardText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   rideHeader: {
     flexDirection: 'row',
@@ -304,21 +328,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#a0aec0',
     marginBottom: 2,
-  },
-  disclaimerFooter: {
-    backgroundColor: '#FFF9E6',
-    padding: 15,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: '#fe7009',
-  },
-  disclaimerFooterText: {
-    fontSize: 12,
-    color: '#4a5568',
-    textAlign: 'center',
-    fontWeight: '500',
   },
   statsRow: {
     flexDirection: 'row',

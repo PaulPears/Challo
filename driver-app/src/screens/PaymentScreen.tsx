@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RazorpayCheckout from 'react-native-razorpay';
 import api from '../config/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import PaymentResultModal, { PaymentResultState } from '../components/PaymentResultModal';
+
+const SUB_PENDING_VERIFICATION_KEY = 'sub_pending_verification';
 
 const PaymentScreen = ({ navigation }: any) => {
   const { user } = useAuth();
@@ -13,6 +16,40 @@ const PaymentScreen = ({ navigation }: any) => {
   const { plan }: any = route.params;
   const [loading, setLoading] = useState(false);
   const [mobileNumber, setMobileNumber] = useState<string | null>(user?.phoneNumber || null);
+  const [razorpayKey, setRazorpayKey] = useState<string | null>(null);
+
+  // Payment result modal state
+  const [resultState, setResultState] = useState<PaymentResultState>(null);
+  const [resultError, setResultError] = useState<string | undefined>();
+  const [pendingPaymentId, setPendingPaymentId] = useState<string | undefined>();
+  const [pendingOrderId, setPendingOrderId] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (user?.phoneNumber) setMobileNumber(user.phoneNumber);
+
+    const fetchConfig = async () => {
+      try {
+        const resp = await api.get('/payments/config');
+        if (resp.data?.razorpay_key) setRazorpayKey(resp.data.razorpay_key);
+      } catch (e) {
+        console.error('Config fetch error:', e);
+      }
+    };
+    fetchConfig();
+    checkPendingVerification();
+  }, [user]);
+
+  const checkPendingVerification = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(SUB_PENDING_VERIFICATION_KEY);
+      if (stored) {
+        const { paymentId, orderId } = JSON.parse(stored);
+        setPendingPaymentId(paymentId);
+        setPendingOrderId(orderId);
+        setResultState('verification_pending');
+      }
+    } catch (_) {}
+  };
 
   // Constants for calculation
   const GST_RATE = 0.18;
@@ -29,134 +66,122 @@ const PaymentScreen = ({ navigation }: any) => {
     let days = 1;
     if (plan.name.includes('Weekly')) days = 7;
     if (plan.name.includes('Monthly')) days = 30;
-
     const totalRides = days * RIDES_PER_DAY;
     const potentialCommission = totalRides * COMMISSION_PER_RIDE;
     const savings = potentialCommission - totalAmount;
-
     return { potentialCommission, savings, totalRides, days };
   };
 
   const { potentialCommission, savings, totalRides, days } = getSavingsDetails();
 
-  useEffect(() => {
-    if (user?.phoneNumber) {
-      setMobileNumber(user.phoneNumber);
-    } else {
-      Alert.alert('Error', 'Mobile number not found. Please log in again.');
-      navigation.goBack();
-    }
-  }, [user]);
-
   const handleRazorpayPayment = async () => {
-    if (!mobileNumber) {
-      Alert.alert('Error', 'Mobile number not available.');
-      return;
-    }
+    if (!razorpayKey) { setResultState('config_error'); return; }
 
     setLoading(true);
+    setResultError(undefined);
+    let orderData: any = null;
+
     try {
-      // Step 1: Create order on backend (Use Total Amount)
-      const orderResponse = await api.post('/subscriptions/create-order', {
-        planId: plan.id,
-      });
+      // ── Step 1: Create order ────────────────────────────────────────
+      try {
+        const orderResponse = await api.post('/subscriptions/create-order', { planId: plan.id });
+        orderData = orderResponse.data;
+      } catch (orderErr: any) {
+        setResultState('payment_failed');
+        setResultError(orderErr.response?.data?.message || orderErr.message);
+        return;
+      }
 
-      const orderData = orderResponse.data;
-
-      // Step 2: Open Razorpay Checkout
+      // ── Step 2: Open Razorpay ───────────────────────────────────────
       const options = {
         description: `Subscription: ${plan.name}`,
-        image: 'https://i.imgur.com/3g7nmJC.jpg',
+        image: 'https://ride-andhra.b-cdn.net/logo.png',
         currency: 'INR',
-        key: orderData.key,
-        amount: orderData.amount, // This comes from backend in paise
+        key: razorpayKey,
+        amount: orderData.amount,
         name: 'Ride Andhra',
         order_id: orderData.orderId,
         prefill: {
-          contact: mobileNumber,
+          contact: mobileNumber || '9999999999',
           name: 'Driver',
+          email: 'driver@rideandhra.in',
         },
         theme: { color: '#fe7009' },
       };
 
-      let data: any;
+      let rzpData: any;
       try {
-        data = await RazorpayCheckout.open(options);
+        rzpData = await RazorpayCheckout.open(options);
       } catch (rzpError: any) {
-        console.warn('Razorpay Native Error:', rzpError);
-        
-        // If native module is not available (e.g. Expo Go), offer simulated success for testing
-        return new Promise((resolve) => {
-          Alert.alert(
-            'Development Mode',
-            'Razorpay native module is not available in this environment. Would you like to simulate a successful payment for testing?',
-            [
-              { text: 'Cancel', style: 'cancel', onPress: () => { setLoading(false); resolve(null); } },
-              { text: 'Simulate Success', onPress: async () => {
-                const mockData = {
-                  razorpay_payment_id: `pay_mock_${Math.random().toString(36).substring(7)}`,
-                  razorpay_signature: 'mock_signature'
-                };
-                await verifyPayment(mockData, orderData.orderId);
-                resolve(null);
-              }}
-            ]
-          );
-        });
+        if (rzpError.code === 2) { setResultState('cancelled'); return; }
+        const desc: string = rzpError?.description || rzpError?.message || '';
+        setResultState('payment_failed');
+        setResultError(desc || 'Payment could not be completed.');
+        return;
       }
 
-      // Step 3: Verify
-      await verifyPayment(data, orderData.orderId);
+      // ── Step 3: Verify ─────────────────────────────────────────────
+      await verifyPayment(rzpData, orderData.orderId);
 
-    } catch (error: any) {
-      console.error('Payment Error:', error);
-
-      // Axios error handling
-      if (error.response) {
-        const errorMsg = error.response.data?.message || 'Server error occurred';
-        Alert.alert('Payment Error', errorMsg);
-      } else if (error.code === 2) {
-        Alert.alert('Payment Cancelled', 'You have cancelled the payment.');
-      } else {
-        Alert.alert('Payment Failed', error.message || 'An error occurred.');
-      }
     } finally {
       setLoading(false);
     }
   };
 
   const verifyPayment = async (paymentData: any, orderId: string) => {
+    await AsyncStorage.setItem(
+      SUB_PENDING_VERIFICATION_KEY,
+      JSON.stringify({ paymentId: paymentData.razorpay_payment_id, orderId, planId: plan.id })
+    );
     try {
       await api.post('/subscriptions/verify', {
         razorpay_order_id: orderId,
         razorpay_payment_id: paymentData.razorpay_payment_id,
         razorpay_signature: paymentData.razorpay_signature,
-        planId: plan.id
+        planId: plan.id,
       });
-
-      Alert.alert(
-        'Success!',
-        `Your ${plan.name} is now active!`,
-        [{ text: 'OK', onPress: () => navigation.navigate('Main') }]
-      );
-    } catch (error: any) {
-      console.error('Verification Error:', error);
-      const errorMsg = error.response?.data?.message || 'Payment verification failed';
-      Alert.alert('Verification Failed', errorMsg + '. Contact support if amount was deducted.');
+      await AsyncStorage.removeItem(SUB_PENDING_VERIFICATION_KEY);
+      setPendingPaymentId(undefined);
+      setPendingOrderId(undefined);
+      setResultState('success');
+    } catch {
+      setPendingPaymentId(paymentData.razorpay_payment_id);
+      setPendingOrderId(orderId);
+      setResultState('verification_pending');
     }
   };
 
+  const handleRetryVerification = async () => {
+    if (!pendingPaymentId || !pendingOrderId) return;
+    setResultState(null);
+    setLoading(true);
+    try {
+      await verifyPayment({ razorpay_payment_id: pendingPaymentId, razorpay_signature: '' }, pendingOrderId);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (!mobileNumber) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fe7009" />
-      </View>
-    );
-  }
+  const handleResultClose = () => {
+    if (resultState === 'success') {
+      navigation.navigate('Main');
+    } else {
+      setResultState(null);
+    }
+  };
 
   return (
     <View style={styles.container}>
+      <PaymentResultModal
+        state={resultState}
+        amount={totalAmount}
+        errorMessage={resultError}
+        paymentId={pendingPaymentId}
+        orderId={pendingOrderId}
+        onClose={handleResultClose}
+        onRetry={() => { setResultState(null); handleRazorpayPayment(); }}
+        onRetryVerification={handleRetryVerification}
+      />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#000" />

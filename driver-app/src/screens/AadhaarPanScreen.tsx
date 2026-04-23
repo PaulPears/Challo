@@ -9,19 +9,19 @@ import { useAuth } from '../context/AuthContext';
 
 const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
   const { registrationData, setRegistrationData, markStepAsCompleted } = useDriverRegistration();
-  const { checkAuth } = useAuth();
+  const { checkAuth, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChooseImage = async (imageType: 'aadhaar' | 'pan') => {
-    // 1. Request camera permissions
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    // 1. Request media library permissions
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      Alert.alert("Camera Permission Required", "You must grant camera access to upload documents.");
+      Alert.alert("Permission Required", "You must grant gallery access to upload documents.");
       return;
     }
 
-    // 2. Launch camera
-    const pickerResult = await ImagePicker.launchCameraAsync({
+    // 2. Launch image library
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
       quality: 0.5,
     });
@@ -41,15 +41,21 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const handleSubmit = async () => {
+    // Attempt to recover phone number from AuthContext if missing in registrationData
+    const userPhone = user?.phone_number || user?.phoneNumber;
+    const currentPhoneNumber = registrationData.phoneNumber || userPhone;
+
     const requiredFields: (keyof typeof registrationData)[] = [
       'aadhaarPhoto',
       'panPhoto',
-      'phoneNumber',
       'name',
       'drivingLicenseNumber',
       'vehicleModel',
       'vehiclePlateNumber',
       'vehicleColor',
+      'vehicleType',
+      'rcPhoto',
+      'rcBackPhoto',
     ];
 
     for (const field of requiredFields) {
@@ -60,6 +66,11 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
         );
         return;
       }
+    }
+
+    if (!currentPhoneNumber) {
+      Alert.alert('Incomplete Application', 'Phone number is missing. Please try logging in again.');
+      return;
     }
 
     setIsSubmitting(true);
@@ -84,11 +95,11 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
         } as any);
       }
 
-      // 3. License Back Photo (from DrivingLicenseScreen)
-      if (registrationData.licenseBackPhoto) {
-        formData.append('licenseBackPhoto', {
-          uri: registrationData.licenseBackPhoto,
-          name: 'license_back.jpg',
+      // 3. RC Back Photo (New)
+      if (registrationData.rcBackPhoto) {
+        formData.append('rcBackPhoto', {
+          uri: registrationData.rcBackPhoto,
+          name: 'rc_back.jpg',
           type: 'image/jpeg',
         } as any);
       }
@@ -107,10 +118,24 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
         type: 'image/jpeg',
       } as any);
 
-      // Ensure phone number is in E.164 format (+919515904761)
-      const formattedPhoneNumber = registrationData.phoneNumber!.startsWith('+')
-        ? registrationData.phoneNumber!
-        : `+${registrationData.phoneNumber!}`;
+      // 6. RC Photo (New)
+      formData.append('rcPhoto', {
+        uri: registrationData.rcPhoto!,
+        name: 'rc.jpg',
+        type: 'image/jpeg',
+      } as any);
+
+      // 7. Insurance Photo (New)
+      formData.append('insurancePhoto', {
+        uri: registrationData.insurancePhoto!,
+        name: 'insurance.jpg',
+        type: 'image/jpeg',
+      } as any);
+
+      // Ensure phone number is in E.164 format (+91...)
+      const formattedPhoneNumber = currentPhoneNumber.startsWith('+')
+        ? currentPhoneNumber
+        : `+${currentPhoneNumber}`;
 
       formData.append('phoneNumber', formattedPhoneNumber);
       formData.append('name', registrationData.name!);
@@ -118,6 +143,7 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
       formData.append('vehicleModel', registrationData.vehicleModel!);
       formData.append('vehiclePlateNumber', registrationData.vehiclePlateNumber!);
       formData.append('vehicleColor', registrationData.vehicleColor!);
+      formData.append('vehicleType', registrationData.vehicleType!);
 
       markStepAsCompleted('5');
 
@@ -125,6 +151,7 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 120000, // 2-minute timeout for document uploads
       });
 
       // Instead of manual navigation, trigger a global status update.

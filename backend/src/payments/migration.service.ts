@@ -233,6 +233,7 @@ export class MigrationService implements OnModuleInit {
                   "ride_id" uuid NOT NULL,
                   "driver_id" uuid NOT NULL,
                   "created_at" TIMESTAMP NOT NULL DEFAULT now(),
+                  "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
                   CONSTRAINT "PK_ride_rejections_id" PRIMARY KEY ("id"),
                   CONSTRAINT "UQ_ride_rejections_ride_driver" UNIQUE ("ride_id", "driver_id"),
                   CONSTRAINT "FK_ride_rejections_ride_id" FOREIGN KEY ("ride_id") REFERENCES "rides"("id") ON DELETE CASCADE,
@@ -240,6 +241,61 @@ export class MigrationService implements OnModuleInit {
                 )
             `);
             console.log('✅ Ride rejections table verified.');
+
+            // 11. Rides Table - Missing Financial Columns
+            await queryRunner.query(`
+                DO $$
+                BEGIN
+                    -- Create payment_method_enum if it doesn't exist
+                    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payment_method_enum') THEN
+                        CREATE TYPE "payment_method_enum" AS ENUM('cash', 'online');
+                    END IF;
+
+                    -- Add payment_method column
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='rides' AND column_name='payment_method') THEN
+                        ALTER TABLE "rides" ADD COLUMN "payment_method" "payment_method_enum" DEFAULT 'cash';
+                    END IF;
+
+                    -- Add financial columns
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='rides' AND column_name='gst_amount') THEN
+                        ALTER TABLE "rides" ADD COLUMN "gst_amount" numeric(8,2) DEFAULT 0;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='rides' AND column_name='platform_fee') THEN
+                        ALTER TABLE "rides" ADD COLUMN "platform_fee" numeric(8,2) DEFAULT 0;
+                    END IF;
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='rides' AND column_name='driver_earnings') THEN
+                        ALTER TABLE "rides" ADD COLUMN "driver_earnings" numeric(8,2) DEFAULT 0;
+                    END IF;
+                END $$;
+            `);
+            console.log('✅ Rides table synchronized (Financial columns added).');
+
+            // 12. Ratings Table
+            await queryRunner.query(`
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'rating_role_enum') THEN
+                        CREATE TYPE "rating_role_enum" AS ENUM('rider', 'driver');
+                    END IF;
+                END $$;
+                
+                CREATE TABLE IF NOT EXISTS "ratings" (
+                    "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
+                    "ride_id" uuid NOT NULL,
+                    "rated_by_user_id" uuid NOT NULL,
+                    "rated_user_id" uuid NOT NULL,
+                    "rated_user_role" "rating_role_enum" NOT NULL,
+                    "stars" numeric(2,1) NOT NULL,
+                    "comment" text,
+                    "tags" text[] DEFAULT '{}',
+                    "created_at" TIMESTAMP NOT NULL DEFAULT now(),
+                    CONSTRAINT "PK_ratings_id" PRIMARY KEY ("id"),
+                    CONSTRAINT "FK_ratings_ride_id" FOREIGN KEY ("ride_id") REFERENCES "rides"("id") ON DELETE CASCADE,
+                    CONSTRAINT "FK_ratings_rated_by_user_id" FOREIGN KEY ("rated_by_user_id") REFERENCES "users"("id") ON DELETE CASCADE,
+                    CONSTRAINT "FK_ratings_rated_user_id" FOREIGN KEY ("rated_user_id") REFERENCES "users"("id") ON DELETE CASCADE
+                );
+            `);
+            console.log('✅ Ratings table verified.');
 
             console.log('--- DB SYNCHRONIZATION COMPLETED SUCCESSFULLY ---');
         } catch (error) {

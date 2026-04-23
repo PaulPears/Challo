@@ -10,10 +10,15 @@ export class PaymentsController {
     @Get('wallet')
     async getWallet(@Request() req) {
         const userId = req.user.id;
-        const wallet = await this.paymentsService.getWalletByUserId(userId);
+        const [wallet, todaysEarnings] = await Promise.all([
+            this.paymentsService.getWalletByUserId(userId),
+            this.paymentsService.getTodaysEarnings(userId),
+        ]);
         return {
             balance: Number(wallet.balance),
-            pending_platform_fees: Number(wallet.pending_platform_fees),
+            reward_balance: Number(wallet.super_km_balance),
+            todaysEarnings: todaysEarnings,
+            pending_gst: Number(wallet.pending_platform_fees),
             currency: wallet.currency,
             is_active: wallet.is_active,
         };
@@ -79,4 +84,41 @@ export class PaymentsController {
         await this.paymentsService.verifySettlement(userId, paymentId, orderId, signature, amount);
         return { message: 'Dues securely settled', success: true };
     }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('bank-details')
+    async getBankDetails(@Request() req) {
+        return this.paymentsService.getBankDetails(req.user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('bank-details')
+    async updateBankDetails(@Request() req, @Body() bankData: any) {
+        return this.paymentsService.updateBankDetails(req.user.id, bankData);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('withdraw')
+    async requestWithdrawal(@Request() req, @Body('amount') amount: number) {
+        if (!amount || amount <= 0) {
+            throw new BadRequestException('Invalid withdrawal amount');
+        }
+        return this.paymentsService.requestWithdrawal(req.user.id, amount);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('withdrawals')
+    async getWithdrawalHistory(@Request() req, @Query('limit') limit?: string) {
+        const parsedLimit = limit ? Math.min(parseInt(limit, 10), 100) : 20;
+        const withdrawals = await this.paymentsService.getWithdrawalHistory(req.user.id, parsedLimit);
+        return withdrawals.map(w => ({
+            id: w.id,
+            amount: Number(w.amount),
+            status: w.status,
+            bank_snapshot: w.bank_snapshot,
+            created_at: w.created_at.toISOString(),
+            processed_at: w.processed_at ? w.processed_at.toISOString() : null,
+        }));
+    }
 }
+

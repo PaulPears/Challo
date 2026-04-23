@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigationTypes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../context/AuthContext';
 
 import api from '../config/api';
 
@@ -20,6 +21,7 @@ type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>
 
 const ProfileScreen = () => {
   const navigation = useNavigation<ProfileScreenNavigationProp>();
+  const { logout } = useAuth();
   const [user, setUser] = React.useState({
     name: 'Loading...',
     avatar: require('../assets/driver_eelcome.png'),
@@ -28,6 +30,9 @@ const ProfileScreen = () => {
     memberSince: '...',
     vehicle: '...',
     vehiclePlateNumber: '...',
+    vehicleColor: '...',
+    phoneNumber: '...',
+    location: '...',
   });
 
   React.useEffect(() => {
@@ -40,19 +45,13 @@ const ProfileScreen = () => {
 
       const data = response.data;
       if (data.profile) {
-        // Construct full avatar URL if relative path is provided
         let avatarSource = require('../assets/driver_eelcome.png');
         if (data.profile.avatar) {
-          // If avatar is a relative path, prepend base URL
-          // We need to handle auth token for image fetching if the endpoint is protected
-          // For now, let's assume we can construct the URL. 
-          // Since the image endpoint is protected, we might need to fetch it as a blob or use a component that supports headers.
-          // But for simplicity, let's try to use the URL with the token in the header if using a custom Image component, 
-          // or just the URL if we make the image endpoint public (not recommended for sensitive docs).
-          // Actually, the best way for React Native Image with auth is to use headers.
-
+          const avatarString = data.profile.avatar;
+          const isAbsolute = avatarString.startsWith('http://') || avatarString.startsWith('https://');
+          const avatarUrl = isAbsolute ? avatarString : `${api.defaults.baseURL}${avatarString}`;
           avatarSource = {
-            uri: `${api.defaults.baseURL}${data.profile.avatar}`,
+            uri: avatarUrl,
             headers: { Authorization: `Bearer ${await AsyncStorage.getItem('token')}` }
           };
         }
@@ -65,6 +64,9 @@ const ProfileScreen = () => {
           memberSince: data.profile.memberSince,
           vehicle: data.profile.vehicleModel,
           vehiclePlateNumber: data.profile.vehiclePlateNumber,
+          vehicleColor: data.profile.vehicleColor,
+          phoneNumber: data.profile.phoneNumber,
+          location: data.profile.currentAddress || 'Not available',
           avatar: avatarSource,
         });
       }
@@ -83,19 +85,14 @@ const ProfileScreen = () => {
 
   const handleLogout = async () => {
     try {
-      // Clear all authentication data
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('phoneNumber');
-
-      // The AppNavigator will automatically detect the token removal
-      // and redirect to the Login screen
+      await logout();
     } catch (error) {
       console.error('Error during logout:', error);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#1a202c" />
@@ -130,7 +127,8 @@ const ProfileScreen = () => {
             </View>
             <View style={styles.cardBody}>
               <Text style={styles.cardText}>Name: {user.name}</Text>
-              <Text style={styles.cardText}>Location: Hyderabad</Text>
+              <Text style={styles.cardText}>Phone: {user.phoneNumber}</Text>
+              <Text style={styles.cardText}>Location: {user.location}</Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.card}>
@@ -138,8 +136,9 @@ const ProfileScreen = () => {
               <Text style={styles.cardTitle}>Vehicle Information</Text>
             </View>
             <View style={styles.cardBody}>
-              <Text style={styles.cardText}>Vehicle: {user.vehicle}</Text>
-              <Text style={styles.cardText}>Vehicle No: {user.vehiclePlateNumber}</Text>
+              <Text style={styles.cardText}>Model: {user.vehicle}</Text>
+              <Text style={styles.cardText}>Number: {user.vehiclePlateNumber}</Text>
+              <Text style={styles.cardText}>Color: {user.vehicleColor}</Text>
             </View>
           </TouchableOpacity>
         </View>

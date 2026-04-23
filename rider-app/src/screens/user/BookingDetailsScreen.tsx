@@ -62,7 +62,18 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
                 new Date(ride.created_at || ride.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ' • ' +
                 new Date(ride.created_at || ride.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
               }</Text>
-              <Text style={styles.rideFare}>Estimated Fare: ₹ {ride.final_fare || ride.finalFare || ride.estimated_fare || ride.fare} </Text>
+              
+              <View style={{ marginTop: 8 }}>
+                <Text style={styles.rideFare}>
+                  {Number(ride.super_km_applied) > 0 ? 'Total Paid: ' : 'Trip Fare: '}
+                  ₹ {Number(ride.rider_payable || ride.final_fare || ride.estimated_fare || 0).toFixed(2)}
+                </Text>
+                {Number(ride.super_km_discount) > 0 && (
+                   <View style={styles.superKmHeaderBadge}>
+                      <Text style={styles.superKmHeaderText}>SUPER KM APPLIED</Text>
+                   </View>
+                )}
+              </View>
               
               <View style={styles.metricsContainer}>
                  <View style={styles.metricItem}>
@@ -136,8 +147,41 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
             <FontAwesome name="chevron-right" size={16} color="white" />
           </TouchableOpacity>
 
+          {/* Fare Summary Section */}
+          <View style={[styles.fareBreakdownCard, { marginBottom: 16 }]}>
+            <Text style={styles.summaryTitle}>Fare Summary</Text>
+            
+            <View style={styles.fareRow}>
+              <Text style={styles.fareLabelSmall}>Trip Total</Text>
+              <Text style={styles.fareValueSmall}>₹ {Number(ride.final_fare || ride.estimated_fare || 0).toFixed(2)}</Text>
+            </View>
+
+            {Number(ride.super_km_discount) > 0 && (
+              <View style={[styles.fareRow, { marginTop: 8 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[styles.fareLabelSmall, { color: '#10b981', fontWeight: 'bold' }]}>Super KM Savings</Text>
+                    <View style={styles.savingsBadge}>
+                        <Text style={styles.savingsText}>PROMO</Text>
+                    </View>
+                </View>
+                <Text style={[styles.fareValueSmall, { color: '#10b981', fontWeight: 'bold' }]}>- ₹ {Number(ride.super_km_discount).toFixed(2)}</Text>
+              </View>
+            )}
+
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Amount Paid</Text>
+              <Text style={styles.totalValueText}>₹ {Number(ride.rider_payable || ride.final_fare || 0).toFixed(2)}</Text>
+            </View>
+
+            {Number(ride.super_km_applied) > 0 && (
+               <View style={styles.offerBadgeContainer}>
+                  <Text style={styles.offerText}>🎯 {ride.super_km_applied} KM applied from your Super KM balance</Text>
+               </View>
+            )}
+          </View>
+
           {ride.status === 'completed' && (
-            <View style={{ marginTop: 16, backgroundColor: '#FFF8E1', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#FFE082' }}>
+            <View style={{ backgroundColor: '#FFF8E1', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#FFE082' }}>
               <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 8}}>
                  <Text style={{fontSize: 24, marginRight: 8}}>🪙</Text>
                  <View>
@@ -434,26 +478,87 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 16,
   },
+  fareBreakdownCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginTop: 16,
+  },
   fareRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
-
-  },
-
-  receiptButton: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    marginTop: 8,
+    marginBottom: 4,
   },
-  receiptButtonText: {
+  fareLabelSmall: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  fareValueSmall: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  savingsBadge: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
     marginLeft: 8,
-    color: '#ff8e2e',
+  },
+  savingsText: {
+    color: '#166534',
+    fontSize: 10,
     fontWeight: 'bold',
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    marginTop: 12,
+    paddingTop: 12,
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  totalValueText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#10B981',
+  },
+  superKmHeaderBadge: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  superKmHeaderText: {
+    color: '#4F46E5',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  offerBadgeContainer: {
+    backgroundColor: '#F0F9FF',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  offerText: {
+    color: '#0369A1',
+    fontSize: 12,
+    fontWeight: '500',
   },
   disclaimer: {
     color: '#6b7280',

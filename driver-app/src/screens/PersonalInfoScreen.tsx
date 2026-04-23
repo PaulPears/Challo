@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
@@ -9,13 +10,19 @@ const PersonalInfoScreen = ({ navigation }) => {
   const { registrationData, setRegistrationData, markStepAsCompleted } = useDriverRegistration();
 
   const handleChoosePhoto = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     if (permissionResult.granted === false) {
-      alert("You've refused to allow this app to access your photos!");
+      alert("You've refused to allow this app to access your camera!");
       return;
     }
 
-    const pickerResult = await ImagePicker.launchImageLibraryAsync();
+    const pickerResult = await ImagePicker.launchCameraAsync({
+      cameraType: ImagePicker.CameraType.front,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+    
     if (pickerResult.canceled === true) {
       return;
     }
@@ -44,13 +51,16 @@ const PersonalInfoScreen = ({ navigation }) => {
           value={registrationData.name || ''}
           onChangeText={(text) => setRegistrationData({ name: text })}
         />
-        <TouchableOpacity style={styles.photoButton} onPress={handleChoosePhoto}>
-          {registrationData.profilePhoto ? (
-            <Image source={{ uri: registrationData.profilePhoto }} style={styles.photo} />
-          ) : (
-            <Text style={styles.photoButtonText}>Upload Photo</Text>
-          )}
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.photoButton} onPress={handleChoosePhoto}>
+            {registrationData.profilePhoto ? (
+              <Image source={{ uri: registrationData.profilePhoto }} style={styles.photo} />
+            ) : (
+              <View style={styles.photoPlaceholder}>
+                <MaterialCommunityIcons name="account-camera" size={40} color="#fe7009" />
+                <Text style={styles.photoButtonText}>Take Selfie</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         <Button mode="contained" onPress={handleSave} style={styles.saveButton}>
           Save and Continue
         </Button>
@@ -97,6 +107,12 @@ const styles = StyleSheet.create({
   },
   photoButtonText: {
     color: '#666',
+    marginTop: 8,
+    fontWeight: '600',
+  },
+  photoPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   saveButton: {
     marginTop: 20,

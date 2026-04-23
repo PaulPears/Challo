@@ -7,6 +7,8 @@ import { OTPWidget } from '@msg91comm/sendotp-react-native';
 import { MSG91_WIDGET_ID, MSG91_TOKEN_AUTH, GOOGLE_MAPS_API_KEY } from './src/config/constants';
 import * as Location from 'expo-location';
 import useLocationStore from './src/store/locationStore';
+import useUserStore from './src/store/userStore';
+import { usePushNotifications } from './src/hooks/usePushNotifications';
 import api from './src/api/axiosClient';
 
 // ─── Push Notification Handler ───────────────────────────────────────────────
@@ -14,63 +16,26 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
+    shouldSetBadge: true,
   }),
 });
 
-async function registerForPushNotificationsAsync() {
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'General Notifications',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#fe7009',
-    });
-  }
+import { ConfigProvider, useAppConfig } from './src/context/ConfigContext';
+import UpdateModal from './src/components/UpdateModal';
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-  if (finalStatus !== 'granted') {
-    console.warn('Failed to get push token for push notification!');
-    return;
-  }
+import LoadingScreen from './src/screens/LoadingScreen';
 
-  try {
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
-    // Register push token with backend
-    try {
-      await api.put('/profile/push-token', { token });
-      console.log('Push token registered successfully:', token);
-    } catch (err: any) {
-      console.error('Failed to register push token with backend:', err.message);
-    }
-    return token;
-  } catch (err: any) {
-    console.warn('[Push] Failed to get push token:', err.message);
-  }
-}
-
-// The root of the app, which renders the main navigator.
-export default function App() {
+function AppContent() {
+  const { config, version, isOutdated, isLoading } = useAppConfig();
   const setCurrentLocation = useLocationStore((state) => state.setCurrentLocation);
-  const responseListener = useRef<Notifications.Subscription | null>(null);
+  const { user } = useUserStore();
+  
+  // Initialize Push Notifications
+  usePushNotifications(user?.id || null);
 
   useEffect(() => {
     OTPWidget.initializeWidget(MSG91_WIDGET_ID, MSG91_TOKEN_AUTH); //Widget initialization
     console.log('MSG91 Widget Initialized');
-
-    registerForPushNotificationsAsync();
-
-    // Handle user tapping on a notification
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification Response Received:', response);
-    });
 
     (async () => {
       try {
@@ -101,16 +66,27 @@ export default function App() {
       }
     })();
 
-    return () => {
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
-    };
   }, [setCurrentLocation]);
+
+  if (isLoading) return <LoadingScreen />;
 
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <AppNavigator />
+      <UpdateModal
+        visible={isOutdated}
+        currentVersion={version}
+        requiredVersion={config?.min_rider_app_version || '1.0.0'}
+      />
     </View>
   );
 }
+
+// The root of the app, which renders the main navigator.
+export default function App() {
+  return (
+    <ConfigProvider>
+      <AppContent />
+    </ConfigProvider>
+  );
+}

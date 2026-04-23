@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDriverRegistration } from '../context/DriverRegistrationContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingHeader from '../components/OnboardingHeader';
+import { useAuth } from '../context/AuthContext';
 
 const steps = [
   { id: '1', title: 'Personal Information', description: 'Name, Email & Profile Photo', screen: 'PersonalInfo', icon: 'account-outline' },
@@ -15,16 +16,29 @@ const steps = [
 
 const DriverRegistrationScreen = ({ navigation }: { navigation: any }) => {
   const { completedSteps, setRegistrationData } = useDriverRegistration();
+  const { user } = useAuth();
 
   useEffect(() => {
-    const getPhoneNumber = async () => {
+    const syncPhoneNumber = async () => {
+      // 1. Try AuthContext (most reliable for live session)
+      const authPhone = user?.phone_number || user?.phoneNumber;
+      
+      if (authPhone) {
+        setRegistrationData({ phoneNumber: authPhone });
+        return;
+      }
+
+      // Ensure phone number is in E.164 format (+91...)
       const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
       if (storedPhoneNumber) {
-        setRegistrationData({ phoneNumber: storedPhoneNumber });
+        const formattedPhoneNumber = storedPhoneNumber.startsWith('+')
+          ? storedPhoneNumber
+          : `+${storedPhoneNumber}`;
+        setRegistrationData({ phoneNumber: formattedPhoneNumber });
       }
     };
-    getPhoneNumber();
-  }, [setRegistrationData]);
+    syncPhoneNumber();
+  }, [setRegistrationData, user]);
 
   const isStepCompleted = (stepId: string) => completedSteps.includes(stepId);
   

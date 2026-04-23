@@ -1,90 +1,155 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RazorpayCheckout from 'react-native-razorpay';
 import api from '../config/api';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import PaymentResultModal, { PaymentResultState } from '../components/PaymentResultModal';
+
+// Key used to persist interrupted payments for recovery
+const PENDING_VERIFICATION_KEY = 'settle_pending_verification';
 
 const SettleDuesScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(true);
   const [mobileNumber, setMobileNumber] = useState<string | null>(null);
   const [walletDues, setWalletDues] = useState<number>(0);
+  const [razorpayKey, setRazorpayKey] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
 
-  useEffect(() => {
-    const init = async () => {
-      const number = await AsyncStorage.getItem('phoneNumber');
-      if (number) setMobileNumber(number);
+  // Payment result modal state
+  const [resultState, setResultState] = useState<PaymentResultState>(null);
+  const [resultError, setResultError] = useState<string | undefined>();
+  const [pendingPaymentId, setPendingPaymentId] = useState<string | undefined>();
+  const [pendingOrderId, setPendingOrderId] = useState<string | undefined>();
 
-      try {
-        const walletResp = await api.get('/payments/wallet');
-        if (walletResp.data?.pending_platform_fees !== undefined) {
-           setWalletDues(Number(walletResp.data.pending_platform_fees));
-        }
-      } catch (e) {
-        console.error(e);
-        Alert.alert('Error', 'Could not fetch wallet details.');
-      } finally {
-        setLoading(false);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [walletResp, configResp, profileResp] = await Promise.all([
+        api.get('/payments/wallet'),
+        api.get('/payments/config'),
+        api.get('/profile'),
+      ]);
+
+      if (walletResp.data?.pending_gst !== undefined) {
+        setWalletDues(Number(walletResp.data.pending_gst));
       }
-    };
-    init();
+      if (configResp.data?.razorpay_key) {
+        setRazorpayKey(configResp.data.razorpay_key);
+      }
+      if (profileResp.data?.profile?.phoneNumber) {
+        setMobileNumber(profileResp.data.profile.phoneNumber);
+      } else {
+        setMobileNumber('9999999999');
+      }
+    } catch (e: any) {
+      const isNetwork = !e.response; // No response = network issue
+      setResultState(isNetwork ? 'network_error' : 'config_error');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchData();
+    checkForPendingVerification();
+  }, []);
+
+  // On mount: check if a previous payment was interrupted mid-verification
+  const checkForPendingVerification = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(PENDING_VERIFICATION_KEY);
+      if (stored) {
+        const { paymentId, orderId, amount } = JSON.parse(stored);
+        setPendingPaymentId(paymentId);
+        setPendingOrderId(orderId);
+        if (amount) setWalletDues(amount);
+        setResultState('verification_pending');
+      }
+    } catch (_) {}
+  };
+
   const handleRazorpayPayment = async () => {
-    if (!mobileNumber) {
-      Alert.alert('Error', 'Mobile number not available.');
+    // Guard: config not ready
+    if (!razorpayKey) {
+      setResultState('config_error');
       return;
     }
-    if (walletDues <= 0) {
-      Alert.alert('No Dues', 'You have no outstanding platform fees.');
-      return;
-    }
+    if (walletDues <= 0) return;
 
     setPaying(true);
+    setResultError(undefined);
+
+    let orderData: any = null;
+
     try {
-      // Create order
-      const orderResponse = await api.post('/payments/create-settlement-order', {
-        amount: walletDues,
-      });
+      // ── Step 1: Create order on backend ──────────────────────────────
+      try {
+        const orderResponse = await api.post('/payments/create-settlement-order', {
+          amount: walletDues,
+        });
+        orderData = orderResponse.data;
+      } catch (orderErr: any) {
+        setResultState('payment_failed');
+        setResultError(orderErr.response?.data?.message || orderErr.message);
+        return;
+      }
 
-      const orderData = orderResponse.data;
-
+      // ── Step 2: Open Razorpay ─────────────────────────────────────────
       const options = {
-        description: 'Settle Platform Fees',
-        image: 'https://ride-andhra.b-cdn.net/logo.png', // Assuming logo exists
+        description: 'Settle Service Tax',
+        image: 'https://ride-andhra.b-cdn.net/logo.png',
         currency: 'INR',
-        key: orderData.key || 'rzp_test_dummyKey123', // Fallback or from response
-        amount: orderData.amount, 
+        key: razorpayKey,
+        amount: orderData.amount,
         name: 'Ride Andhra',
-        order_id: orderData.id, // Razorpay order ID is usually 'id' in the response object from backend
+        order_id: orderData.id,
         prefill: {
-          contact: mobileNumber,
+          contact: mobileNumber || '9999999999',
           name: 'Driver',
+          email: 'driver@rideandhra.in',
         },
         theme: { color: '#fe7009' },
       };
 
-      const data = await RazorpayCheckout.open(options);
-      await verifyPayment(data, orderData.id);
 
-    } catch (error: any) {
-      console.error('Payment Error:', error);
-      if (error.response) {
-        const errorMsg = error.response.data?.message || 'Server error occurred';
-        Alert.alert('Payment Error', errorMsg);
-      } else if (error.code === 2 || error.description === 'Payment Cancelled') {
-        Alert.alert('Payment Cancelled', 'You cancelled the payment.');
-      } else {
-        Alert.alert('Payment Failed', error.message || 'An error occurred.');
+      let rzpData: any;
+      try {
+        rzpData = await RazorpayCheckout.open(options);
+      } catch (rzpError: any) {
+        // code 2 = user pressed back / cancelled deliberately
+        if (rzpError.code === 2) {
+          setResultState('cancelled');
+          return;
+        }
+        // Network dropped DURING Razorpay, timeout, bank app crash, etc.
+        const desc: string = rzpError?.description || rzpError?.message || '';
+        setResultState('payment_failed');
+        setResultError(desc || 'Payment could not be completed.');
+        return;
       }
+
+      // ── Step 3: Verify with backend ───────────────────────────────────
+      await verifyPayment(rzpData, orderData.id);
+
     } finally {
       setPaying(false);
     }
   };
 
-  const verifyPayment = async (paymentData: any, orderId: string) => {
+  const verifyPayment = async (paymentData: any, orderId: string, isRetry = false) => {
+    // Save to AsyncStorage BEFORE calling backend — if network dies mid-call
+    // we can recover this on next app open
+    await AsyncStorage.setItem(
+      PENDING_VERIFICATION_KEY,
+      JSON.stringify({
+        paymentId: paymentData.razorpay_payment_id,
+        orderId,
+        amount: walletDues,
+      })
+    );
+
     try {
       await api.post('/payments/verify-settlement', {
         razorpay_order_id: orderId,
@@ -93,15 +158,42 @@ const SettleDuesScreen = ({ navigation }: any) => {
         amount: walletDues,
       });
 
-      Alert.alert(
-        'Success!',
-        'Your dues have been cleared successfully!',
-        [{ text: 'Great!', onPress: () => navigation.goBack() }]
+      // ✅ Success — clear the recovery record
+      await AsyncStorage.removeItem(PENDING_VERIFICATION_KEY);
+      setPendingPaymentId(undefined);
+      setPendingOrderId(undefined);
+      setResultState('success');
+
+    } catch (verifyErr: any) {
+      // ⚠️ CRITICAL: payment went through but verification failed
+      // The recovery record is already saved above — do NOT clear it
+      console.error('[Settle] Verification failed — recovery data persisted:', paymentData.razorpay_payment_id);
+      setPendingPaymentId(paymentData.razorpay_payment_id);
+      setPendingOrderId(orderId);
+      setResultState('verification_pending');
+    }
+  };
+
+  const handleRetryVerification = async () => {
+    if (!pendingPaymentId || !pendingOrderId) return;
+    setResultState(null);
+    setPaying(true);
+    try {
+      await verifyPayment(
+        { razorpay_payment_id: pendingPaymentId, razorpay_signature: '' },
+        pendingOrderId,
+        true
       );
-    } catch (error: any) {
-      console.error('Verification Error:', error);
-      const errorMsg = error.response?.data?.message || 'Verification failed';
-      Alert.alert('Verification Failed', errorMsg + '. Please contact support.');
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const handleResultClose = () => {
+    if (resultState === 'success') {
+      navigation.goBack();
+    } else {
+      setResultState(null);
     }
   };
 
@@ -115,6 +207,17 @@ const SettleDuesScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <PaymentResultModal
+        state={resultState}
+        amount={walletDues}
+        errorMessage={resultError}
+        paymentId={pendingPaymentId}
+        orderId={pendingOrderId}
+        onClose={handleResultClose}
+        onRetry={() => { setResultState(null); handleRazorpayPayment(); }}
+        onRetryVerification={handleRetryVerification}
+      />
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#1a202c" />
@@ -130,12 +233,24 @@ const SettleDuesScreen = ({ navigation }: any) => {
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        {/* Recovery banner — shown if app was restarted mid-payment */}
+        {pendingPaymentId && resultState !== 'verification_pending' && (
+          <TouchableOpacity
+            style={styles.recoveryBanner}
+            onPress={() => setResultState('verification_pending')}
+          >
+            <Ionicons name="warning" size={18} color="#92400e" />
+            <Text style={styles.recoveryText}>Unverified payment detected. Tap to resolve.</Text>
+            <Ionicons name="chevron-forward" size={16} color="#92400e" />
+          </TouchableOpacity>
+        )}
+
         <View style={styles.warningCard}>
            <View style={styles.iconContainer}>
              <Ionicons name="warning" size={48} color="#fe7009" />
            </View>
-           <Text style={styles.warningTitle}>Outstanding Platform Fees</Text>
-           <Text style={styles.warningSubtitle}>You cannot go online or receive rides if your dues exceed ₹100. Please clear your dues immediately to guarantee continuous service.</Text>
+           <Text style={styles.warningTitle}>Outstanding Service Tax</Text>
+           <Text style={styles.warningSubtitle}>You cannot go online or receive rides if your service tax dues exceed ₹100. Please clear your dues immediately to guarantee continuous service.</Text>
            
            <View style={styles.duesContainer}>
               <Text style={styles.currencySymbol}>₹</Text>
@@ -152,6 +267,12 @@ const SettleDuesScreen = ({ navigation }: any) => {
       </ScrollView>
 
       <View style={styles.footer}>
+        {paying && (
+          <View style={styles.payingOverlay}>
+            <ActivityIndicator color="#fe7009" />
+            <Text style={styles.payingText}>Processing payment...</Text>
+          </View>
+        )}
         <TouchableOpacity
           style={[styles.payButton, (paying || walletDues <= 0) && styles.disabledButton]}
           onPress={handleRazorpayPayment}
@@ -312,6 +433,35 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     letterSpacing: 0.5,
+  },
+  recoveryBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef3c7',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    gap: 8,
+  },
+  recoveryText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#92400e',
+  },
+  payingOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+    gap: 8,
+  },
+  payingText: {
+    fontSize: 13,
+    color: '#fe7009',
+    fontWeight: '600',
   },
 });
 

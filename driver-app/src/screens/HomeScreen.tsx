@@ -23,6 +23,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePermissions } from '../hooks/usePermissions';
 import PermissionRationaleModal from '../components/PermissionRationaleModal';
 import RegionalRestrictionModal from '../components/RegionalRestrictionModal';
@@ -33,6 +34,7 @@ import { useRideRequest, RideRequest } from '../context/RideRequestContext';
 import { useSound } from '../context/SoundContext';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 interface Ride {
   id: string;
@@ -55,12 +57,17 @@ interface Ride {
     phone_number?: string;
   };
   status?: string;
+  rider_payable?: number;
+  company_payable?: number;
+  super_km_discount?: number;
+  driver_earnings?: number;
 }
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const [isOnline, setIsOnline] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
@@ -102,6 +109,10 @@ const HomeScreen = () => {
   const [ratingComment, setRatingComment] = useState('');
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
 
+  // Summary Modal
+  const [summaryModalVisible, setSummaryModalVisible] = useState(false);
+  const [completedRideDetails, setCompletedRideDetails] = useState<Ride | null>(null);
+
   // Permission States
   const {
     locationStatus,
@@ -113,6 +124,7 @@ const HomeScreen = () => {
   } = usePermissions();
   const [rationaleVisible, setRationaleVisible] = useState(false);
   const [rationaleConfig, setRationaleConfig] = useState({ title: '', description: '', icon: '', type: '' });
+  const { unreadCount } = usePushNotifications(useAuth().user?.id || null);
   const [isInsideAP, setIsInsideAP] = useState(true);
 
   const classyRed = '#dc3545';
@@ -120,10 +132,30 @@ const HomeScreen = () => {
 
   const [zones, setZones] = useState<string[]>([]);
   const [loadingZones, setLoadingZones] = useState(true);
+  const [currentDistrict, setCurrentDistrict] = useState<string | null>(null);
   const [locationLabel, setLocationLabel] = useState<string>('Locating...');
   const currentDate = new Date().toLocaleDateString('en-IN', {
     weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
   });
+
+  const fetchZones = async (district?: string | null) => {
+    try {
+      setLoadingZones(true);
+      const url = district ? `/rides/high-booking-zones?district=${encodeURIComponent(district)}` : '/rides/high-booking-zones';
+      const response = await api.get(url);
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        setZones(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching high booking zones:', error);
+    } finally {
+      setLoadingZones(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchZones(currentDistrict);
+  }, [currentDistrict]);
 
   useEffect(() => {
     checkAllPermissions();
@@ -133,8 +165,8 @@ const HomeScreen = () => {
       try {
         try {
           const walletResp = await api.get('/payments/wallet');
-          if (walletResp.data?.pending_platform_fees !== undefined) {
-            setWalletDues(Number(walletResp.data.pending_platform_fees));
+          if (walletResp.data?.pending_gst !== undefined) {
+            setWalletDues(Number(walletResp.data.pending_gst));
           }
         } catch (e) {
           console.error('Wallet fetch error:', e);
@@ -161,7 +193,7 @@ const HomeScreen = () => {
       const expiry = await AsyncStorage.getItem('subscriptionExpiry');
       if (expiry) {
         const status = updateSubscriptionStatus(expiry);
-        
+
         // Recurring Modal Logic: Every 60s if expired
         if (status.isExpired) {
           const now = Date.now();
@@ -172,21 +204,6 @@ const HomeScreen = () => {
         }
       }
     }, 1000);
-
-    // Fetch High Booking Zones
-    const fetchZones = async () => {
-      try {
-        const response = await api.get('/rides/high-booking-zones');
-        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-          setZones(response.data);
-        }
-      } catch (error) {
-        console.error('Error fetching high booking zones:', error);
-      } finally {
-        setLoadingZones(false);
-      }
-    };
-    fetchZones();
 
     // Fetch location once on mount so header shows it even when offline
     const fetchInitialLocation = async () => {
@@ -200,6 +217,8 @@ const HomeScreen = () => {
         if (place) {
           const parts = [place.district || place.subregion, place.city || place.region].filter(Boolean);
           setLocationLabel(parts.join(', ') || 'Unknown location');
+          // For the header and backend filtering, we want the City/District, not a specific area.
+          setCurrentDistrict(place.city || place.district || place.region);
         }
       } catch (_) { /* GPS not ready yet */ }
     };
@@ -207,12 +226,28 @@ const HomeScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchWallet = async () => {
+        try {
+          const walletResp = await api.get('/payments/wallet');
+          if (walletResp.data?.pending_gst !== undefined) {
+            setWalletDues(Number(walletResp.data.pending_gst));
+          }
+        } catch (e) {
+          console.error('Wallet refresh error:', e);
+        }
+      };
+      fetchWallet();
+    }, [])
+  );
+
   const updateSubscriptionStatus = (expiryDate: string) => {
     const now = new Date();
     const expiry = new Date(expiryDate);
     const graceExpiry = new Date(expiry.getTime() + 12 * 60 * 60 * 1000);
     const FIVE_HOURS = 5 * 60 * 60 * 1000;
-    
+
     let target = expiry;
     let isGrace = false;
     let isExpired = false;
@@ -233,13 +268,13 @@ const HomeScreen = () => {
     const secs = Math.floor((diff % (1000 * 60)) / 1000);
 
     // For the banner: "2d 4h left"
-    const bannerLabel = isExpired ? 'Plan Expired' : 
-                       isGrace ? `Grace: ${hours}h ${mins}m` :
-                       `${days > 0 ? `${days}d ` : ''}${hours}h remaining`;
-    
+    const bannerLabel = isExpired ? 'Plan Expired' :
+      isGrace ? `Grace: ${hours}h ${mins}m` :
+        `${days > 0 ? `${days}d ` : ''}${hours}h remaining`;
+
     // For the large UI: "02d 14:30:15"
     const timerString = isExpired ? '00:00:00' :
-                       `${days > 0 ? `${days}d ` : ''}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      `${days > 0 ? `${days}d ` : ''}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
     setSubStatus({
       label: bannerLabel,
@@ -325,6 +360,8 @@ const HomeScreen = () => {
             if (place) {
               const parts = [place.district || place.subregion, place.city || place.region].filter(Boolean);
               setLocationLabel(parts.join(', ') || 'Unknown location');
+              // For the header and backend filtering, we want the City/District, not a specific area.
+              setCurrentDistrict(place.city || place.district || place.region);
             }
           } catch (_) { /* ignore geocode errors */ }
           const payload = {
@@ -372,7 +409,7 @@ const HomeScreen = () => {
     try {
       const response = await api.get('/rides/pending');
       const newRides = response.data;
-      
+
       let hasTrulyNewRide = false;
       newRides.forEach((nr: any) => {
         if (!knownRidesRef.current.has(nr.id)) {
@@ -380,9 +417,30 @@ const HomeScreen = () => {
           knownRidesRef.current.add(nr.id);
         }
       });
-      
-      if (isOnline && hasTrulyNewRide && newRides.length > 0) {
-        console.log('[Rides] Truly new ride detected, playing alert');
+
+      if (isOnline && !currentRide && hasTrulyNewRide && newRides.length > 0) {
+        const latestRide = newRides[0];
+        console.log('[Rides] Truly new ride detected:', latestRide.id);
+
+        // Trigger the modal from polling if not already set (fallback for missed socket events)
+        if (!rideRequest && !currentRide) {
+          console.log('[Rides] Triggering modal from polling fallback');
+          setRideRequest({
+            rideId: latestRide.id,
+            pickupLocation: latestRide.pickup_address || 'Unknown pickup',
+            pickupLatitude: Number(latestRide.pickup_latitude || 0),
+            pickupLongitude: Number(latestRide.pickup_longitude || 0),
+            dropoffLocation: latestRide.dropoff_address || 'Unknown dropoff',
+            dropoffLatitude: Number(latestRide.dropoff_latitude || 0),
+            dropoffLongitude: Number(latestRide.dropoff_longitude || 0),
+            fare: Number(latestRide.estimated_fare || latestRide.fare || 0),
+            distance: latestRide.estimated_distance_km,
+            duration: latestRide.estimated_duration_min,
+            riderName: latestRide.rider?.name || latestRide.user?.name || 'Rider',
+            riderPhone: latestRide.rider?.phone_number || latestRide.user?.phone_number,
+          });
+        }
+
         playAlert('RIDE_REQUEST');
       }
       setRides(newRides);
@@ -410,11 +468,11 @@ const HomeScreen = () => {
   // Polling for rides every 2 seconds when online
   useEffect(() => {
     let pollInterval: any = null;
-    
+
     if (isOnline) {
       fetchPendingRides();
       fetchCurrentRide();
-      
+
       pollInterval = setInterval(() => {
         fetchPendingRides();
         fetchCurrentRide();
@@ -439,7 +497,7 @@ const HomeScreen = () => {
     const expiryString = await AsyncStorage.getItem('subscriptionExpiry');
     const now = new Date();
     const expiry = expiryString ? new Date(expiryString) : null;
-    
+
     // Logic: Active if (now < expiry) OR (now < expiry + 12h)
     const graceExpiry = expiry ? new Date(expiry.getTime() + 12 * 60 * 60 * 1000) : null;
     const isWithinValidPeriod = expiry && (now < expiry || (graceExpiry && now < graceExpiry));
@@ -514,10 +572,13 @@ const HomeScreen = () => {
   const handleCompleteRide = async () => {
     try {
       setActionLoading('complete');
-      await api.patch(`/rides/${currentRide?.id}/complete`);
-      setRideToRate(currentRide?.id || null);
+      const response = await api.patch(`/rides/${currentRide?.id}/complete`);
+      const completedRide = response.data;
+      
+      setRideToRate(completedRide.id);
+      setCompletedRideDetails(completedRide);
       setCurrentRide(null);
-      setRatingModalVisible(true);
+      setSummaryModalVisible(true);
       fetchPendingRides();
     } catch (error: any) {
       console.error('Error completing ride:', error);
@@ -548,7 +609,7 @@ const HomeScreen = () => {
       setIsSubmittingRating(true);
       await api.post('/ratings', {
         ride_id: rideToRate,
-        rating: ratingValue,
+        stars: ratingValue,
         comment: ratingComment || 'Good passenger',
         tags: [],
       });
@@ -600,11 +661,18 @@ const HomeScreen = () => {
             </View>
           </View>
           {(currentRide?.rider?.phone_number || currentRide?.user?.phone_number) && (
-            <TouchableOpacity 
-              style={styles.activeCallBtn} 
+            <TouchableOpacity
+              style={styles.properActiveCallBtn}
               onPress={() => Linking.openURL(`tel:${currentRide?.rider?.phone_number || currentRide?.user?.phone_number}`)}
+              activeOpacity={0.8}
             >
-              <MaterialCommunityIcons name="phone" size={20} color="#fff" />
+              <LinearGradient
+                colors={['#22c55e', '#16a34a']}
+                style={styles.activeCallGradient}
+              >
+                <MaterialCommunityIcons name="phone" size={16} color="#fff" />
+                <Text style={styles.activeCallText} numberOfLines={1} adjustsFontSizeToFit>Call Rider</Text>
+              </LinearGradient>
             </TouchableOpacity>
           )}
         </View>
@@ -633,26 +701,41 @@ const HomeScreen = () => {
           {currentRide?.status === 'accepted' && (
             <>
               <TouchableOpacity style={styles.navBtn} onPress={() => openInMaps(currentRide.pickup_latitude, currentRide.pickup_longitude, 'Pickup')}>
-                <MaterialCommunityIcons name="navigation" size={18} color="#3182ce" />
-                <Text style={styles.navBtnText}>Navigate</Text>
+                <MaterialCommunityIcons name="navigation" size={16} color="#3182ce" />
+                <Text style={styles.navBtnText} numberOfLines={1} adjustsFontSizeToFit>Navigate</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.startBtn} onPress={() => setPinModalVisible(true)}>
-                <MaterialCommunityIcons name="play-circle" size={18} color="#fff" />
-                <Text style={styles.startBtnText}>Start Trip</Text>
+                <MaterialCommunityIcons name="play-circle" size={16} color="#fff" />
+                <Text style={styles.startBtnText} numberOfLines={1} adjustsFontSizeToFit>Start Trip</Text>
               </TouchableOpacity>
             </>
           )}
           {currentRide?.status === 'in_progress' && (
-            <>
-              <TouchableOpacity style={styles.navBtn} onPress={() => openInMaps(currentRide.dropoff_latitude, currentRide.dropoff_longitude, 'Drop-off')}>
-                <MaterialCommunityIcons name="navigation" size={18} color="#3182ce" />
-                <Text style={styles.navBtnText}>Navigate</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.startBtn, { backgroundColor: '#28a745' }]} onPress={handleCompleteRide}>
-                <MaterialCommunityIcons name="check-circle" size={18} color="#fff" />
-                <Text style={styles.startBtnText}>Complete</Text>
-              </TouchableOpacity>
-            </>
+            <View style={{ flex: 1 }}>
+              <View style={styles.ongoingBadge}>
+                <View style={styles.pulseDot} />
+                <Text style={styles.ongoingBadgeText}>TRIP IN PROGRESS</Text>
+              </View>
+              <View style={styles.rideActionRow}>
+                <TouchableOpacity style={styles.navBtn} onPress={() => openInMaps(currentRide.dropoff_latitude, currentRide.dropoff_longitude, 'Drop-off')}>
+                  <MaterialCommunityIcons name="navigation" size={16} color="#3182ce" />
+                  <Text style={styles.navBtnText} numberOfLines={1} adjustsFontSizeToFit>Navigate</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.startBtn, { backgroundColor: '#28a745', borderColor: '#218838' }]} onPress={() => {
+                  Alert.alert(
+                    'Complete Ride',
+                    'Are you sure you want to complete this ride?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Complete', onPress: handleCompleteRide }
+                    ]
+                  );
+                }}>
+                  <MaterialCommunityIcons name="check-circle" size={16} color="#fff" />
+                  <Text style={styles.startBtnText} numberOfLines={1} adjustsFontSizeToFit>End Trip</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
         </View>
         {currentRide?.status === 'accepted' && (
@@ -668,6 +751,15 @@ const HomeScreen = () => {
 
   const toggleOnlineStatus = async () => {
     if (isUpdatingStatus) return;
+
+    if (isOnline && currentRide) {
+      Alert.alert(
+        "Action Blocked",
+        "You cannot go offline while you have an active ride. Please complete or cancel your current trip first.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
 
     // 0. Check Regional Restriction First
     if (!isInsideAP) {
@@ -715,7 +807,7 @@ const HomeScreen = () => {
     if (walletDues >= 100) {
       Alert.alert(
         "Action Blocked",
-        `You have outstanding platform fees of ₹${walletDues}. Please clear your dues to go online.`,
+        `You have outstanding Service fees(gst) of ₹${walletDues}on your rides. Please clear your dues to go online.`,
         [
           { text: "Cancel", style: "cancel" },
           { text: "Pay Now", onPress: () => navigation.navigate("SettleDues") }
@@ -734,10 +826,10 @@ const HomeScreen = () => {
           longitude: location.coords.longitude
         };
       }
-      
+
       await api.put('/profile/driver/status', payload);
       setIsOnline(newStatus);
-      
+
       ToastAndroid.show(`You are now ${newStatus ? 'Online' : 'Offline'}`, ToastAndroid.SHORT);
       if (newStatus) playAlert('ONLINE_POP');
     } catch (error: any) {
@@ -773,28 +865,28 @@ const HomeScreen = () => {
             <MaterialCommunityIcons name="menu" size={28} color="rgba(255,255,255,0.95)" />
           </TouchableOpacity>
 
-          <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900', letterSpacing: 1.5 }}>RIDE ANDHRA</Text>
+          <Image source={require('../assets/Dashboard.png')} style={styles.headerImage} />
 
           <View style={styles.headerRight}>
-            <View style={[styles.socketDot, { backgroundColor: isConnected ? '#4cff72' : '#ff4d4d' }]} />
-            <View style={[styles.statusBadge, { backgroundColor: isOnline ? 'rgba(40,167,69,0.25)' : 'rgba(255,255,255,0.15)' }]}>
-              <View style={[styles.statusDot, { backgroundColor: isOnline ? '#4cff72' : '#fff' }]} />
+            <View style={[styles.statusBadge, { backgroundColor: isOnline ? 'rgba(40,167,69,0.25)' : 'rgba(255,255,255,0.15)', marginRight: 10 }]}>
+              {isOnline && <View style={[styles.statusDot, { backgroundColor: '#4cff72', marginRight: 4 }]} />}
               <Text style={styles.statusBadgeText}>{isOnline ? 'Online' : 'Offline'}</Text>
             </View>
+
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('Notifications')} 
+              style={styles.headerIconButton}
+            >
+              <MaterialCommunityIcons name="bell-outline" size={24} color="rgba(255,255,255,0.95)" />
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.headerInfoRow}>
-          <View style={styles.headerInfoItem}>
-            <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 4 }} />
-            <Text style={styles.headerInfoText}>{currentDate}</Text>
-          </View>
-          <View style={styles.headerInfoDivider} />
-          <View style={styles.headerInfoItem}>
-            <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 4 }} />
-            <Text style={styles.headerInfoText} numberOfLines={1}>{location ? locationLabel : 'Enable GPS'}</Text>
-          </View>
-        </View>
       </LinearGradient>
     </View>
   );
@@ -828,42 +920,59 @@ const HomeScreen = () => {
       ) : null}
 
       {/* Status Card */}
-      <View style={styles.statusCard}>
-        <View style={styles.statusCardLeft}>
-          <Text style={styles.statusCardLabel}>
-            {subStatus?.isGrace ? 'Grace Period' : 'Subscription'}
-          </Text>
-          <Text style={[
-            styles.statusCardTimer, 
-            (subStatus?.isWarning || subStatus?.isExpired) && { color: '#dc3545' }
-          ]}>
-            {subStatus?.timer || '--:--'}
-          </Text>
-          <View style={styles.statusPill}>
-            <View style={[styles.statusPillDot, { backgroundColor: isOnline ? '#22c55e' : '#94a3b8' }]} />
-            <Text style={[styles.statusPillText, { color: isOnline ? '#15803d' : '#64748b' }]}>
-              {isOnline ? 'You are Online' : 'You are Offline'}
+      <View style={[styles.statusCard, { flexDirection: 'column', alignItems: 'stretch' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
+          <View style={styles.statusCardLeft}>
+            <Text style={styles.statusCardLabel}>
+              {subStatus?.isGrace ? 'Grace Period' : 'Subscription'}
             </Text>
+            <Text style={[
+              styles.statusCardTimer,
+              (subStatus?.isWarning || subStatus?.isExpired) && { color: '#dc3545' }
+            ]}>
+              {subStatus?.timer || '--:--'}
+            </Text>
+            <View style={styles.statusPill}>
+              <View style={[styles.statusPillDot, { backgroundColor: isOnline ? '#22c55e' : '#94a3b8' }]} />
+              <Text style={[styles.statusPillText, { color: isOnline ? '#15803d' : '#64748b' }]}>
+                {isOnline ? 'You are Online' : 'You are Offline'}
+              </Text>
+            </View>
           </View>
-        </View>
-        <TouchableOpacity
-          style={[styles.goToggleBtn, { backgroundColor: isOnline ? '#dc3545' : '#22c55e' }]}
-          onPress={toggleOnlineStatus}
-          disabled={isUpdatingStatus}
-          activeOpacity={0.85}
-        >
-          {isUpdatingStatus
-            ? <ActivityIndicator color="#fff" size="small" />
-            : <>
+          <TouchableOpacity
+            style={[styles.goToggleBtn, { backgroundColor: isOnline ? '#dc3545' : '#22c55e' }]}
+            onPress={toggleOnlineStatus}
+            disabled={isUpdatingStatus}
+            activeOpacity={0.85}
+          >
+            {isUpdatingStatus
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <>
                 <MaterialCommunityIcons name={isOnline ? 'power-off' : 'power'} size={22} color="#fff" />
                 <Text style={styles.goToggleBtnText}>{isOnline ? 'Go\nOffline' : 'Go\nOnline'}</Text>
               </>
-          }
-        </TouchableOpacity>
+            }
+          </TouchableOpacity>
+        </View>
+
+        {/* Date and Location at the bottom of the card */}
+        <View style={[styles.headerInfoRow, { backgroundColor: '#f8fafc', borderRadius: 12, marginTop: 0 }]}>
+          <View style={styles.headerInfoItem}>
+            <Ionicons name="calendar-outline" size={12} color="#64748b" style={{ marginRight: 4 }} />
+            <Text style={[styles.headerInfoText, { color: '#64748b' }]}>{currentDate}</Text>
+          </View>
+          <View style={[styles.headerInfoDivider, { backgroundColor: '#e2e8f0' }]} />
+          <View style={styles.headerInfoItem}>
+            <Ionicons name="location-outline" size={12} color="#64748b" style={{ marginRight: 4 }} />
+            <Text style={[styles.headerInfoText, { color: '#64748b', flex: 1 }]} numberOfLines={1}>{location ? locationLabel : 'Enable GPS'}</Text>
+          </View>
+        </View>
       </View>
+
 
       {/* Active Ride */}
       {isOnline && currentRide && renderActiveRide()}
+
     </View>
   );
 
@@ -872,7 +981,7 @@ const HomeScreen = () => {
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.quickActionsGrid}>
         {[
-          { label: 'Earnings', icon: 'wallet', screen: 'MyRides', color: '#ff8c00' },
+          { label: 'Wallet', icon: 'wallet', screen: 'Wallet', color: '#ff8c00' },
           { label: 'My Rides', icon: 'history', screen: 'MyRides', color: '#6366f1' },
           { label: 'Plans', icon: 'card-account-details-outline', screen: 'Subscriptions', color: '#10b981' },
         ].map((item) => (
@@ -896,7 +1005,9 @@ const HomeScreen = () => {
     <View style={styles.sectionWrapper}>
       <View style={styles.sectionHeaderRow}>
         <MaterialCommunityIcons name="fire" size={20} color="#fe7009" />
-        <Text style={[styles.sectionTitle, { marginBottom: 0, marginLeft: 6, marginTop: 0 }]}>Hot Zones</Text>
+        <Text style={[styles.sectionTitle, { marginBottom: 0, marginLeft: 6, marginTop: 0 }]}>
+          {currentDistrict ? `Hot Zones in ${currentDistrict}` : 'Hot Zones'}
+        </Text>
       </View>
       {loadingZones ? (
         <ActivityIndicator color="#fe7009" style={{ marginTop: 12 }} />
@@ -905,7 +1016,7 @@ const HomeScreen = () => {
           {zones.map((zone, index) => (
             <View key={index} style={styles.zoneChip}>
               <MaterialCommunityIcons name="map-marker-radius" size={14} color="#fe7009" style={{ marginRight: 5 }} />
-              <Text style={styles.zoneText}>{zone}</Text>
+              <Text style={styles.zoneText} numberOfLines={1} ellipsizeMode="tail">{zone}</Text>
             </View>
           ))}
           {zones.length === 0 && (
@@ -948,9 +1059,9 @@ const HomeScreen = () => {
               <Ionicons name="card-outline" size={24} color="#fe7009" />
               <Text style={styles.drawerItemText}>Subscriptions</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('SettleDues'); }}>
+            <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('Wallet'); }}>
               <Ionicons name="wallet-outline" size={24} color="#fe7009" />
-              <Text style={styles.drawerItemText}>Settle Dues</Text>
+              <Text style={styles.drawerItemText}>My Wallet</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('Help'); }}>
               <Ionicons name="help-circle-outline" size={24} color="#fe7009" />
@@ -974,16 +1085,16 @@ const HomeScreen = () => {
           keyboardShouldPersistTaps="handled"
         >
           {subStatus && (
-            <TouchableOpacity 
+            <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => navigation.navigate('Subscriptions')}
               style={[styles.subTimerBanner, { backgroundColor: subStatus.color }]}
             >
               <View style={styles.subTimerContent}>
-                <MaterialCommunityIcons 
-                  name={subStatus.isGrace ? "clock-alert-outline" : "clock-outline"} 
-                  size={20} 
-                  color="#fff" 
+                <MaterialCommunityIcons
+                  name={subStatus.isGrace ? "clock-alert-outline" : "clock-outline"}
+                  size={20}
+                  color="#fff"
                 />
                 <Text style={styles.subTimerText}>
                   {subStatus.isGrace ? "Grace Period: " : "Plan: "}{subStatus.label}
@@ -992,6 +1103,8 @@ const HomeScreen = () => {
               <Ionicons name="chevron-forward" size={18} color="#fff" />
             </TouchableOpacity>
           )}
+
+
 
           {renderDashboardContent()}
           {renderQuickActions()}
@@ -1040,6 +1153,18 @@ const HomeScreen = () => {
                       {/* Buttons */}
                       <View style={styles.rideActionRow}>
                         <TouchableOpacity
+                          style={styles.properActiveCallBtnSmall}
+                          onPress={() => Linking.openURL(`tel:${ride.rider?.phone_number || ride.user?.phone_number}`)}
+                        >
+                          <LinearGradient
+                            colors={['#22c55e', '#16a34a']}
+                            style={styles.activeCallGradientSmall}
+                          >
+                            <MaterialCommunityIcons name="phone" size={14} color="#fff" />
+                            <Text style={styles.activeCallTextSmall}>Call Rider</Text>
+                          </LinearGradient>
+                        </TouchableOpacity>
+                        <TouchableOpacity
                           style={styles.rejectBtn}
                           onPress={() => handleReject(ride.id)}
                           disabled={actionLoading === ride.id}
@@ -1064,6 +1189,7 @@ const HomeScreen = () => {
             )}
           </View>
         </ScrollView>
+
 
         {/* Rating Modal */}
         <Modal transparent visible={ratingModalVisible} animationType="fade">
@@ -1112,26 +1238,109 @@ const HomeScreen = () => {
           </View>
         </Modal>
 
-        {/* PIN Modal */}
-        <Modal transparent visible={pinModalVisible} animationType="slide">
+        {/* Ride Summary Modal */}
+        <Modal transparent visible={summaryModalVisible} animationType="fade">
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Enter Rider PIN</Text>
+            <View style={[styles.modalContent, { paddingBottom: 30 }]}>
+              <View style={[styles.iconCircle, { backgroundColor: '#f0fdf4', marginBottom: 15 }]}>
+                <MaterialCommunityIcons name="check-all" size={36} color="#22c55e" />
+              </View>
+              <Text style={styles.modalTitle}>Trip Completed!</Text>
+              <Text style={styles.modalSubtitle}>Here is the earnings breakdown for this trip.</Text>
+
+              <View style={styles.summaryContainer}>
+                {/* NEW: Explicit Payment Source Breakdown */}
+                <View style={{ marginTop: 5 }}>
+                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#64748b', marginBottom: 12, letterSpacing: 1 }}>PAYMENT SOURCES</Text>
+                  
+                  {/* Source 1: Rider (Cash/Online) */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, padding: 12, backgroundColor: '#fff7ed', borderRadius: 12, borderLeftWidth: 4, borderLeftColor: '#fe7009' }}>
+                    <View>
+                      <Text style={{ fontSize: 13, color: '#9a3412', fontWeight: '800' }}>COLLECT FROM RIDER</Text>
+                      <Text style={{ fontSize: 10, color: '#c2410c' }}>Cash or Online Payment</Text>
+                    </View>
+                    <Text style={{ fontSize: 24, fontWeight: '900', color: '#fe7009' }}>₹{Number(completedRideDetails?.rider_payable || 0).toFixed(2)}</Text>
+                  </View>
+
+                  {/* Source 2: Platform (Wallet Credit) */}
+                  {Number(completedRideDetails?.company_payable) > 0 && (
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, padding: 12, backgroundColor: '#f0f9ff', borderRadius: 12, borderLeftWidth: 4, borderLeftColor: '#0ea5e9' }}>
+                      <View>
+                        <Text style={{ fontSize: 13, color: '#0369a1', fontWeight: '800' }}>PLATFORM REWARD</Text>
+                        <Text style={{ fontSize: 10, color: '#0ea5e9' }}>Added to Rewards Wallet</Text>
+                      </View>
+                      <Text style={{ fontSize: 24, fontWeight: '900', color: '#0ea5e9' }}>₹{Number(completedRideDetails.company_payable).toFixed(2)}</Text>
+                    </View>
+                  )}
+
+                  <View style={{ paddingHorizontal: 5, paddingVertical: 10, borderTopWidth: 1, borderTopStyle: 'dashed', borderTopColor: '#cbd5e1', flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#1e293b' }}>Total Trip Value (Tab)</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e293b' }}>₹{Number(completedRideDetails?.final_fare || 0).toFixed(2)}</Text>
+                  </View>
+                </View>
+
+                <HorizontalDivider />
+
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { fontWeight: 'bold' }]}>Your Net Earnings</Text>
+                  <Text style={[styles.summaryValue, { color: '#22c55e' }]}>₹{Number(completedRideDetails?.driver_earnings || 0).toFixed(2)}</Text>
+                </View>
+              </View>
+
+              <Button
+                mode="contained"
+                onPress={() => {
+                  setSummaryModalVisible(false);
+                  setRatingModalVisible(true);
+                }}
+                style={[styles.startTripSubmitBtn, { backgroundColor: '#22c55e', marginTop: 10 }]}
+              >
+                Done
+              </Button>
+            </View>
+          </View>
+        </Modal>
+
+        {/* PIN Modal */}
+        <Modal transparent visible={pinModalVisible} animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { paddingBottom: 35 }]}>
+              <View style={[styles.iconCircle, { backgroundColor: '#fff5ed', marginBottom: 10 }]}>
+                <MaterialCommunityIcons name="shield-key-outline" size={32} color="#fe7009" />
+              </View>
+              <Text style={styles.modalTitle}>Verification Required</Text>
+              <Text style={styles.modalSubtitle}>Please enter the 4-digit PIN provided by the rider to start your trip.</Text>
+
               <View style={styles.pinContainer}>
                 {pin.map((digit, index) => (
                   <TextInput
                     key={index}
                     ref={(ref) => { pinInputRefs.current[index] = ref; }}
-                    style={styles.pinInput}
+                    style={[styles.pinInput, digit ? { borderColor: '#fe7009', backgroundColor: '#fff' } : null]}
                     maxLength={1}
                     keyboardType="numeric"
                     value={digit}
+                    onKeyPress={({ nativeEvent }) => {
+                      if (nativeEvent.key === 'Backspace' && !digit && index > 0) {
+                        pinInputRefs.current[index - 1].focus();
+                      }
+                    }}
                     onChangeText={(text) => handlePinChange(text, index)}
                   />
                 ))}
               </View>
-              <Button mode="contained" onPress={handleStartRide} loading={actionLoading === 'start'}>Start Trip</Button>
-              <Button mode="text" onPress={() => setPinModalVisible(false)} style={{ marginTop: 10 }}>Cancel</Button>
+
+              <Button
+                mode="contained"
+                onPress={handleStartRide}
+                loading={actionLoading === 'start'}
+                style={styles.startTripSubmitBtn}
+              >
+                Verify & Start Trip
+              </Button>
+              <TouchableOpacity onPress={() => setPinModalVisible(false)} style={{ marginTop: 20 }}>
+                <Text style={{ color: '#94a3b8', fontWeight: 'bold' }}>Go Back</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -1158,9 +1367,9 @@ const HomeScreen = () => {
               <Text style={styles.modalSubtitle}>
                 Your subscription and grace period have ended. You must renew to keep accepting rides.
               </Text>
-              
-              <Button 
-                mode="contained" 
+
+              <Button
+                mode="contained"
                 buttonColor="#fe7009"
                 onPress={() => {
                   setSubModalVisible(false);
@@ -1170,7 +1379,7 @@ const HomeScreen = () => {
               >
                 Renew Now
               </Button>
-              
+
               <TouchableOpacity onPress={() => setSubModalVisible(false)} style={{ padding: 10 }}>
                 <Text style={{ color: '#94a3b8', fontWeight: 'bold' }}>Close</Text>
               </TouchableOpacity>
@@ -1224,6 +1433,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center',
   },
   headerLogo: { width: 150, height: 38, resizeMode: 'contain' },
+  notificationBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: '#dc3545',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#fe7009',
+  },
+  notificationBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '900',
+  },
   statusBadge: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20,
@@ -1275,7 +1502,17 @@ const styles = StyleSheet.create({
   riderAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#fff5ed', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   riderName: { fontSize: 16, fontWeight: '700', color: '#1a202c' },
   riderPhone: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
-  activeCallBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#22c55e', justifyContent: 'center', alignItems: 'center', marginLeft: 12, elevation: 4, shadowColor: '#22c55e', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  properActiveCallBtn: {
+    borderRadius: 12, overflow: 'hidden',
+    marginBottom: 14, minWidth: 130,
+    elevation: 3, shadowColor: '#22c55e',
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 5,
+  },
+  activeCallGradient: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 12, paddingHorizontal: 14, gap: 8,
+  },
+  activeCallText: { color: '#fff', fontSize: 13, fontWeight: '800', flexShrink: 1 },
 
   // ─── Route Display ───────────────────────────────────────────────────────────
   routeContainer: { backgroundColor: '#f8fafc', borderRadius: 14, padding: 14, marginBottom: 14 },
@@ -1286,20 +1523,38 @@ const styles = StyleSheet.create({
   routeLabel: { fontSize: 9, fontWeight: '700', color: '#94a3b8', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 2 },
   routeAddress: { fontSize: 13, color: '#334155', fontWeight: '500', flex: 1 },
 
+  debugBtn: {
+    backgroundColor: '#6366f1',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginTop: 10,
+    gap: 8,
+  },
+  debugBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+
   // ─── Ride Action Buttons ──────────────────────────────────────────────────────
-  rideActionRow: { flexDirection: 'row', gap: 10 },
+  rideActionRow: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  properActiveCallBtnSmall: { borderRadius: 10, overflow: 'hidden', flex: 1, elevation: 2 },
+  activeCallGradientSmall: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 11, paddingHorizontal: 8, gap: 5,
+  },
+  activeCallTextSmall: { color: '#fff', fontSize: 11, fontWeight: '800', flexShrink: 1 },
   navBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 12, borderRadius: 12,
+    paddingVertical: 12, paddingHorizontal: 10, borderRadius: 12,
     borderWidth: 1.5, borderColor: '#3182ce', backgroundColor: '#eff6ff',
   },
-  navBtnText: { color: '#3182ce', fontWeight: '700', marginLeft: 6, fontSize: 13 },
+  navBtnText: { color: '#3182ce', fontWeight: '700', marginLeft: 5, fontSize: 12, flexShrink: 1 },
   startBtn: {
-    flex: 1.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 12, borderRadius: 12, backgroundColor: '#fe7009',
+    flex: 1.4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 12, paddingHorizontal: 10, borderRadius: 12, backgroundColor: '#fe7009',
     elevation: 4, shadowColor: '#fe7009', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 5,
   },
-  startBtnText: { color: '#fff', fontWeight: '800', marginLeft: 6, fontSize: 13 },
+  startBtnText: { color: '#fff', fontWeight: '800', marginLeft: 5, fontSize: 12, flexShrink: 1 },
 
   // ─── Quick Actions ────────────────────────────────────────────────────────────
   quickActionsGrid: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
@@ -1394,6 +1649,13 @@ const styles = StyleSheet.create({
     minHeight: 80, textAlignVertical: 'top',
   },
   submitRatingButton: { width: '100%', borderRadius: 12, backgroundColor: '#fe7009', marginBottom: 10 },
+  startTripSubmitBtn: { width: '100%', borderRadius: 12, paddingVertical: 6, backgroundColor: '#fe7009' },
+
+  // ─── Summary Modal ────────────────────────────────────────────────────────────
+  summaryContainer: { width: '100%', marginVertical: 10 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  summaryLabel: { fontSize: 14, color: '#64748b' },
+  summaryValue: { fontSize: 16, fontWeight: '900', color: '#1a202c' },
 
   // ─── Misc (kept for compatibility) ────────────────────────────────────────────
   rideCard: { borderRadius: 15, elevation: 3, backgroundColor: '#fff', marginBottom: 15 },
@@ -1460,6 +1722,31 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     letterSpacing: 0.2,
   },
+  ongoingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff5f5',
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#feb2b2',
+  },
+  ongoingBadgeText: {
+    color: '#c53030',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  pulseDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#e53e3e',
+    marginRight: 8,
+  }
 });
 
 export default HomeScreen;
