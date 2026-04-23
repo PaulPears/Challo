@@ -1,5 +1,5 @@
 -- =========================================================
--- 🚀 RIDE ANDHRA – MIGRATION: Entity/Schema Sync (V6)
+-- 🚀 RIDE ANDHRA – MIGRATION: Entity/Schema Sync (V7)
 -- =========================================================
 
 -- 1️⃣ USERS TABLE UPDATES
@@ -68,7 +68,12 @@ ALTER TABLE payments
     ADD COLUMN IF NOT EXISTS gst_amount DECIMAL(10,2) DEFAULT 0,
     ADD COLUMN IF NOT EXISTS total_amount DECIMAL(10,2) DEFAULT 0;
 
--- 7️⃣ SYSTEM_SETTINGS TABLE (NEW)
+-- 7️⃣ NOTIFICATIONS TABLE UPDATES
+------------------------------------------------------------
+ALTER TABLE notifications 
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- 8️⃣ SYSTEM_SETTINGS TABLE (NEW)
 ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS system_settings (
     "key" VARCHAR PRIMARY KEY,
@@ -79,7 +84,7 @@ CREATE TABLE IF NOT EXISTS system_settings (
     "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8️⃣ SUBSCRIPTION TABLES (NEW)
+-- 9️⃣ SUBSCRIPTION TABLES (NEW)
 ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS subscription_plans (
     "id" VARCHAR PRIMARY KEY,
@@ -116,7 +121,7 @@ CREATE TABLE IF NOT EXISTS subscription_sales (
     "created_at" TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 9️⃣ SETTLEMENTS & INCENTIVES (NEW)
+-- 🔟 SETTLEMENTS & INCENTIVES (NEW)
 ------------------------------------------------------------
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'settlement_status_enum') THEN
@@ -165,7 +170,7 @@ CREATE TABLE IF NOT EXISTS incentives (
     "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 🔟 BANK DETAILS, LOCATIONS & SURGE (NEW)
+-- 1️⃣1️⃣ BANK DETAILS, LOCATIONS & SURGE (NEW)
 ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS driver_bank_details (
     "user_id" UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -200,7 +205,7 @@ CREATE TABLE IF NOT EXISTS surge_events (
     "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1️⃣1️⃣ RIDE METADATA (NEW)
+-- 1️⃣2️⃣ RIDE METADATA (NEW)
 ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ride_rejections (
     "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
