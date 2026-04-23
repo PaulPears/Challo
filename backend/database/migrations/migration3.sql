@@ -1,5 +1,5 @@
 -- =========================================================
--- 🚀 RIDE ANDHRA – MIGRATION: Entity/Schema Sync (V5)
+-- 🚀 RIDE ANDHRA – MIGRATION: Entity/Schema Sync (V6)
 -- =========================================================
 
 -- 1️⃣ USERS TABLE UPDATES
@@ -103,7 +103,7 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS subscription_sales (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     "driver_id" UUID NOT NULL REFERENCES users(id),
     "plan_id" VARCHAR NOT NULL,
     "amount_paid" DECIMAL(12,2) NOT NULL,
@@ -119,13 +119,15 @@ CREATE TABLE IF NOT EXISTS subscription_sales (
 -- 9️⃣ SETTLEMENTS & INCENTIVES (NEW)
 ------------------------------------------------------------
 DO $$ BEGIN
-    CREATE TYPE settlement_status_enum AS ENUM('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED');
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'settlement_status_enum') THEN
+        CREATE TYPE settlement_status_enum AS ENUM('PENDING', 'SUCCESS', 'FAILED', 'CANCELLED');
+    END IF;
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
 CREATE TABLE IF NOT EXISTS settlements (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     "driver_id" UUID NOT NULL REFERENCES users(id),
     "amount" DECIMAL(10,2) NOT NULL,
     "razorpay_order_id" VARCHAR,
@@ -136,14 +138,18 @@ CREATE TABLE IF NOT EXISTS settlements (
 );
 
 DO $$ BEGIN
-    CREATE TYPE incentive_type_enum AS ENUM('driver_trip_milestone', 'rider_trip_milestone', 'driver_peak_hours', 'referral_bonus');
-    CREATE TYPE incentive_status_enum AS ENUM('active', 'claimed', 'expired');
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'incentive_type_enum') THEN
+        CREATE TYPE incentive_type_enum AS ENUM('driver_trip_milestone', 'rider_trip_milestone', 'driver_peak_hours', 'referral_bonus');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'incentive_status_enum') THEN
+        CREATE TYPE incentive_status_enum AS ENUM('active', 'claimed', 'expired');
+    END IF;
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
 CREATE TABLE IF NOT EXISTS incentives (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     "user_id" UUID NOT NULL REFERENCES users(id),
     "type" incentive_type_enum NOT NULL,
     "title" VARCHAR(255) NOT NULL,
@@ -159,17 +165,52 @@ CREATE TABLE IF NOT EXISTS incentives (
     "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 🔟 RIDE METADATA (NEW)
+-- 🔟 BANK DETAILS, LOCATIONS & SURGE (NEW)
+------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS driver_bank_details (
+    "user_id" UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    "bank_name" VARCHAR(100) NOT NULL,
+    "account_number" VARCHAR(50) NOT NULL,
+    "ifsc_code" VARCHAR(20) NOT NULL,
+    "account_holder_name" VARCHAR(100) NOT NULL,
+    "created_at" TIMESTAMPTZ DEFAULT NOW(),
+    "updated_at" TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS driver_locations (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "driver_id" UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    "latitude" DECIMAL(10,6) NOT NULL,
+    "longitude" DECIMAL(10,6) NOT NULL,
+    "accuracy" DECIMAL(5,2),
+    "heading" DECIMAL(5,2),
+    "speed" DECIMAL(5,2),
+    "created_at" TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS surge_events (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "name" VARCHAR(100) NOT NULL,
+    "start_date" TIMESTAMPTZ NOT NULL,
+    "end_date" TIMESTAMPTZ NOT NULL,
+    "multiplier" DECIMAL(5,3) DEFAULT 1.2,
+    "vehicle_types" TEXT,
+    "is_active" BOOLEAN DEFAULT TRUE,
+    "created_at" TIMESTAMPTZ DEFAULT NOW(),
+    "updated_at" TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 1️⃣1️⃣ RIDE METADATA (NEW)
 ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ride_rejections (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     "ride_id" UUID NOT NULL REFERENCES rides(id),
     "driver_id" UUID NOT NULL REFERENCES users(id),
     "rejected_at" TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS ride_routes (
-    "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     "ride_id" UUID NOT NULL REFERENCES rides(id),
     "latitude" DECIMAL(10,6) NOT NULL,
     "longitude" DECIMAL(10,6) NOT NULL,
