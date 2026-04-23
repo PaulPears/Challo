@@ -4,6 +4,7 @@ import {
   OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  SubscribeMessage,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
@@ -33,8 +34,22 @@ export class NotificationsGateway
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
+  @SubscribeMessage('join-ride')
+  handleJoinRide(client: Socket, rideId: string) {
+    this.logger.log(`Client ${client.id} joining room: ride-${rideId}`);
+    client.join(`ride-${rideId}`);
+  }
+
+  @SubscribeMessage('leave-ride')
+  handleLeaveRide(client: Socket, rideId: string) {
+    this.logger.log(`Client ${client.id} leaving room: ride-${rideId}`);
+    client.leave(`ride-${rideId}`);
+  }
+
   sendRideUpdate(rideId: string, status: string, ride: any) {
     this.logger.log(`Emitting ride update for ${rideId}: ${status}`);
+    // Emit to the specific room AND broadcast as fallback
+    this.server.to(`ride-${rideId}`).emit(`ride-${rideId}`, { status, ride });
     this.server.emit(`ride-${rideId}`, { status, ride });
   }
 

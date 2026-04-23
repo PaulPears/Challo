@@ -91,9 +91,11 @@ const UserNavigator = () => {
     socket.on(rideChannel, handleRideUpdate);
     socket.on('notification', handleNotification);
 
-    let locationChannel: string | null = null;
     if (currentRide?.id) {
-      locationChannel = `ride-location-${currentRide.id}`;
+      console.log(`[Socket] Joining room: ride-${currentRide.id}`);
+      socket.emit('join-ride', currentRide.id);
+
+      const locationChannel = `ride-location-${currentRide.id}`;
       socket.on(locationChannel, handleLocationUpdate);
     }
 
@@ -101,7 +103,10 @@ const UserNavigator = () => {
       console.log(`[Socket] Cleaning up listeners for ${rideChannel}`);
       socket.off(rideChannel, handleRideUpdate);
       socket.off('notification', handleNotification);
-      if (locationChannel) {
+      if (currentRide?.id) {
+        console.log(`[Socket] Leaving room: ride-${currentRide.id}`);
+        socket.emit('leave-ride', currentRide.id);
+        const locationChannel = `ride-location-${currentRide.id}`;
         socket.off(locationChannel, handleLocationUpdate);
       }
     };
