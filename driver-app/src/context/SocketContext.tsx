@@ -38,7 +38,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
       socket = io(API_URL, {
         auth: { token },
-        transports: ['websocket', 'polling'], // Prioritize websocket for mobile stability
+        transports: ['websocket'], // Force websocket for production stability on App Runner
         reconnection: true,
         reconnectionDelay: 2000,
         reconnectionAttempts: Infinity,
