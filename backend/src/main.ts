@@ -9,76 +9,87 @@ import { LoggerService } from './common/logger/logger.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    bufferLogs: true,
-    rawBody: true, // Needed for Razorpay/Stripe webhooks signature verification
-  });
-
-  // Serve static files uploaded by users
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/uploads/',
-  });
-
-  // Initialize custom logger
   const logger = new LoggerService();
-  app.useLogger(logger);
+  try {
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+      bufferLogs: true,
+      rawBody: true, // Needed for Razorpay/Stripe webhooks signature verification
+    });
 
-  // Global exception filter
-  app.useGlobalFilters(new HttpExceptionFilter(logger));
+    // Initialize custom logger
+    app.useLogger(logger);
+    logger.log('🚀 Starting application bootstrap...', 'Bootstrap');
 
-  // Enable global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Strip properties not in the DTO
-      transform: true, // Transform payloads to DTO instances
-      forbidNonWhitelisted: true, // Throw error if extra properties are present
-    }),
-  );
+    // Serve static files uploaded by users
+    app.useStaticAssets(join(process.cwd(), 'uploads'), {
+      prefix: '/uploads/',
+    });
 
-  // Security Headers - Helmet.js
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
+    // Global exception filter
+    app.useGlobalFilters(new HttpExceptionFilter(logger));
+
+    // Enable global validation pipe
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true, // Strip properties not in the DTO
+        transform: true, // Transform payloads to DTO instances
+        forbidNonWhitelisted: true, // Throw error if extra properties are present
+      }),
+    );
+
+    // Security Headers - Helmet.js
+    app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", 'data:', 'https:'],
+          },
         },
+        crossOriginEmbedderPolicy: false, // Disable for API compatibility
+        crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin requests
+      }),
+    );
+
+    const allowedOrigins = process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',')
+      : ['*']; // Allow all for development if not specified
+
+    app.enableCors({
+      origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        logger.warn(`CORS blocked origin: ${origin}`, 'Bootstrap');
+        callback(new Error('Not allowed by CORS'));
       },
-      crossOriginEmbedderPolicy: false, // Disable for API compatibility
-      crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin requests
-    }),
-  );
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+      exposedHeaders: ['Content-Length', 'Content-Type'],
+      maxAge: 3600,
+    });
 
-  const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
-    : ['*']; // Allow all for development if not specified
+    // Request Size Limits - Prevent DoS attacks
+    app.use(compression());
 
-  app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      logger.warn(`CORS blocked origin: ${origin}`, 'Bootstrap');
-      callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    exposedHeaders: ['Content-Length', 'Content-Type'],
-    maxAge: 3600,
-  });
+    const port = process.env.PORT ?? 3000;
+    const nodeEnv = process.env.NODE_ENV ?? 'development';
 
-  // Request Size Limits - Prevent DoS attacks
-  app.use(compression());
+    logger.log(`Environment: ${nodeEnv}`, 'Bootstrap');
+    logger.log(`Attempting to listen on port: ${port}`, 'Bootstrap');
 
-  const port = process.env.PORT ?? 3000;
-  await app.listen(port, '0.0.0.0'); // Explicitly listen on all interfaces
+    await app.listen(port, '0.0.0.0');
 
-  logger.log(`🚀 Application is running on: http://0.0.0.0:${port}`, 'Bootstrap');
-  logger.log(`🔒 Security middleware enabled: Helmet, CORS, Compression`, 'Bootstrap');
-  logger.log(`🌐 Allowed origins: ${allowedOrigins.join(', ')}`, 'Bootstrap');
+    logger.log(`🚀 Application is running on: http://0.0.0.0:${port}`, 'Bootstrap');
+    logger.log(`🔒 Security middleware enabled: Helmet, CORS, Compression`, 'Bootstrap');
+    logger.log(`🌐 Allowed origins: ${allowedOrigins.join(', ')}`, 'Bootstrap');
+  } catch (error) {
+    logger.error('❌ Application failed to start!', error.stack, 'Bootstrap');
+    process.exit(1);
+  }
 }
 bootstrap();
