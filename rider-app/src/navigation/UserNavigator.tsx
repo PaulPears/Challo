@@ -26,14 +26,12 @@ const UserNavigator = () => {
   useEffect(() => {
     // Global socket listeners
     const rideChannel = currentRide?.id ? `ride-${currentRide.id}` : 'ride_update';
-    console.log(`Subscribing to channel: ${rideChannel}`);
+    console.log(`[Socket] Subscribing to channel: ${rideChannel}`);
 
-    socket.on(rideChannel, (data: any) => {
-      console.log('Ride update received:', data);
+    const handleRideUpdate = (data: any) => {
+      console.log(`[Socket] Ride update received on ${rideChannel}:`, data);
 
       const status = (data.status || data.type || '').toUpperCase();
-
-      // The backend (server/) sends driver info inside 'ride' property
       const rideInfo = data.ride || {};
       const driverData = data.driver || {
         name: rideInfo.driverName,
@@ -51,7 +49,6 @@ const UserNavigator = () => {
           data: data
         });
         updateRideStatus('ACCEPTED', driverData);
-        // Navigate back to Home (Map) to show the modal overlay
         navigation.navigate('App');
       } else if (status === 'ARRIVED' || status === 'DRIVER_ARRIVED') {
         setAlert({
@@ -65,10 +62,8 @@ const UserNavigator = () => {
         updateRideStatus('STARTED');
       } else if (status === 'COMPLETED' || status === 'RIDE_COMPLETED') {
         updateRideStatus('COMPLETED');
-        setAlert(null); // Clear alert so modal/bar closes
+        setAlert(null);
       } else if (status === 'CANCELLED' || status === 'RIDE_CANCELLED') {
-        console.log('--- USER NAVIGATOR: CANCEL EVENT RECEIVED ---');
-        console.log('Data:', JSON.stringify(data, null, 2));
         updateRideStatus('CANCELLED');
         setAlert({
           type: 'RIDE_CANCELLED',
@@ -76,32 +71,40 @@ const UserNavigator = () => {
           message: 'This ride has been cancelled.',
           data: data
         });
-        console.log('--- USER NAVIGATOR: ALERT SET ---');
       }
-    });
+    };
 
-    socket.on('notification', (data: any) => {
+    const handleNotification = (data: any) => {
       addNotification({
         id: Math.random().toString(36).substr(2, 9),
         title: data.title,
         message: data.message,
         icon: data.icon || 'bell',
       });
-    });
+    };
 
+    const handleLocationUpdate = (location: any) => {
+      console.log('[Socket] Driver location update:', location);
+      useRideStore.getState().setDriverLocation(location);
+    };
+
+    socket.on(rideChannel, handleRideUpdate);
+    socket.on('notification', handleNotification);
+
+    let locationChannel: string | null = null;
     if (currentRide?.id) {
-      const locationChannel = `ride-location-${currentRide.id}`;
-      socket.on(locationChannel, (location: any) => {
-        console.log('Driver location update received:', location);
-        useRideStore.getState().setDriverLocation(location);
-      });
-
-      return () => {
-        socket.off(rideChannel);
-        socket.off('notification');
-        socket.off(locationChannel);
-      };
+      locationChannel = `ride-location-${currentRide.id}`;
+      socket.on(locationChannel, handleLocationUpdate);
     }
+
+    return () => {
+      console.log(`[Socket] Cleaning up listeners for ${rideChannel}`);
+      socket.off(rideChannel, handleRideUpdate);
+      socket.off('notification', handleNotification);
+      if (locationChannel) {
+        socket.off(locationChannel, handleLocationUpdate);
+      }
+    };
   }, [currentRide?.id, navigation]);
 
   return (
