@@ -56,6 +56,19 @@ ALTER TABLE driver_profiles
     ADD COLUMN IF NOT EXISTS is_manual_access BOOLEAN DEFAULT FALSE,
     ADD COLUMN IF NOT EXISTS license_number VARCHAR(50);
 
+-- 5️⃣ RIDER_PROFILES TABLE UPDATES
+------------------------------------------------------------
+ALTER TABLE rider_profiles 
+    ADD COLUMN IF NOT EXISTS super_coins_balance INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS super_km_balance DECIMAL(10,2) DEFAULT 0;
+
+-- 6️⃣ PAYMENTS TABLE UPDATES
+------------------------------------------------------------
+ALTER TABLE payments 
+    ADD COLUMN IF NOT EXISTS taxable_amount DECIMAL(10,2) DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS gst_amount DECIMAL(10,2) DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS total_amount DECIMAL(10,2) DEFAULT 0;
+
 -- =========================================================
 -- 🎉 MIGRATION COMPLETE — SCHEMA SYNCED WITH ENTITIES!
 -- =========================================================
