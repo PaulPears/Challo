@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../config/api';
+import api from '../api/axiosClient';
 import packageJson from '../../package.json';
 
 interface AppConfig {
