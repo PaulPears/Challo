@@ -85,6 +85,18 @@ export class UsersService {
     await this.usersRepository.update(userId, { password: hashedPassword });
   }
 
+  async updateRoles(userId: string, roles: UserRole[]): Promise<void> {
+    await this.usersRepository.update(userId, { roles });
+    
+    // Ensure rider profile exists if rider role is added
+    if (roles.includes(UserRole.RIDER)) {
+      const profile = await this.riderProfileRepository.findOne({ where: { user_id: userId } });
+      if (!profile) {
+        await this.createRiderProfile(userId);
+      }
+    }
+  }
+
   async create(userData: Partial<User>): Promise<User> {
     const user = this.usersRepository.create(userData);
     const savedUser = await this.usersRepository.save(user);

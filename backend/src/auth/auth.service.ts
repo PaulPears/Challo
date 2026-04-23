@@ -73,7 +73,7 @@ export class AuthService {
       const payload: JwtPayload = {
         sub: user.id,
         phoneNumber: user.phone_number,
-        roles: user.roles,
+        roles: user.roles.includes(UserRole.RIDER) ? user.roles : [...user.roles, UserRole.RIDER],
         name: user.name,
       };
 
@@ -146,6 +146,11 @@ export class AuthService {
 
     if (existingUser) {
       user = existingUser;
+      // Auto-add RIDER role if missing (ensures consistency for legacy users)
+      if (!user.roles.includes(UserRole.RIDER)) {
+        user.roles.push(UserRole.RIDER);
+        await this.usersService.updateRoles(user.id, user.roles);
+      }
     } else {
       user = await this.usersService.create({
         phone_number: phoneNumber,
@@ -218,12 +223,20 @@ export class AuthService {
 
     if (existingUser) {
       user = existingUser;
+      // Auto-add RIDER role if missing
+      if (!user.roles.includes(UserRole.RIDER)) {
+        user.roles.push(UserRole.RIDER);
+        await this.usersService.updateRoles(user.id, user.roles);
+      }
     } else {
-      const userRole = role?.toUpperCase() === 'DRIVER' ? UserRole.DRIVER : UserRole.RIDER;
+      const roles = [UserRole.RIDER];
+      if (role?.toUpperCase() === 'DRIVER') {
+        roles.push(UserRole.DRIVER);
+      }
       user = await this.usersService.create({
         phone_number: cleanPhone,
         name: '',
-        roles: [userRole],
+        roles: roles,
       });
       isNewUser = true;
     }
