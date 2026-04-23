@@ -1,5 +1,5 @@
 -- =========================================================
--- 🚀 RIDE ANDHRA – MIGRATION: Entity/Schema Sync (V7)
+-- 🚀 RIDE ANDHRA – MIGRATION: Entity/Schema Sync (V8)
 -- =========================================================
 
 -- 1️⃣ USERS TABLE UPDATES
@@ -36,11 +36,21 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- 3️⃣ WALLETS TABLE UPDATES
+-- 3️⃣ WALLETS & FARE SETTINGS UPDATES
 ------------------------------------------------------------
 ALTER TABLE wallets 
     ADD COLUMN IF NOT EXISTS super_km_balance DECIMAL(10,2) DEFAULT 0,
     ADD COLUMN IF NOT EXISTS pending_platform_fees DECIMAL(10,2) DEFAULT 0;
+
+ALTER TABLE fare_settings 
+    ADD COLUMN IF NOT EXISTS weather_surge_active BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS max_surge_cap DECIMAL(4,2) DEFAULT 2.50,
+    ADD COLUMN IF NOT EXISTS zone_airport_multiplier DECIMAL(4,2) DEFAULT 1.25,
+    ADD COLUMN IF NOT EXISTS zone_highway_multiplier DECIMAL(4,2) DEFAULT 0.90;
+
+ALTER TABLE fare_tiers 
+    ADD COLUMN IF NOT EXISTS per_minute_rate DECIMAL(10,4),
+    ADD COLUMN IF NOT EXISTS effective_from TIMESTAMPTZ DEFAULT NOW();
 
 -- 4️⃣ DRIVER_PROFILES TABLE UPDATES
 ------------------------------------------------------------
@@ -121,7 +131,7 @@ CREATE TABLE IF NOT EXISTS subscription_sales (
     "created_at" TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 🔟 SETTLEMENTS & INCENTIVES (NEW)
+-- 🔟 SETTLEMENTS, WITHDRAWALS & INCENTIVES (NEW)
 ------------------------------------------------------------
 DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'settlement_status_enum') THEN
@@ -138,6 +148,18 @@ CREATE TABLE IF NOT EXISTS settlements (
     "razorpay_order_id" VARCHAR,
     "razorpay_payment_id" VARCHAR,
     "status" settlement_status_enum DEFAULT 'PENDING',
+    "created_at" TIMESTAMPTZ DEFAULT NOW(),
+    "updated_at" TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS withdrawal_requests (
+    "id" UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    "driver_id" UUID NOT NULL REFERENCES users(id),
+    "amount" DECIMAL(10,2) NOT NULL,
+    "status" VARCHAR(20) DEFAULT 'PENDING',
+    "bank_snapshot" JSONB,
+    "admin_note" TEXT,
+    "processed_at" TIMESTAMPTZ,
     "created_at" TIMESTAMPTZ DEFAULT NOW(),
     "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
