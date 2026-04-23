@@ -94,6 +94,14 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
     "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Seed Subscription Plans
+INSERT INTO subscription_plans (id, name, price, duration_days, description, features)
+VALUES 
+('daily_lite', 'Daily Lite', 49.00, 1, 'Basic daily access', '["Unlimited rides", "Standard support"]'),
+('weekly_pro', 'Weekly Pro', 249.00, 7, 'Best for regular drivers', '["Unlimited rides", "Priority support", "Lower commission"]'),
+('monthly_max', 'Monthly Max', 899.00, 30, 'Maximum value', '["Unlimited rides", "24/7 Priority support", "Zero commission", "Super Coins bonus"]')
+ON CONFLICT (id) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS subscription_sales (
     "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "driver_id" UUID NOT NULL REFERENCES users(id),
