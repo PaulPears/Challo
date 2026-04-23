@@ -33,6 +33,7 @@ ALTER TABLE rides
 DO $$ 
 BEGIN
     ALTER TYPE payment_method_enum ADD VALUE IF NOT EXISTS 'online';
+    ALTER TYPE vehicle_type_enum ADD VALUE IF NOT EXISTS 'luxury_bike';
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
