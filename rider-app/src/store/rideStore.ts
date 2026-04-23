@@ -6,6 +6,7 @@ interface Ride {
   dropoff_address: string;
   estimated_fare: number;
   status: 'SEARCHING' | 'ACCEPTED' | 'ARRIVED' | 'STARTED' | 'COMPLETED' | 'CANCELLED';
+  otp?: string;
   driver?: {
     name: string;
     phone: string;

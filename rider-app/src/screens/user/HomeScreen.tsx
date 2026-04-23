@@ -27,7 +27,7 @@ const HomeScreen = ({ navigation }: any) => {
   const [isLocationReady, setIsLocationReady] = useState(false);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const { locationStatus, requestLocation, checkAllPermissions } = usePermissions();
-  const { unreadCount } = usePushNotifications(useUserStore((state) => state.user?.id || null));
+  const { unreadCount, fetchUnreadCount } = usePushNotifications(useUserStore((state) => state.user?.id || null));
   const [rationaleVisible, setRationaleVisible] = useState(false);
   const [isInsideAP, setIsInsideAP] = useState(true);
   const { currentRide, driverLocation, clearRide, setRide } = useRideStore();
