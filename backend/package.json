@@ -19,7 +19,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:init": "psql -U postgres -d ride_andhra -f database/ride_andhra.sql",
-    "db:reset": "psql -U postgres -d ride_andhra -c \"DROP SCHEMA public CASCADE; CREATE SCHEMA public;\" && npm run db:init"
+    "db:reset": "psql -U postgres -d ride_andhra -c \"DROP SCHEMA public CASCADE; CREATE SCHEMA public;\" && npm run db:init",
+    "migrate:tokens": "ts-node src/scripts/migrate-tokens.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
