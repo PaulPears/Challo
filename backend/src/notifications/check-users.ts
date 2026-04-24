@@ -10,10 +10,10 @@ async function bootstrap() {
   
   console.log('--- User Roles Check ---');
   try {
-    const users = await userRepository.find({ select: { id: true, name: true, roles: true, push_token: true } });
+    const users = await userRepository.find({ select: { id: true, name: true, roles: true, rider_push_token: true, driver_push_token: true } });
     console.log('Total users:', users.length);
     users.forEach(u => {
-      console.log(`User: ${u.name || 'N/A'}, Roles: ${JSON.stringify(u.roles)}, Token: ${u.push_token ? 'Exists' : 'Missing'}`);
+      console.log(`User: ${u.name || 'N/A'}, Roles: ${JSON.stringify(u.roles)}, Rider Token: ${u.rider_push_token ? 'Exists' : 'Missing'}, Driver Token: ${u.driver_push_token ? 'Exists' : 'Missing'}`);
     });
 
     // Test specific filters
