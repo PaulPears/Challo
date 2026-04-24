@@ -246,7 +246,8 @@ const RideStatusModal = () => {
                     </TouchableOpacity>
                 ) : (
                     <>
-                        {currentRide?.status !== 'SEARCHING' && (
+                        {/* Call Driver — only show once a driver has been assigned */}
+                        {(currentRide?.status === 'ACCEPTED' || currentRide?.status === 'ARRIVED' || currentRide?.status === 'STARTED') && (
                             <TouchableOpacity
                                 style={[styles.actionButton, { backgroundColor: '#22c55e' }]}
                                 onPress={handleCall}

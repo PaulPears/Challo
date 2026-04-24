@@ -8,7 +8,7 @@ import BookingScreen from '../screens/user/BookingScreen';
 import BookingDetailsScreen from '../screens/user/BookingDetailsScreen';
 import WaitingForDriverScreen from '../screens/user/WaitingForDriverScreen';
 import DriverDetailsScreen from '../screens/user/DriverDetailsScreen';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useSocket } from '../context/SocketContext';
 import useRideStore from '../store/rideStore';
 import useNotificationStore from '../store/notificationStore';
@@ -82,7 +82,8 @@ const UserNavigator = () => {
           message: 'Thank you for riding with RideAndhra. We hope you had a great trip!',
           data: data
         });
-        navigation.navigate('App');
+        // Reset the stack so pressing back does NOT go back to WaitingForDriver
+        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
       } else if (status === 'CANCELLED' || status === 'RIDE_CANCELLED') {
         updateRideStatus('CANCELLED');
         setAlert({
@@ -91,7 +92,7 @@ const UserNavigator = () => {
           message: 'This ride has been cancelled.',
           data: data
         });
-        navigation.navigate('App');
+        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
       }
     };
 
@@ -160,7 +161,8 @@ const UserNavigator = () => {
               vehicle_model: latestRide.driver.vehicle_model,
               vehicle_number: latestRide.driver.vehicle_number,
               rating: latestRide.driver.rating,
-              phone: latestRide.driver.phone_number,
+              phone: latestRide.driver.phone_number || latestRide.driver.phone,
+              photo: latestRide.driver.profile_image || latestRide.driver.avatar,
             } : undefined;
 
             const mappedStatus = newStatus === 'IN_PROGRESS' ? 'STARTED' : newStatus;
@@ -191,14 +193,14 @@ const UserNavigator = () => {
                   title: 'Ride Completed! 🏁',
                   message: 'Thank you for riding with RideAndhra.',
                });
-               navigation.navigate('App');
+               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
             } else if (mappedStatus === 'CANCELLED') {
                setAlert({
                   type: 'RIDE_CANCELLED',
                   title: 'Ride Cancelled',
                   message: 'This ride has been cancelled.',
                });
-               navigation.navigate('App');
+               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
             }
           }
         }

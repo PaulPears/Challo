@@ -4,10 +4,12 @@ import LottieView from 'lottie-react-native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { rideAPI } from '../../api/rideAPI';
 import useRideStore from '../../store/rideStore';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
-const WaitingForDriverScreen = ({ route, navigation }: any) => {
+const WaitingForDriverScreen = ({ route }: any) => {
+  const navigation = useNavigation<any>();
   const { ride } = route.params;
   const rideId = ride?.id;
   const { currentRide, setAlert, updateRideStatus } = useRideStore();
@@ -51,7 +53,7 @@ const WaitingForDriverScreen = ({ route, navigation }: any) => {
           } else if (status === 'CANCELLED') {
             updateRideStatus('CANCELLED');
             clearInterval(pollInterval);
-            navigation.navigate('App');
+            navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
           }
         }
       } catch (error) {
@@ -69,7 +71,7 @@ const WaitingForDriverScreen = ({ route, navigation }: any) => {
       setAlert(null);
       updateRideStatus('CANCELLED');
       setCancelModalVisible(false);
-      navigation.navigate('App');
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
     } catch (error) {
       console.error('Failed to cancel ride:', error);
       Alert.alert('Error', 'Failed to cancel ride. Please try again.');

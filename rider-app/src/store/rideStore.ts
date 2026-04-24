@@ -5,7 +5,9 @@ interface Ride {
   pickup_address: string;
   dropoff_address: string;
   estimated_fare: number;
-  status: 'SEARCHING' | 'ACCEPTED' | 'ARRIVED' | 'STARTED' | 'COMPLETED' | 'CANCELLED';
+  vehicle_type?: string;
+  // PENDING is the initial backend status; we display it as SEARCHING locally
+  status: 'PENDING' | 'SEARCHING' | 'ACCEPTED' | 'ARRIVED' | 'STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   otp?: string;
   driver?: {
     name: string;
@@ -13,6 +15,7 @@ interface Ride {
     vehicle_number: string;
     vehicle_model: string;
     rating: number;
+    photo?: string;  // optional profile picture URL
   };
 }
 
@@ -45,19 +48,21 @@ const useRideStore = create<RideState>((set) => ({
   updateRideStatus: (status, driverDetails) =>
     set((state) => {
       const newStatus = status.toUpperCase() as Ride['status'];
-      console.log(`[RideStore] updateRideStatus: ${newStatus}`);
-      const finished = newStatus === 'COMPLETED' || newStatus === 'CANCELLED';
+      console.log(`[RideStore] updateRideStatus: ${newStatus}, driverDetails:`, JSON.stringify(driverDetails));
+
+      // When a driver accepts, un-minimize so the modal pops up showing driver info
+      const shouldUnMinimize = ['ACCEPTED', 'ARRIVED', 'STARTED', 'COMPLETED', 'CANCELLED'].includes(newStatus);
 
       return {
         currentRide: state.currentRide
           ? {
             ...state.currentRide,
             status: newStatus,
-            driver: driverDetails || state.currentRide.driver
+            driver: driverDetails ?? state.currentRide.driver,
           }
           : null,
         activeAlert: state.activeAlert,
-        isMinimized: state.isMinimized
+        isMinimized: shouldUnMinimize ? false : state.isMinimized,
       };
     }),
   setAlert: (alert) => set({ activeAlert: alert, isMinimized: false }),
