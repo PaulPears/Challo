@@ -51,7 +51,7 @@ export const usePushNotifications = (userId: string | null) => {
             // High-priority Ride Alert channel with custom sound
             await Notifications.setNotificationChannelAsync('ride-alerts', {
                 name: 'Ride Alerts',
-                description: 'Alerts for incoming ride requests',
+                description: 'Critical alerts for incoming ride requests',
                 importance: Notifications.AndroidImportance.MAX,
                 vibrationPattern: [0, 500, 200, 500, 200, 500],
                 lightColor: '#FF7009',
@@ -61,6 +61,9 @@ export const usePushNotifications = (userId: string | null) => {
                 lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
                 bypassDnd: true,  // Override Do Not Disturb for ride alerts
             });
+
+            const channels = await Notifications.getAllNotificationChannelsAsync();
+            console.log('[PushNotifications] Registered Channels:', channels.map(c => c.id));
         }
 
         // ── 2. Request permissions ────────────────────────────────────────────

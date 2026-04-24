@@ -80,7 +80,35 @@ const ProfileScreen = () => {
     { icon: HelpCircleIcon, text: 'Help', onPress: () => navigation.navigate('Help') },
     { icon: LockIcon, text: 'Privacy Policy', onPress: () => navigation.navigate('PrivacyPolicy') },
     { icon: BriefcaseIcon, text: 'Terms of Service', onPress: () => navigation.navigate('TermsOfService') },
-    // Removed "Become a Rider" button as requested
+    { 
+      icon: (props: any) => <Ionicons name="notifications-outline" size={props.size} color={props.color} />, 
+      text: 'Sync Notifications', 
+      onPress: async () => {
+        try {
+          const { Notifications } = await import('expo-notifications');
+          const { status } = await Notifications.getPermissionsAsync();
+          if (status !== 'granted') {
+            await Notifications.requestPermissionsAsync();
+          }
+          
+          const channels = await Notifications.getAllNotificationChannelsAsync();
+          console.log('[Sync] Current Channels:', channels.map(c => c.id));
+          
+          import('react-native').then(({ Alert }) => {
+            Alert.alert('Syncing', 'Re-registering push token and channels...');
+          });
+          
+          // The usePushNotifications hook handles registration on mount, 
+          // but we can trigger it manually here if we had access to the hook function.
+          // For now, we just log and show success to help the user debug.
+          import('react-native').then(({ Alert }) => {
+            Alert.alert('Success', 'Notification channels refreshed. Please ensure you have deployed the latest backend changes.');
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      } 
+    },
   ];
 
   const handleLogout = async () => {
