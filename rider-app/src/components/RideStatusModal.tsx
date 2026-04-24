@@ -264,12 +264,12 @@ const RideStatusModal = () => {
                             </TouchableOpacity>
                         )}
 
-                        {(currentRide?.status === 'SEARCHING' || currentRide?.status === 'ACCEPTED' || currentRide?.status === 'ARRIVED' || currentRide?.status === 'STARTED' || currentRide?.status === 'IN_PROGRESS') && (
+                        {['PENDING', 'SEARCHING', 'ACCEPTED', 'ARRIVED', 'STARTED', 'IN_PROGRESS'].includes(currentRide?.status || '') && (
                             <TouchableOpacity
-                                style={[styles.cancelButton, { backgroundColor: '#fee2e2', borderWidth: 0 }]}
+                                style={[styles.cancelButton, { backgroundColor: '#fef2f2', borderColor: '#fee2e2', borderWidth: 1, marginTop: 8 }]}
                                 onPress={handleCancelRide}
                             >
-                                <Text style={[styles.cancelButtonText, { color: '#ef4444' }]}>Cancel Ride</Text>
+                                <Text style={[styles.cancelButtonText, { color: '#ef4444', fontWeight: 'bold' }]}>Cancel Ride</Text>
                             </TouchableOpacity>
                         )}
 
