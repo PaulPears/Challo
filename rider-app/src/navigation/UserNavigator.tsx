@@ -82,6 +82,7 @@ const UserNavigator = () => {
           message: 'Thank you for riding with RideAndhra. We hope you had a great trip!',
           data: data
         });
+        navigation.navigate('App');
       } else if (status === 'CANCELLED' || status === 'RIDE_CANCELLED') {
         updateRideStatus('CANCELLED');
         setAlert({
@@ -90,6 +91,7 @@ const UserNavigator = () => {
           message: 'This ride has been cancelled.',
           data: data
         });
+        navigation.navigate('App');
       }
     };
 
@@ -189,12 +191,14 @@ const UserNavigator = () => {
                   title: 'Ride Completed! 🏁',
                   message: 'Thank you for riding with RideAndhra.',
                });
+               navigation.navigate('App');
             } else if (mappedStatus === 'CANCELLED') {
                setAlert({
                   type: 'RIDE_CANCELLED',
                   title: 'Ride Cancelled',
                   message: 'This ride has been cancelled.',
                });
+               navigation.navigate('App');
             }
           }
         }
