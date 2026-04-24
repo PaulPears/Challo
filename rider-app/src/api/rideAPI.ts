@@ -28,6 +28,11 @@ export const rideAPI = {
     return response.data;
   },
 
+  getRideById: async (id: string) => {
+    const response = await axiosClient.get(`/rides/${id}`);
+    return response.data;
+  },
+
   searchLocations: async (query: string) => {
     console.log(`Searching for location: ${query}...`);
     await new Promise(resolve => setTimeout(resolve, 500));
