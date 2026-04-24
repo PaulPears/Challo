@@ -100,22 +100,30 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
                 resizeMode="contain"
               />
               <View style={[styles.statusBadge,
-              ride.status === 'completed' ? styles.completedStatus :
-                ride.status === 'cancelled' ? styles.cancelledStatus :
-                  ride.status === 'in_progress' ? styles.inProgressStatus :
-                    ride.status === 'accepted' ? styles.acceptedStatus :
+              (ride.status || '').toLowerCase() === 'completed' ? styles.completedStatus :
+                (ride.status || '').toLowerCase() === 'cancelled' ? styles.cancelledStatus :
+                  (ride.status || '').toLowerCase() === 'in_progress' || (ride.status || '').toLowerCase() === 'started' ? styles.inProgressStatus :
+                    (ride.status || '').toLowerCase() === 'accepted' ? styles.acceptedStatus :
                       styles.pendingStatus
               ]}>
                 <Text style={[
-                  ride.status === 'completed' ? styles.completedStatustext :
-                    ride.status === 'cancelled' ? styles.cancelledStatustext :
-                      ride.status === 'in_progress' ? styles.inProgressStatustext :
-                        ride.status === 'accepted' ? styles.acceptedStatustext :
+                  (ride.status || '').toLowerCase() === 'completed' ? styles.completedStatustext :
+                    (ride.status || '').toLowerCase() === 'cancelled' ? styles.cancelledStatustext :
+                      (ride.status || '').toLowerCase() === 'in_progress' || (ride.status || '').toLowerCase() === 'started' ? styles.inProgressStatustext :
+                        (ride.status || '').toLowerCase() === 'accepted' ? styles.acceptedStatustext :
                           styles.pendingStatustext
                 ]}>{ride.status?.replace(/_/g, ' ')}</Text>
               </View>
             </View>
           </View>
+
+          {ride.otp && (ride.status === 'SEARCHING' || ride.status === 'ACCEPTED' || ride.status === 'ARRIVED' || ride.status === 'PENDING') && (
+             <View style={styles.otpDetailContainer}>
+                <Text style={styles.otpDetailLabel}>TRIP PIN (OTP)</Text>
+                <Text style={styles.otpDetailValue}>{ride.otp}</Text>
+                <Text style={styles.otpDetailSub}>Share this PIN with your driver to start the trip</Text>
+             </View>
+          )}
 
           <View style={styles.addressDetails}>
             <Text style={styles.addressTitle}>Address details</Text>
@@ -566,6 +574,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
+  },
+  otpDetailContainer: {
+    backgroundColor: '#F0F9FF',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  otpDetailLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#0369A1',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  otpDetailValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#0EA5E9',
+    letterSpacing: 4,
+  },
+  otpDetailSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 4,
   },
 });
 

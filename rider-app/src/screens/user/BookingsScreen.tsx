@@ -7,14 +7,17 @@ import { StatusBar } from 'react-native';
 
 const BookingCard = ({ item, navigation }: any) => {
   const getVehicleImage = (vehicleType: string) => {
-    const type = vehicleType?.toLowerCase();
-    if (type?.includes('cab') || type?.includes('car')) return require('../../../assets/cab_icon.png');
-    if (type?.includes('bike_lite') || type?.includes('bike-lite')) return require('../../../assets/bike_lite_icon.png');
-    if (type?.includes('bike')) return require('../../../assets/bike_icon.png');
-    if (type?.includes('auto')) return require('../../../assets/auto_icon.png');
-    if (type?.includes('parcel')) return require('../../../assets/parcel_icon.png');
+    const type = (vehicleType || '').toLowerCase();
+    if (type.includes('cab') || type.includes('car')) return require('../../../assets/cab_icon.png');
+    if (type.includes('bike_lite') || type.includes('bike-lite')) return require('../../../assets/bike_lite_icon.png');
+    if (type.includes('bike')) return require('../../../assets/bike_icon.png');
+    if (type.includes('auto')) return require('../../../assets/auto_icon.png');
+    if (type.includes('parcel')) return require('../../../assets/parcel_icon.png');
     return require('../../../assets/cab_icon.png');
   };
+
+  const status = (item.status || '').toUpperCase();
+  const showOtp = status === 'SEARCHING' || status === 'ACCEPTED' || status === 'ARRIVED' || status === 'PENDING';
 
   return (
     <TouchableOpacity
@@ -24,22 +27,22 @@ const BookingCard = ({ item, navigation }: any) => {
       <View style={styles.bookingCard}>
         <View style={styles.cardHeader}>
           <View>
-            <Text style={styles.rideType}>{(item.vehicleType || 'Ride').replace(/_/g, ' ')}</Text>
+            <Text style={styles.rideType}>{(item.vehicle_type || item.vehicleType || 'Ride').replace(/_/g, ' ')}</Text>
             <Text style={styles.rideDate}>{
-              new Date(item.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ' • ' +
-              new Date(item.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+              new Date(item.created_at || item.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ' • ' +
+              new Date(item.created_at || item.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
             }</Text>
           </View>
           <View style={styles.rideStatusContainer}>
-            <Image source={getVehicleImage(item.vehicleType)} style={{ width: 40, height: 40, marginBottom: 8 }} resizeMode="contain" />
+            <Image source={getVehicleImage(item.vehicle_type || item.vehicleType)} style={{ width: 40, height: 40, marginBottom: 8 }} resizeMode="contain" />
             <Text style={[styles.statusBadge,
-            item.status === 'completed' ? styles.completedStatus :
-              item.status === 'cancelled' ? styles.cancelledStatus :
-                item.status === 'in_progress' ? styles.inProgressStatus :
-                  item.status === 'accepted' ? styles.acceptedStatus :
+            status === 'COMPLETED' ? styles.completedStatus :
+              status === 'CANCELLED' ? styles.cancelledStatus :
+                status === 'IN_PROGRESS' || status === 'STARTED' ? styles.inProgressStatus :
+                  status === 'ACCEPTED' ? styles.acceptedStatus :
                     styles.pendingStatus
             ]}>
-              {item.status?.replace(/_/g, ' ')}
+              {status.replace(/_/g, ' ')}
             </Text>
           </View>
         </View>
@@ -51,14 +54,20 @@ const BookingCard = ({ item, navigation }: any) => {
             <View style={styles.endPin} />
           </View>
           <View style={styles.addressContainer}>
-            <Text style={styles.address} numberOfLines={1}>{item.pickupLocation || 'N/A'}</Text>
-            <Text style={styles.address} numberOfLines={1}>{item.dropoffLocation || 'N/A'}</Text>
+            <Text style={styles.address} numberOfLines={1}>{item.pickup_address || item.pickupLocation || 'N/A'}</Text>
+            <Text style={styles.address} numberOfLines={1}>{item.dropoff_address || item.dropoffLocation || 'N/A'}</Text>
           </View>
         </View>
 
         <View style={styles.cardFooter}>
           <View>
-            <Text style={styles.rideFare}>₹{Number(item.riderPayable || item.finalFare || item.fare || 0).toFixed(2)}</Text>
+            <Text style={styles.rideFare}>₹{Number(item.rider_payable || item.riderPayable || item.fare || 0).toFixed(2)}</Text>
+            {showOtp && item.otp && (
+              <View style={styles.otpListBadge}>
+                 <Text style={styles.otpListLabel}>TRIP PIN:</Text>
+                 <Text style={styles.otpListValue}>{item.otp}</Text>
+              </View>
+            )}
             {Number(item.super_km_applied) > 0 && (
               <View style={styles.listSavingsBadge}>
                  <Text style={styles.listSavingsText}>Super KM Applied ✨</Text>
@@ -282,6 +291,27 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#ef4444',
     fontWeight: '600',
+  },
+  otpListBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  otpListLabel: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#0369A1',
+    marginRight: 6,
+  },
+  otpListValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#0EA5E9',
+    letterSpacing: 1,
   },
 });
 
