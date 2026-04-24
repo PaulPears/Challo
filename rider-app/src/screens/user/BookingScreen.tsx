@@ -89,6 +89,8 @@ const BookingScreen = ({ navigation, route }: any) => {
             duration * 60, 
             pickup.lat, 
             pickup.lng,
+            dropoff.lat,
+            dropoff.lng,
             useSuperKm ? user?.super_km_balance : 0
           );
 

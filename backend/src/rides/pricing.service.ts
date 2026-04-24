@@ -5,6 +5,8 @@ import { FareSetting } from './fare-setting.entity';
 import { FareTier } from './fare-tier.entity';
 import { SurgeEvent } from './surge-event.entity';
 import { Ride, RideStatus, VehicleType } from './ride.entity';
+import { WeatherService } from './weather.service';
+import { TrafficService } from './traffic.service';
 
 export interface FareBreakdown {
   vehicleType: VehicleType;
@@ -32,6 +34,8 @@ export class PricingService {
     private surgeEventRepository: Repository<SurgeEvent>,
     @InjectRepository(Ride)
     private ridesRepository: Repository<Ride>,
+    private weatherService: WeatherService,
+    private trafficService: TrafficService,
   ) {}
 
   async getFareEstimate(
@@ -40,6 +44,8 @@ export class PricingService {
     vehicleType: VehicleType,
     lat?: number,
     lng?: number,
+    destLat?: number,
+    destLng?: number,
     superKmBalance?: number,
   ): Promise<FareBreakdown> {
     const distanceInKm = distance / 1000;
@@ -134,10 +140,26 @@ export class PricingService {
       }
     }
 
-    // 4. Weather Surcharge
-    if (fareSetting.weather_surge_active) {
-      surgeMultiplier *= 1.15;
-      surgeReason += ' + Weather Surcharge';
+    // 4. Weather Surcharge (Automated)
+    if (lat && lng) {
+      const isBadWeather = await this.weatherService.isBadWeather(lat, lng);
+      if (isBadWeather) {
+        surgeMultiplier *= 1.15;
+        surgeReason += ' + Weather Surcharge';
+      } else if (fareSetting.weather_surge_active) {
+        // Fallback to manual flag if API isn't used or doesn't detect it
+        surgeMultiplier *= 1.15;
+        surgeReason += ' + Weather Surcharge (Manual)';
+      }
+    }
+
+    // 5. Traffic Surcharge / Discount (Automated)
+    if (lat && lng && destLat && destLng) {
+      const traffic = await this.trafficService.getTrafficMultiplier(lat, lng, destLat, destLng);
+      if (traffic.multiplier !== 1.0) {
+        surgeMultiplier *= traffic.multiplier;
+        surgeReason += ` + ${traffic.reason}`;
+      }
     }
 
     // Cap the surge

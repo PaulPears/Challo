@@ -25,13 +25,13 @@ const getApiUrl = () => {
 
     // 3. Absolute Fallback to your PC's current Wi-Fi IP
     // This ensures it works on your physical device even if Expo doesn't report the IP.
-    const pcIpFallback = 'http://192.168.29.18:3000';
+    const pcIpFallback = 'http://192.168.29.10:3000';
     console.log(`[API Debug] Falling back to known PC IP: ${pcIpFallback}`);
     return pcIpFallback;
   }
 
   // Production
-  return process.env.EXPO_PUBLIC_API_URL || 'https://ride-andhra-unified-db.onrender.com';
+  return process.env.EXPO_PUBLIC_API_URL || 'https://sy5b8p7tug.us-east-1.awsapprunner.com';
 };
 
 const API_BASE_URL = getApiUrl();

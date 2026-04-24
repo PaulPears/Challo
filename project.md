@@ -28,6 +28,16 @@ To provide a seamless, reliable, and transparent transportation ecosystem for ri
 - **Rider Rewards:** Super Coins earned on every ride, redeemable for future trips.
 - **Referral Program:** (Planned) Growth through community invitations.
 
+### 5. Real-time Synchronization
+- **Room-based Socket.IO**: Dedicated communication rooms for each ride ensure secure, targeted updates.
+- **Bi-directional Auth**: Both Rider and Driver apps use JWT-authenticated sockets to maintain state across sessions.
+- **Live Lifecycle Tracking**: Immediate UI synchronization for ride acceptance, driver arrival, trip start, and completion.
+
+## Infrastructure & Deployment
+- **Backend**: NestJS application deployed via AWS App Runner for automated scaling and zero-downtime deployments.
+- **Database**: AWS RDS PostgreSQL instance for high-availability data storage and transaction integrity.
+- **Production URL**: `https://sy5b8p7tug.us-east-1.awsapprunner.com`
+
 ## Maintenance & Operations
 - **System Monitoring:** Health check endpoints and error logging.
 - **Database Backups:** Regular snapshots for disaster recovery.

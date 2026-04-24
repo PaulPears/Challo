@@ -106,6 +106,8 @@ export class RidesService {
             createRideDto.vehicle_type as any,
             createRideDto.pickup_latitude,
             createRideDto.pickup_longitude,
+            createRideDto.dropoff_latitude,
+            createRideDto.dropoff_longitude,
             Number(riderProfile.super_km_balance)
           );
 

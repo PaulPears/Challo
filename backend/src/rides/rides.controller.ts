@@ -41,17 +41,14 @@ export class RidesController {
   ) { }
 
   @Post('fare-estimate')
-  async getFareEstimate(@Body() body: { distance: number; duration: number; lat?: number; lng?: number; superKmBalance?: number }) {
-    const vehicleTypes = Object.values(VehicleType);
-    const estimates = await Promise.all(
-      vehicleTypes.map(async (type) => {
-        try {
-          return await this.pricingService.getFareEstimate(body.distance, body.duration, type, body.lat, body.lng, body.superKmBalance);
-        } catch (e) {
-          return null;
-        }
-      }),
-    );
+  async getFareEstimate(@Body() body: { distance: number; duration: number; lat?: number; lng?: number; destLat?: number; destLng?: number; superKmBalance?: number }) {
+    const estimates = await Promise.all(Object.values(VehicleType).map(async (type) => {
+      try {
+        return await this.pricingService.getFareEstimate(body.distance, body.duration, type, body.lat, body.lng, body.destLat, body.destLng, body.superKmBalance);
+      } catch (e) {
+        return null;
+      }
+    }));
     return estimates.filter((e) => e !== null);
   }
 

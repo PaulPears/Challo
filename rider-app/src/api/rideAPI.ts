@@ -50,8 +50,8 @@ export const rideAPI = {
     return response.data;
   },
 
-  getFare: async (distance: number, duration: number, lat?: number, lng?: number, superKmBalance?: number) => {
-    const response = await axiosClient.post('/rides/fare-estimate', { distance, duration, lat, lng, superKmBalance });
+  getFare: async (distance: number, duration: number, lat?: number, lng?: number, destLat?: number, destLng?: number, superKmBalance?: number) => {
+    const response = await axiosClient.post('/rides/fare-estimate', { distance, duration, lat, lng, destLat, destLng, superKmBalance });
     return response.data;
   },
 

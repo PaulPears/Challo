@@ -15,6 +15,8 @@ import { PricingService } from './pricing.service';
 import { MatchingService } from './matching.service';
 import { RidePolicyService } from './ride-policy.service';
 import { RideCleanupService } from './ride-cleanup.service';
+import { WeatherService } from './weather.service';
+import { TrafficService } from './traffic.service';
 import { DriverProfile } from '../drivers/driver-profile.entity';
 import { IncentivesModule } from '../incentives/incentives.module';
 
@@ -27,7 +29,7 @@ import { IncentivesModule } from '../incentives/incentives.module';
     IncentivesModule,
   ],
   controllers: [RidesController],
-  providers: [RidesService, PricingService, MatchingService, RidePolicyService, RideCleanupService],
-  exports: [RidesService, PricingService, MatchingService, RidePolicyService],
+  providers: [RidesService, PricingService, MatchingService, RidePolicyService, RideCleanupService, WeatherService, TrafficService],
+  exports: [RidesService, PricingService, MatchingService, RidePolicyService, WeatherService, TrafficService],
 })
 export class RidesModule { }
