@@ -89,10 +89,17 @@ const RideStatusModal = () => {
     if (!currentRide && !activeAlert) return null;
 
     const isCancelled = activeAlert?.type === 'RIDE_CANCELLED';
+    const isCompleted = activeAlert?.type === 'RIDE_COMPLETED';
     const title = activeAlert?.title || (currentRide?.status === 'SEARCHING' ? 'Searching for Captain...' : 'Ride Progress');
     const message = activeAlert?.message || (currentRide?.status === 'ACCEPTED' ? 'Driver is on the way' : currentRide?.status === 'ARRIVED' ? 'Driver is at the pickup' : 'Your ride is in progress');
 
     const handleBookAgain = () => {
+        setAlert(null);
+        useRideStore.getState().clearRide();
+        navigation.navigate('App');
+    };
+
+    const handleFinishRide = () => {
         setAlert(null);
         useRideStore.getState().clearRide();
         navigation.navigate('App');
@@ -118,6 +125,21 @@ const RideStatusModal = () => {
                             <Text style={{ fontSize: 40 }}>😢</Text>
                         </View>
                         <Text style={styles.message}>Sorry, your request has been cancelled.</Text>
+                    </View>
+                ) : isCompleted ? (
+                    <View style={styles.centerContent}>
+                        <View style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
+                            <Text style={{ fontSize: 40 }}>🎉</Text>
+                        </View>
+                        <Text style={[styles.message, { fontWeight: 'bold', fontSize: 18, color: '#111827' }]}>Arrived at Destination!</Text>
+                        <Text style={styles.message}>We hope you enjoyed your ride. See you again soon!</Text>
+                        
+                        <View style={[styles.fareBreakdownCard, { width: '100%', marginTop: 24 }]}>
+                            <View style={styles.fareRow}>
+                                <Text style={styles.totalLabel}>Total Fare Paid</Text>
+                                <Text style={styles.totalValueText}>₹ {Number(currentRide?.estimated_fare || 0).toFixed(2)}</Text>
+                            </View>
+                        </View>
                     </View>
                 ) : (
                     <>
@@ -190,6 +212,13 @@ const RideStatusModal = () => {
                             <Text style={styles.cancelButtonText}>Close</Text>
                         </TouchableOpacity>
                     </>
+                ) : isCompleted ? (
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: '#10b981' }]}
+                        onPress={handleFinishRide}
+                    >
+                        <Text style={styles.actionButtonText}>Done</Text>
+                    </TouchableOpacity>
                 ) : (
                     <>
                         <TouchableOpacity

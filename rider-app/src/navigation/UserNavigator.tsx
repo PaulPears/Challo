@@ -69,7 +69,12 @@ const UserNavigator = () => {
         updateRideStatus('STARTED');
       } else if (status === 'COMPLETED' || status === 'RIDE_COMPLETED') {
         updateRideStatus('COMPLETED');
-        setAlert(null);
+        setAlert({
+          type: 'RIDE_COMPLETED',
+          title: 'Ride Completed! 🏁',
+          message: 'Thank you for riding with RideAndhra. We hope you had a great trip!',
+          data: data
+        });
       } else if (status === 'CANCELLED' || status === 'RIDE_CANCELLED') {
         updateRideStatus('CANCELLED');
         setAlert({
