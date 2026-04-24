@@ -127,6 +127,59 @@ const UserNavigator = () => {
     };
   }, [socket, currentRide?.id, navigation]);
 
+  // ─── Background State Synchronizer (Polling Fallback) ───────────────────
+  useEffect(() => {
+    if (!currentRide?.id) return;
+    
+    // Only poll for "active" statuses that might change without user action
+    const activeStatuses = ['SEARCHING', 'ACCEPTED', 'ARRIVED', 'STARTED', 'IN_PROGRESS'];
+    if (!activeStatuses.includes(currentRide.status)) return;
+
+    const syncInterval = setInterval(async () => {
+      try {
+        const { rideAPI } = await import('../api/rideAPI');
+        const latestRide = await rideAPI.getRideById(currentRide.id);
+        
+        if (latestRide) {
+          const newStatus = (latestRide.status || '').toUpperCase();
+          
+          if (newStatus !== currentRide.status) {
+            console.log(`[Sync] Detected state mismatch! Remote: ${newStatus}, Local: ${currentRide.status}`);
+            
+            const driverData = latestRide.driver ? {
+              name: latestRide.driver.name,
+              vehicle_model: latestRide.driver.vehicle_model,
+              vehicle_number: latestRide.driver.vehicle_number,
+              rating: latestRide.driver.rating,
+              phone: latestRide.driver.phone_number,
+            } : undefined;
+
+            updateRideStatus(newStatus, driverData);
+
+            // Handle specific navigation/alert transitions if missed
+            if (newStatus === 'ACCEPTED') {
+               setAlert({
+                  type: 'RIDE_ACCEPTED',
+                  title: 'Ride Confirmed! 🚕',
+                  message: `Your ride has been accepted by ${driverData?.name || 'a driver'}.`,
+               });
+            } else if (newStatus === 'COMPLETED') {
+               setAlert({
+                  type: 'RIDE_COMPLETED',
+                  title: 'Ride Completed! 🏁',
+                  message: 'Thank you for riding with RideAndhra.',
+               });
+            }
+          }
+        }
+      } catch (error) {
+        console.log('[Sync] Background sync failed:', error);
+      }
+    }, 10000); // 10 seconds fallback
+
+    return () => clearInterval(syncInterval);
+  }, [currentRide?.id, currentRide?.status]);
+
   return (
     <>
       <Stack.Navigator>
