@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Image, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Image, Alert, Dimensions, Modal } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { rideAPI } from '../../api/rideAPI';
@@ -11,6 +11,8 @@ const WaitingForDriverScreen = ({ route, navigation }: any) => {
   const { ride } = route.params;
   const rideId = ride?.id;
   const { currentRide, setAlert, updateRideStatus } = useRideStore();
+  const [cancelModalVisible, setCancelModalVisible] = React.useState(false);
+  const [isCancelling, setIsCancelling] = React.useState(false);
 
   const displayStatus = currentRide?.status === 'ACCEPTED'
     ? 'Driver found! En route to your location.'
@@ -23,27 +25,19 @@ const WaitingForDriverScreen = ({ route, navigation }: any) => {
   }, [currentRide?.status, navigation]);
 
   const handleCancelRide = async () => {
-    Alert.alert(
-      'Cancel Ride',
-      'Are you sure you want to cancel this ride?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await rideAPI.cancelRide(rideId);
-              setAlert(null);
-              updateRideStatus('CANCELLED');
-              navigation.navigate('App');
-            } catch (error) {
-              console.error('Failed to cancel ride:', error);
-            }
-          },
-        },
-      ]
-    );
+    try {
+      setIsCancelling(true);
+      await rideAPI.cancelRide(rideId);
+      setAlert(null);
+      updateRideStatus('CANCELLED');
+      setCancelModalVisible(false);
+      navigation.navigate('App');
+    } catch (error) {
+      console.error('Failed to cancel ride:', error);
+      Alert.alert('Error', 'Failed to cancel ride. Please try again.');
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   return (
@@ -115,11 +109,46 @@ const WaitingForDriverScreen = ({ route, navigation }: any) => {
              <Text style={styles.vehicleInfoText}>Requesting {ride.vehicle_type?.toUpperCase() || 'Ride'}</Text>
           </View>
 
-          <TouchableOpacity onPress={handleCancelRide} style={styles.cancelButton}>
+          <TouchableOpacity onPress={() => setCancelModalVisible(true)} style={styles.cancelButton}>
             <Text style={styles.cancelButtonText}>Cancel Request</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
+
+      {/* Custom Cancel Modal */}
+      <Modal transparent visible={cancelModalVisible} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconContainer}>
+               <Ionicons name="warning" size={40} color="#FF5252" />
+            </View>
+            <Text style={styles.modalTitle}>Cancel Ride?</Text>
+            <Text style={styles.modalSubtitle}>Are you sure you want to cancel this request? Drivers are searching for you.</Text>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                onPress={() => setCancelModalVisible(false)} 
+                style={[styles.modalButton, styles.noButton]}
+                disabled={isCancelling}
+              >
+                <Text style={styles.noButtonText}>No, Keep It</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={handleCancelRide} 
+                style={[styles.modalButton, styles.yesButton]}
+                disabled={isCancelling}
+              >
+                {isCancelling ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.yesButtonText}>Yes, Cancel</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -283,6 +312,69 @@ const styles = StyleSheet.create({
     color: '#FF5252',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FFEBEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noButton: {
+    backgroundColor: '#F5F5F5',
+  },
+  yesButton: {
+    backgroundColor: '#FF5252',
+  },
+  noButtonText: {
+    color: '#666',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  yesButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 

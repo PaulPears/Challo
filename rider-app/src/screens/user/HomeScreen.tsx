@@ -118,9 +118,14 @@ const HomeScreen = ({ navigation }: any) => {
   useEffect(() => {
     (async () => {
       try {
-        if (locationStatus !== 'granted') {
+        if (locationStatus === 'denied' || locationStatus === 'permanently_denied') {
           setRationaleVisible(true);
           setIsLocationReady(true);
+          return;
+        }
+
+        if (locationStatus === 'undetermined') {
+          // Wait for usePermissions to finish the initial check
           return;
         }
 
