@@ -96,7 +96,14 @@ export class MatchingService {
                 .limit(limit);
 
             if (vehicleType) {
-                qb.andWhere('dp.vehicle_type = :vehicleType', { vehicleType });
+                if (vehicleType === VehicleType.PARCEL) {
+                    // Parcel can be picked up by Bikes
+                    qb.andWhere('dp.vehicle_type IN (:...parcelTypes)', { 
+                        parcelTypes: [VehicleType.BIKE, VehicleType.BIKE_LITE, VehicleType.LUXURY_BIKE, VehicleType.PARCEL] 
+                    });
+                } else {
+                    qb.andWhere('dp.vehicle_type = :vehicleType', { vehicleType });
+                }
             }
 
             const raw = await qb.getRawMany();

@@ -27,7 +27,7 @@ const BookingScreen = ({ navigation, route }: any) => {
   const [useCoins, setUseCoins] = React.useState(false);
   const [useSuperKm, setUseSuperKm] = React.useState(false);
   const [duration, setDuration] = React.useState(0);
-  const [selectedVehicle, setSelectedVehicle] = React.useState('Auto');
+  const [selectedVehicle, setSelectedVehicle] = React.useState('');
 
   const [vehicleOptions, setVehicleOptions] = React.useState<VehicleOption[]>([]);
   const [cheapestOption, setCheapestOption] = React.useState<VehicleOption | null>(null);
@@ -136,6 +136,8 @@ const BookingScreen = ({ navigation, route }: any) => {
               prev.cost < current.cost ? prev : current
             );
             setCheapestOption(cheapest);
+            // Auto-select the cheapest vehicle if none selected yet or just loaded
+            setSelectedVehicle(cheapest.vehicle);
           } else {
             setCheapestOption(null);
           }
@@ -189,7 +191,10 @@ const BookingScreen = ({ navigation, route }: any) => {
       </MapView>
       <View style={styles.detailsContainer}>
         <Text style={styles.distanceText}>Distance: {distance ? distance.toFixed(2) : '0.00'} km</Text>
-        <ScrollView>
+        <ScrollView 
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        >
           {user?.super_coins_balance && user.super_coins_balance > 0 ? (
             <View style={styles.coinsCard}>
               <View style={styles.coinsHeader}>
@@ -356,11 +361,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   map: {
-    flex: 1,
+    height: '35%',
+    width: '100%',
   },
   detailsContainer: {
     flex: 1,
     padding: 16,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -20, // Overlap the map slightly for modern look
   },
   distanceText: {
     fontSize: 18,
