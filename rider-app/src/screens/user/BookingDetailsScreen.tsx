@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Image, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Image, Linking, Alert } from 'react-native';
+import { CommonActions } from '@react-navigation/native';
+import useRideStore from '../../store/rideStore';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { rideAPI } from '../../api/rideAPI';
@@ -23,6 +25,42 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
 
     fetchRideDetails();
   }, [rideId]);
+
+  const handleCancelRide = async () => {
+    if (!ride) return;
+    
+    const status = (ride.status || '').toUpperCase();
+    const isStarted = status === 'STARTED' || status === 'IN_PROGRESS';
+
+    Alert.alert(
+      isStarted ? 'Cancel Active Ride?' : 'Cancel Ride',
+      isStarted 
+        ? 'Your ride has already started. Cancelling now may result in full fare charges. Are you sure?' 
+        : 'Are you sure you want to cancel this ride?',
+      [
+        { text: 'No', style: 'cancel' },
+        { 
+          text: 'Yes, Cancel', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await rideAPI.cancelRide(ride.id);
+              if (useRideStore.getState().currentRide?.id === ride.id) {
+                useRideStore.getState().clearRide();
+              }
+              navigation.dispatch(CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'App' }],
+              }));
+            } catch (error) {
+              console.error('Failed to cancel ride:', error);
+              Alert.alert('Error', 'Failed to cancel ride. Please try again.');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   if (loading) {
     return <ActivityIndicator size="large" color="#FF5722" style={{ flex: 1, justifyContent: 'center' }} />;
@@ -216,6 +254,15 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
                 </TouchableOpacity>
               )}
             </View>
+          )}
+
+          {ride.status && ['PENDING', 'SEARCHING', 'ACCEPTED', 'ARRIVED', 'STARTED', 'IN_PROGRESS'].includes(ride.status.toUpperCase()) && (
+            <TouchableOpacity 
+              style={styles.cancelActiveRideBtn}
+              onPress={handleCancelRide}
+            >
+              <Text style={styles.cancelActiveRideText}>Cancel Active Ride</Text>
+            </TouchableOpacity>
           )}
 
         </View>
@@ -601,6 +648,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     marginTop: 4,
+  },
+  cancelActiveRideBtn: {
+    backgroundColor: '#fee2e2',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  cancelActiveRideText: {
+    color: '#ef4444',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, Linking, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, Linking, ScrollView, Image, Alert } from 'react-native';
+import { rideAPI } from '../api/rideAPI';
 import { FontAwesome, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import useRideStore from '../store/rideStore';
 import useUserStore from '../store/userStore';
@@ -62,28 +63,34 @@ const RideStatusModal = () => {
 
     const handleCancelRide = async () => {
         if (!currentRide?.id) return;
-        try {
-            import('react-native').then(({ Alert }) => {
-                Alert.alert(
-                    'Cancel Ride',
-                    'Are you sure you want to cancel this ride?',
-                    [
-                        { text: 'No', style: 'cancel' },
-                        { 
-                            text: 'Yes, Cancel', 
-                            style: 'destructive',
-                            onPress: async () => {
-                                await rideAPI.cancelRide(currentRide.id);
-                                useRideStore.getState().clearRide();
-                                navigation.navigate('App');
-                            }
+        
+        const isStarted = currentRide.status === 'STARTED' || currentRide.status === 'IN_PROGRESS';
+        const alertTitle = isStarted ? 'Cancel Active Ride?' : 'Cancel Ride';
+        const alertMessage = isStarted 
+            ? 'Your ride has already started. Cancelling now may result in full fare charges. Are you sure?' 
+            : 'Are you sure you want to cancel this ride?';
+
+        Alert.alert(
+            alertTitle,
+            alertMessage,
+            [
+                { text: 'No', style: 'cancel' },
+                { 
+                    text: 'Yes, Cancel', 
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await rideAPI.cancelRide(currentRide.id);
+                            useRideStore.getState().clearRide();
+                            navigation.navigate('App');
+                        } catch (error) {
+                            console.error('Failed to cancel ride:', error);
+                            Alert.alert('Error', 'Failed to cancel ride. Please try again.');
                         }
-                    ]
-                );
-            });
-        } catch (error) {
-            console.error('Failed to cancel ride:', error);
-        }
+                    }
+                }
+            ]
+        );
     };
 
     if (!currentRide && !activeAlert) return null;
@@ -257,7 +264,7 @@ const RideStatusModal = () => {
                             </TouchableOpacity>
                         )}
 
-                        {(currentRide?.status === 'SEARCHING' || currentRide?.status === 'ACCEPTED' || currentRide?.status === 'ARRIVED') && (
+                        {(currentRide?.status === 'SEARCHING' || currentRide?.status === 'ACCEPTED' || currentRide?.status === 'ARRIVED' || currentRide?.status === 'STARTED' || currentRide?.status === 'IN_PROGRESS') && (
                             <TouchableOpacity
                                 style={[styles.cancelButton, { backgroundColor: '#fee2e2', borderWidth: 0 }]}
                                 onPress={handleCancelRide}
