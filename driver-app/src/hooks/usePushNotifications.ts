@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Alert, Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import api from '../config/api';
@@ -88,6 +88,15 @@ export const usePushNotifications = (userId: string | null) => {
 
             if (finalStatus !== 'granted') {
                 console.warn('[PushNotifications] Permission not granted. Cannot get push token.');
+                Alert.alert(
+                    'Notifications Required',
+                    'You must enable push notifications to receive new ride alerts when the app is closed. Please enable them in your device settings.',
+                    [
+                        { text: 'Later', style: 'cancel' },
+                        { text: 'Open Settings', onPress: () => Linking.openSettings() }
+                    ],
+                    { cancelable: false }
+                );
                 return undefined;
             }
 
