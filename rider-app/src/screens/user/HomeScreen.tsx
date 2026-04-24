@@ -15,6 +15,7 @@ import useRideStore from '../../store/rideStore';
 import useUserStore from '../../store/userStore';
 import api from '../../api/axiosClient';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
+import { rideAPI } from '../../api/rideAPI';
 
 const searchXml = `<svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 48 48" width="100px" height="100px"><path fill="#616161" d="M34.6 28.1H38.6V45.1H34.6z" transform="rotate(-45.001 36.586 36.587)"/><path fill="#616161" d="M20 4A16 16 0 1 0 20 36A16 16 0 1 0 20 4Z"/><path fill="#37474F" d="M36.2 32.1H40.2V44.400000000000006H36.2z" transform="rotate(-45.001 38.24 38.24)"/><path fill="#64B5F6" d="M20 7A13 13 0 1 0 20 33A13 13 0 1 0 20 7Z"/><path fill="#BBDEFB" d="M26.9,14.2c-1.7-2-4.2-3.2-6.9-3.2s-5.2,1.2-6.9,3.2c-0.4,0.4-0.3,1.1,0.1,1.4c0.4,0.4,1.1,0.3,1.4-0.1C16,13.9,17.9,13,20,13s4,0.9,5.4,2.5c0.2,0.2,0.5,0.4,0.8,0.4c0.2,0,0.5-0.1,0.6-0.2C27.2,15.3,27.2,14.6,26.9,14.2z"/></svg>`;
 
@@ -37,6 +38,7 @@ const HomeScreen = ({ navigation }: any) => {
   const [ratingValue, setRatingValue] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [nearbyDrivers, setNearbyDrivers] = useState<any[]>([]);
 
   // ─── Active Ride Recovery ─────────────────────────────────────────────────
   // On every focus, check if there is an active ride the rider is mid-trip on.
@@ -148,6 +150,23 @@ const HomeScreen = ({ navigation }: any) => {
         location.coords.longitude
       );
       setIsInsideAP(inAP);
+
+      // Fetch nearby drivers when location is available
+      const fetchNearby = async () => {
+        try {
+          const drivers = await rideAPI.getNearbyDrivers(
+            location.coords.latitude,
+            location.coords.longitude
+          );
+          setNearbyDrivers(drivers);
+        } catch (error) {
+          console.log('Error fetching nearby drivers:', error);
+        }
+      };
+
+      fetchNearby();
+      const interval = setInterval(fetchNearby, 15000); // Refresh every 15s
+      return () => clearInterval(interval);
     }
   }, [location]);
 
@@ -232,6 +251,27 @@ const HomeScreen = ({ navigation }: any) => {
               />
             </Marker>
           )}
+
+          {nearbyDrivers.map((driver) => (
+            <Marker
+              key={driver.user_id}
+              coordinate={{
+                latitude: driver.current_latitude,
+                longitude: driver.current_longitude,
+              }}
+              title={driver.vehicle_model}
+              flat={true} // Makes it look better on rotation
+            >
+              <Image
+                source={
+                  driver.vehicle_type?.includes('auto') 
+                    ? require('../../../assets/auto_icon.png')
+                    : require('../../../assets/bike_icon.png')
+                }
+                style={{ width: 35, height: 35, resizeMode: 'contain' }}
+              />
+            </Marker>
+          ))}
         </MapView>
       ) : (
         <View style={styles.loadingContainer}>

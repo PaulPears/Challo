@@ -13,6 +13,7 @@ import {
   HttpStatus,
   Query,
 } from '@nestjs/common';
+import { MatchingService } from './matching.service';
 import { RidesService } from './rides.service';
 import { PricingService } from './pricing.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -38,6 +39,7 @@ export class RidesController {
   constructor(
     private readonly ridesService: RidesService,
     private readonly pricingService: PricingService,
+    private readonly matchingService: MatchingService,
   ) { }
 
   @Post('fare-estimate')
@@ -52,10 +54,15 @@ export class RidesController {
     return estimates.filter((e) => e !== null);
   }
 
-  @Post('fare') // Keep old endpoint for backward compatibility but use new service
+  @Get('fare') // Keep old endpoint for backward compatibility but use new service
   getFare(@Body() body: { distance: number; duration: number; vehicleType: string; superKmBalance?: number }) {
     const vehicleType = body.vehicleType.replace('-', '_').toLowerCase() as VehicleType;
     return this.pricingService.getFareEstimate(body.distance, body.duration, vehicleType, undefined, undefined, body.superKmBalance);
+  }
+
+  @Get('nearby-drivers')
+  getNearbyDrivers(@Query('lat') lat: number, @Query('lng') lng: number, @Query('radius') radius?: number) {
+    return this.matchingService.findNearbyDrivers(Number(lat), Number(lng), undefined, radius ? Number(radius) : 5);
   }
 
   @Get('high-booking-zones')

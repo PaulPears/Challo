@@ -64,4 +64,9 @@ export const rideAPI = {
     const response = await axiosClient.get('/rides/my-rides');
     return response.data;
   },
+
+  getNearbyDrivers: async (lat: number, lng: number) => {
+    const response = await axiosClient.get(`/rides/nearby-drivers?lat=${lat}&lng=${lng}&radius=5`);
+    return response.data;
+  },
 };
