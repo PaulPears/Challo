@@ -53,5 +53,8 @@ export class User {
   password: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  push_token: string;
+  rider_push_token: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  driver_push_token: string;
 }

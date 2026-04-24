@@ -53,8 +53,8 @@ export class ProfileController {
 
   @UseGuards(JwtAuthGuard)
   @Put('push-token')
-  async updatePushToken(@Request() req, @Body('token') token: string) {
-    await this.usersService.updatePushToken(req.user.id, token);
+  async updatePushToken(@Request() req, @Body('token') token: string, @Body('role') role?: string) {
+    await this.usersService.updatePushToken(req.user.id, token, role);
     return { success: true };
   }
 

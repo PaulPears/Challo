@@ -24,10 +24,10 @@ export const usePushNotifications = (userId: string | null) => {
 
     const saveTokenToBackend = async (token: string) => {
         try {
-            await axiosClient.put('/profile/push-token', { token });
-            console.log('[Push] Token stored successfully:', token);
+            await axiosClient.put('/profile/push-token', { token, role: 'rider' });
+            console.log('[Push] Rider token stored successfully:', token);
         } catch (error) {
-            console.error('[Push] Failed to store token:', error);
+            console.error('[Push] Failed to store rider token:', error);
         }
     };
 

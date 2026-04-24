@@ -30,10 +30,10 @@ export const usePushNotifications = (userId: string | null) => {
 
     const saveTokenToBackend = async (token: string) => {
         try {
-            await api.put('/profile/push-token', { token });
-            console.log('[PushNotifications] Token saved to backend successfully:', token);
+            await api.put('/profile/push-token', { token, role: 'driver' });
+            console.log('[PushNotifications] Driver token saved to backend successfully:', token);
         } catch (error) {
-            console.error('[PushNotifications] Failed to save token to backend:', error);
+            console.error('[PushNotifications] Failed to save driver token to backend:', error);
         }
     };
 

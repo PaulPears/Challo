@@ -189,8 +189,14 @@ export class UsersService {
     await this.favoriteDriverRepository.delete({ rider_id: riderId, driver_id: driverId });
   }
 
-  async updatePushToken(userId: string, token: string): Promise<void> {
-    await this.usersRepository.update(userId, { push_token: token });
+  async updatePushToken(userId: string, token: string, role?: string): Promise<void> {
+    const updateData: any = {};
+    if (role === 'driver') {
+      updateData.driver_push_token = token;
+    } else {
+      updateData.rider_push_token = token; // Default to rider if not specified
+    }
+    await this.usersRepository.update(userId, updateData);
   }
 
   async updateDriverStatus(userId: string, statusData: { online: boolean; location?: { latitude: number; longitude: number } }): Promise<void> {

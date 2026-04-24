@@ -39,10 +39,10 @@ export class NotificationsService {
     await this.saveNotification(driverUserId, NotificationType.RIDE_REQUEST, title, body, ride);
 
     // 2. Send Push Notification immediately
-    const user = await this.userRepository.findOne({ where: { id: driverUserId }, select: { push_token: true } });
-    if (user && Expo.isExpoPushToken(user.push_token)) {
+    const user = await this.userRepository.findOne({ where: { id: driverUserId }, select: { driver_push_token: true } });
+    if (user && user.driver_push_token && Expo.isExpoPushToken(user.driver_push_token)) {
       await this.sendPushBatch(
-        [user.push_token], 
+        [user.driver_push_token], 
         title, 
         body, 
         { rideId: ride.id, type: NotificationType.RIDE_REQUEST, target: 'driver' },
@@ -62,23 +62,22 @@ export class NotificationsService {
       // 1. Determine Target Users
       let users: User[] = [];
       if (target === 'all') {
-        users = await this.userRepository.find({ select: { id: true, push_token: true } });
+        users = await this.userRepository.find({ select: { id: true, rider_push_token: true, driver_push_token: true } });
       } else if (target === 'riders') {
-        // Correctly handle Postgres array overlap/contains with quoted alias
         users = await this.userRepository.createQueryBuilder('user')
           .where('"user"."roles"::text[] @> ARRAY[:role]::text[]', { role: UserRole.RIDER })
-          .select(['user.id', 'user.push_token'])
+          .select(['user.id', 'user.rider_push_token'])
           .getMany();
       } else if (target === 'drivers') {
         users = await this.userRepository.createQueryBuilder('user')
           .where('"user"."roles"::text[] @> ARRAY[:role]::text[]', { role: UserRole.DRIVER })
-          .select(['user.id', 'user.push_token'])
+          .select(['user.id', 'user.driver_push_token'])
           .getMany();
       } else {
         // Single user ID
         const user = await this.userRepository.findOne({
           where: { id: target },
-          select: { id: true, push_token: true }
+          select: { id: true, rider_push_token: true, driver_push_token: true }
         });
         if (user) users = [user];
       }
@@ -107,7 +106,26 @@ export class NotificationsService {
       }
 
       // 3. Send Push Notifications (Expo)
-      const tokens = users.map(u => u.push_token).filter(t => Expo.isExpoPushToken(t));
+      const tokens = users.flatMap(u => {
+        const t = [];
+        if (target === 'drivers' || target === 'all') {
+          // @ts-ignore
+          if (u.driver_push_token) t.push(u.driver_push_token);
+        }
+        if (target === 'riders' || target === 'all') {
+          // @ts-ignore
+          if (u.rider_push_token) t.push(u.rider_push_token);
+        }
+        // If specific user target, include both
+        if (target !== 'drivers' && target !== 'riders' && target !== 'all') {
+          // @ts-ignore
+          if (u.rider_push_token) t.push(u.rider_push_token);
+          // @ts-ignore
+          if (u.driver_push_token) t.push(u.driver_push_token);
+        }
+        return t;
+      }).filter(t => Expo.isExpoPushToken(t));
+
       if (tokens.length > 0) {
         const enhancedData = { ...data, target: target === 'drivers' ? 'driver' : target === 'riders' ? 'rider' : 'all' };
         await this.sendPushBatch(tokens, title, body, enhancedData);
