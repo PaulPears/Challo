@@ -68,6 +68,12 @@ const UserNavigator = () => {
         updateRideStatus('ARRIVED');
       } else if (status === 'IN_PROGRESS' || status === 'STARTED' || status === 'RIDE_STARTED') {
         updateRideStatus('STARTED');
+        setAlert({
+          type: 'RIDE_STARTED',
+          title: 'Trip Started! 🚗',
+          message: 'Your ride is in progress. Have a safe journey.',
+          data: data
+        });
       } else if (status === 'COMPLETED' || status === 'RIDE_COMPLETED') {
         updateRideStatus('COMPLETED');
         setAlert({
@@ -144,7 +150,7 @@ const UserNavigator = () => {
         if (latestRide) {
           const newStatus = (latestRide.status || '').toUpperCase();
           
-          if (newStatus !== currentRide.status) {
+          if (newStatus !== currentRide.status && newStatus !== 'IN_PROGRESS' || (newStatus === 'IN_PROGRESS' && currentRide.status !== 'STARTED')) {
             console.log(`[Sync] Detected state mismatch! Remote: ${newStatus}, Local: ${currentRide.status}`);
             
             const driverData = latestRide.driver ? {
@@ -155,20 +161,39 @@ const UserNavigator = () => {
               phone: latestRide.driver.phone_number,
             } : undefined;
 
-            updateRideStatus(newStatus, driverData);
+            const mappedStatus = newStatus === 'IN_PROGRESS' ? 'STARTED' : newStatus;
+            updateRideStatus(mappedStatus, driverData);
 
             // Handle specific navigation/alert transitions if missed
-            if (newStatus === 'ACCEPTED') {
+            if (mappedStatus === 'ACCEPTED') {
                setAlert({
                   type: 'RIDE_ACCEPTED',
                   title: 'Ride Confirmed! 🚕',
                   message: `Your ride has been accepted by ${driverData?.name || 'a driver'}.`,
                });
-            } else if (newStatus === 'COMPLETED') {
+            } else if (mappedStatus === 'STARTED') {
+               setAlert({
+                  type: 'RIDE_STARTED',
+                  title: 'Trip Started! 🚗',
+                  message: 'Your ride is in progress. Have a safe journey.',
+               });
+            } else if (mappedStatus === 'ARRIVED') {
+               setAlert({
+                  type: 'DRIVER_ARRIVED',
+                  title: 'Driver Arrived! 📍',
+                  message: 'Your driver is at the pickup location.',
+               });
+            } else if (mappedStatus === 'COMPLETED') {
                setAlert({
                   type: 'RIDE_COMPLETED',
                   title: 'Ride Completed! 🏁',
                   message: 'Thank you for riding with RideAndhra.',
+               });
+            } else if (mappedStatus === 'CANCELLED') {
+               setAlert({
+                  type: 'RIDE_CANCELLED',
+                  title: 'Ride Cancelled',
+                  message: 'This ride has been cancelled.',
                });
             }
           }

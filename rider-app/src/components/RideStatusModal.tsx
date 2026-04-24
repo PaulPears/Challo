@@ -173,7 +173,7 @@ const RideStatusModal = () => {
                             <Text style={styles.message}>{message}</Text>
                         </View>
 
-                        {currentRide?.otp && (
+                        {currentRide?.otp && currentRide.status !== 'STARTED' && (
                             <View style={styles.pinContainer}>
                                 <Text style={styles.pinLabel}>Trip PIN</Text>
                                 <Text style={styles.pinValue}>{currentRide.otp}</Text>
@@ -526,6 +526,28 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         fontSize: 14,
         color: '#1e293b',
+    },
+    fareBreakdownCard: {
+        backgroundColor: '#f8fafc',
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    fareRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    totalLabel: {
+        fontSize: 16,
+        color: '#64748b',
+        fontWeight: '600',
+    },
+    totalValueText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#0f172a',
     },
 });
 

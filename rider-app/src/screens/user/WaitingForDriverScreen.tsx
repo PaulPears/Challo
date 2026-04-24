@@ -33,7 +33,7 @@ const WaitingForDriverScreen = ({ route, navigation }: any) => {
         const updatedRide = await rideAPI.getRideById(rideId);
         if (updatedRide) {
           const status = updatedRide.status?.toUpperCase();
-          if (status === 'ACCEPTED' || status === 'ARRIVED' || status === 'STARTED') {
+          if (status === 'ACCEPTED' || status === 'ARRIVED' || status === 'STARTED' || status === 'IN_PROGRESS') {
             console.log('[WaitingScreen] Polling detected ride status change:', status);
             
             const driverData = updatedRide.driver ? {
@@ -44,7 +44,8 @@ const WaitingForDriverScreen = ({ route, navigation }: any) => {
               rating: updatedRide.driver.rating,
             } : undefined;
 
-            updateRideStatus(status, driverData);
+            const mappedStatus = status === 'IN_PROGRESS' ? 'STARTED' : status;
+            updateRideStatus(mappedStatus, driverData);
             clearInterval(pollInterval);
             navigation.navigate('DriverDetails');
           } else if (status === 'CANCELLED') {
