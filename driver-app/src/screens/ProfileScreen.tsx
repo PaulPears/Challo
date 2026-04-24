@@ -91,7 +91,7 @@ const ProfileScreen = () => {
             await Notifications.requestPermissionsAsync();
           }
           
-          const channels = await Notifications.getAllNotificationChannelsAsync();
+          const channels = await Notifications.getNotificationChannelsAsync();
           console.log('[Sync] Current Channels:', channels.map(c => c.id));
           
           import('react-native').then(({ Alert }) => {

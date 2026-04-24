@@ -62,7 +62,7 @@ export const usePushNotifications = (userId: string | null) => {
                 bypassDnd: true,  // Override Do Not Disturb for ride alerts
             });
 
-            const channels = await Notifications.getAllNotificationChannelsAsync();
+            const channels = await Notifications.getNotificationChannelsAsync();
             console.log('[PushNotifications] Registered Channels:', channels.map(c => c.id));
         }
 
