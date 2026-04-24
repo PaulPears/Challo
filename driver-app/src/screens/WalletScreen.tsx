@@ -47,7 +47,7 @@ const WalletScreen = ({ navigation }: any) => {
       ]);
       setWalletData({
         ...walletResp.data,
-        pending_platform_fees: walletResp.data.pending_platform_fees || 0,
+        pending_platform_fees: walletResp.data.pending_gst || walletResp.data.pending_platform_fees || 0,
         reward_balance: walletResp.data.reward_balance || walletResp.data.super_km_balance || 0
       });
       setTransactions(transResp.data);

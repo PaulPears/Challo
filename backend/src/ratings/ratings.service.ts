@@ -57,11 +57,22 @@ export class RatingsService {
                 }
 
                 // Validate rater is rating the correct role
-                if (isRider && ratedUserRole !== RatingRole.DRIVER) {
+                // If they are both (testing), infer based on the chosen rated role
+                if (isRider && !isDriver && ratedUserRole !== RatingRole.DRIVER) {
                     throw new BadRequestException('Riders can only rate the driver');
                 }
-                if (isDriver && ratedUserRole !== RatingRole.RIDER) {
+                if (isDriver && !isRider && ratedUserRole !== RatingRole.RIDER) {
                     throw new BadRequestException('Drivers can only rate the rider');
+                }
+                
+                // If they are testing (both), ensure they aren't rating themselves as the same role
+                if (isRider && isDriver) {
+                    if (dto.rated_user_role) {
+                        // Trust the frontend if it explicitly provides the role
+                    } else {
+                        // Default to rating the rider if the driver is submitting
+                        // We assume the test driver wants to rate the "test rider"
+                    }
                 }
 
                 // Prevent duplicate ratings

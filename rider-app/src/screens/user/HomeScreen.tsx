@@ -89,6 +89,7 @@ const HomeScreen = ({ navigation }: any) => {
         rating: ratingValue,
         comment: ratingComment || 'Excellent ride',
         tags: [],
+        rated_user_role: 'driver',
       });
       setRatingModalVisible(false);
       clearRide();
