@@ -38,12 +38,14 @@ const UserNavigator = () => {
 
       const status = (data.status || data.type || '').toUpperCase();
       const rideInfo = data.ride || {};
-      const driverData = data.driver || {
-        name: rideInfo.driverName || rideInfo.driver?.name,
-        vehicle_model: rideInfo.vehicleModel || rideInfo.driver?.vehicle_model,
-        vehicle_number: rideInfo.vehiclePlateNumber || rideInfo.driver?.vehicle_number,
-        rating: rideInfo.driverRating || rideInfo.driver?.rating,
-        phone: rideInfo.driverPhone || rideInfo.driver?.phone_number,
+      // Robust driver data extraction
+      const driverObj = rideInfo.driver || data.driver || {};
+      const driverData = {
+        name: driverObj.name || rideInfo.driverName,
+        vehicle_model: driverObj.vehicle_model || rideInfo.vehicleModel,
+        vehicle_number: driverObj.vehicle_number || rideInfo.vehiclePlateNumber,
+        rating: driverObj.rating || rideInfo.driverRating,
+        phone: driverObj.phone_number || driverObj.phone || rideInfo.driverPhone,
       };
 
       if (status === 'ACCEPTED' || status === 'RIDE_ACCEPTED') {

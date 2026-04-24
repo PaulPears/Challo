@@ -19,10 +19,47 @@ const WaitingForDriverScreen = ({ route, navigation }: any) => {
     : 'Searching for a nearby driver...';
 
   useEffect(() => {
-    if (currentRide?.status === 'ACCEPTED') {
+    if (currentRide?.status === 'ACCEPTED' || currentRide?.status === 'ARRIVED' || currentRide?.status === 'STARTED') {
       navigation.navigate('App');
     }
   }, [currentRide?.status, navigation]);
+
+  useEffect(() => {
+    if (!rideId) return;
+
+    // Polling fallback: Check ride status every 5 seconds in case socket is missed
+    const pollInterval = setInterval(async () => {
+      try {
+        const updatedRide = await rideAPI.getRideById(rideId);
+        if (updatedRide) {
+          const status = updatedRide.status?.toUpperCase();
+          if (status === 'ACCEPTED' || status === 'ARRIVED' || status === 'STARTED') {
+            console.log('[WaitingScreen] Polling detected ride status change:', status);
+            
+            const driverData = updatedRide.driver ? {
+              name: updatedRide.driver.name,
+              phone: updatedRide.driver.phone_number,
+              vehicle_number: updatedRide.driver.vehicle_number,
+              vehicle_model: updatedRide.driver.vehicle_model,
+              rating: updatedRide.driver.rating,
+            } : undefined;
+
+            updateRideStatus(status, driverData);
+            clearInterval(pollInterval);
+            navigation.navigate('App');
+          } else if (status === 'CANCELLED') {
+            updateRideStatus('CANCELLED');
+            clearInterval(pollInterval);
+            navigation.navigate('App');
+          }
+        }
+      } catch (error) {
+        console.error('[WaitingScreen] Polling error:', error);
+      }
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
+  }, [rideId, navigation, updateRideStatus]);
 
   const handleCancelRide = async () => {
     try {
