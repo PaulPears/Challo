@@ -251,20 +251,33 @@ export class RidesService {
   }
 
   async rejectRide(rideId: string, driverId: string): Promise<{ message: string }> {
-    const ride = await this.getRideById(rideId);
-    if (!ride) throw new NotFoundException(`Ride ${rideId} not found`);
+    try {
+      console.log(`[RidesService] Driver ${driverId} rejecting ride ${rideId}`);
+      const ride = await this.getRideById(rideId);
+      if (!ride) throw new NotFoundException(`Ride ${rideId} not found`);
 
-    // Check if already rejected to be idempotent
-    const existing = await this.rideRejectionRepository.findOne({
-      where: { ride_id: rideId, driver_id: driverId },
-    });
-    if (existing) {
-      return { message: 'Ride already rejected' };
+      // Check if already rejected to be idempotent
+      const existing = await this.rideRejectionRepository.findOne({
+        where: { ride_id: rideId, driver_id: driverId },
+      });
+
+      if (existing) {
+        console.log(`[RidesService] Ride ${rideId} already rejected by driver ${driverId}`);
+        return { message: 'Ride already rejected' };
+      }
+
+      const rejection = this.rideRejectionRepository.create({ 
+        ride_id: rideId, 
+        driver_id: driverId 
+      });
+      
+      await this.rideRejectionRepository.save(rejection);
+      console.log(`[RidesService] Ride ${rideId} successfully rejected by driver ${driverId}`);
+      return { message: 'Ride rejected successfully' };
+    } catch (error) {
+      console.error(`[RidesService] Error rejecting ride ${rideId}:`, error);
+      throw error;
     }
-
-    const rejection = this.rideRejectionRepository.create({ ride_id: rideId, driver_id: driverId });
-    await this.rideRejectionRepository.save(rejection);
-    return { message: 'Ride rejected successfully' };
   }
 
   async cancelRide(rideId: string): Promise<Ride | null> {
