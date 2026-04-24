@@ -10,10 +10,11 @@ interface User {
   phoneNumber: string;
   role: 'rider' | 'driver' | 'admin';
   accessToken?: string;
-  rating?: number; // Add rating property
+  rating?: number;
   super_coins_balance?: number;
-  rider_pin?: string; // Add rider_pin property
-  isNewUser?: boolean; // Add isNewUser property
+  super_km_balance?: number;   // ← added
+  rider_pin?: string;
+  isNewUser?: boolean;
 }
 
 // Define the shape of the store
@@ -62,7 +63,12 @@ const useUserStore = create<UserState>((set, get) => ({
         const data = await getMe();
         if (data.profile) {
            set((state) => ({
-             user: state.user ? { ...state.user, super_coins_balance: data.profile.super_coins_balance, rating: data.profile.rating } : null,
+             user: state.user ? {
+               ...state.user,
+               super_coins_balance: data.profile.super_coins_balance,
+               super_km_balance: Number(data.profile.super_km_balance || 0), // ← added
+               rating: data.profile.rider_rating || data.profile.rating,
+             } : null,
            }));
         }
       } catch (error) {

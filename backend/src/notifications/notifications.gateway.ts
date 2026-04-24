@@ -48,9 +48,8 @@ export class NotificationsGateway
 
   sendRideUpdate(rideId: string, status: string, ride: any) {
     this.logger.log(`Emitting ride update for ${rideId}: ${status}`);
-    // Emit to the specific room AND broadcast as fallback
+    // Room-targeted: only the rider who joined ride-{rideId} receives this
     this.server.to(`ride-${rideId}`).emit(`ride-${rideId}`, { status, ride });
-    this.server.emit(`ride-${rideId}`, { status, ride });
   }
 
   sendNewRideToDriver(driverUserId: string, ride: any) {

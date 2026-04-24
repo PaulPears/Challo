@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import UserTabNavigator from './UserTabNavigator';
 import SearchScreen from '../screens/user/SearchScreen';
@@ -8,9 +8,8 @@ import BookingScreen from '../screens/user/BookingScreen';
 import BookingDetailsScreen from '../screens/user/BookingDetailsScreen';
 import WaitingForDriverScreen from '../screens/user/WaitingForDriverScreen';
 import DriverDetailsScreen from '../screens/user/DriverDetailsScreen';
-import { useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import socket from '../api/socket';
+import { useSocket } from '../context/SocketContext';
 import useRideStore from '../store/rideStore';
 import useNotificationStore from '../store/notificationStore';
 import RideStatusModal from '../components/RideStatusModal';
@@ -19,26 +18,32 @@ import RideStatusBar from '../components/RideStatusBar';
 const Stack = createStackNavigator();
 
 const UserNavigator = () => {
+  const { socket } = useSocket();
   const { setAlert, updateRideStatus, currentRide } = useRideStore();
   const { addNotification } = useNotificationStore();
   const navigation = useNavigation<any>();
 
   useEffect(() => {
-    // Global socket listeners
-    const rideChannel = currentRide?.id ? `ride-${currentRide.id}` : 'ride_update';
-    console.log(`[Socket] Subscribing to channel: ${rideChannel}`);
+    if (!socket) {
+      console.log('[Socket] No socket available yet — waiting for connection');
+      return;
+    }
+
+    // ─── Channel for THIS specific ride (or a fallback stub) ─────────────────
+    const rideChannel = currentRide?.id ? `ride-${currentRide.id}` : null;
+    console.log(`[Socket] UserNavigator: ${rideChannel ? `Listening on ${rideChannel}` : 'No active ride — skipping ride channel'}`);
 
     const handleRideUpdate = (data: any) => {
-      console.log(`[Socket] Ride update received on ${rideChannel}:`, data);
+      console.log(`[Socket] Ride update received:`, JSON.stringify(data));
 
       const status = (data.status || data.type || '').toUpperCase();
       const rideInfo = data.ride || {};
       const driverData = data.driver || {
-        name: rideInfo.driverName,
-        vehicle_model: rideInfo.vehicleModel,
-        vehicle_number: rideInfo.vehiclePlateNumber,
-        rating: rideInfo.driverRating,
-        phone: rideInfo.driverPhone
+        name: rideInfo.driverName || rideInfo.driver?.name,
+        vehicle_model: rideInfo.vehicleModel || rideInfo.driver?.vehicle_model,
+        vehicle_number: rideInfo.vehiclePlateNumber || rideInfo.driver?.vehicle_number,
+        rating: rideInfo.driverRating || rideInfo.driver?.rating,
+        phone: rideInfo.driverPhone || rideInfo.driver?.phone_number,
       };
 
       if (status === 'ACCEPTED' || status === 'RIDE_ACCEPTED') {
@@ -58,7 +63,7 @@ const UserNavigator = () => {
           data: data
         });
         updateRideStatus('ARRIVED');
-      } else if (status === 'STARTED' || status === 'IN_PROGRESS' || status === 'RIDE_STARTED') {
+      } else if (status === 'IN_PROGRESS' || status === 'STARTED' || status === 'RIDE_STARTED') {
         updateRideStatus('STARTED');
       } else if (status === 'COMPLETED' || status === 'RIDE_COMPLETED') {
         updateRideStatus('COMPLETED');
@@ -88,29 +93,32 @@ const UserNavigator = () => {
       useRideStore.getState().setDriverLocation(location);
     };
 
-    socket.on(rideChannel, handleRideUpdate);
+    // ─── Subscribe ──────────────────────────────────────────────────────────
     socket.on('notification', handleNotification);
 
-    if (currentRide?.id) {
-      console.log(`[Socket] Joining room: ride-${currentRide.id}`);
-      socket.emit('join-ride', currentRide.id);
+    if (rideChannel) {
+      socket.on(rideChannel, handleRideUpdate);
 
-      const locationChannel = `ride-location-${currentRide.id}`;
+      // Join the room so backend's room-targeted emit reaches us
+      console.log(`[Socket] Joining room: ${rideChannel}`);
+      socket.emit('join-ride', currentRide!.id);
+
+      const locationChannel = `ride-location-${currentRide!.id}`;
       socket.on(locationChannel, handleLocationUpdate);
     }
 
     return () => {
-      console.log(`[Socket] Cleaning up listeners for ${rideChannel}`);
-      socket.off(rideChannel, handleRideUpdate);
+      // ─── Cleanup ──────────────────────────────────────────────────────────
       socket.off('notification', handleNotification);
-      if (currentRide?.id) {
-        console.log(`[Socket] Leaving room: ride-${currentRide.id}`);
-        socket.emit('leave-ride', currentRide.id);
-        const locationChannel = `ride-location-${currentRide.id}`;
+      if (rideChannel) {
+        console.log(`[Socket] Unsubscribing from ${rideChannel}`);
+        socket.off(rideChannel, handleRideUpdate);
+        socket.emit('leave-ride', currentRide!.id);
+        const locationChannel = `ride-location-${currentRide!.id}`;
         socket.off(locationChannel, handleLocationUpdate);
       }
     };
-  }, [currentRide?.id, navigation]);
+  }, [socket, currentRide?.id, navigation]);
 
   return (
     <>
@@ -119,7 +127,6 @@ const UserNavigator = () => {
         <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Book a Ride' }} />
         <Stack.Screen name="MapSelection" component={MapSelectionScreen} options={{ title: 'Select Locations' }} />
         <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Booking Details' }} />
-
         <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="WaitingForDriver" component={WaitingForDriverScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DriverDetails" component={DriverDetailsScreen} options={{ headerShown: false }} />

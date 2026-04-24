@@ -326,12 +326,14 @@ const BookingScreen = ({ navigation, route }: any) => {
             const newRide = await rideAPI.createRide(rideData);
 
             // Update global store so UserNavigator can subscribe to the correct channel
+            // Use backend snake_case field names (pickup_address, dropoff_address, otp)
             setRide({
               id: newRide.id,
-              pickup_address: newRide.pickupLocation || pickup.address,
-              dropoff_address: newRide.dropoffLocation || dropoff.address,
-              estimated_fare: rideData.apply_super_coins ? Math.max(0, baseFare - rideData.apply_super_coins) : (newRide.fare || rideData.fare),
-              status: 'SEARCHING'
+              pickup_address: newRide.pickup_address || pickup.address,
+              dropoff_address: newRide.dropoff_address || dropoff.address,
+              estimated_fare: newRide.estimated_fare || newRide.fare || rideData.fare,
+              status: 'SEARCHING',
+              otp: newRide.otp,  // ← store OTP so Trip PIN shows in modal
             });
 
             navigation.navigate('WaitingForDriver', { ride: newRide });

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { Vibration, Alert } from 'react-native';
+import { Vibration } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { io } from 'socket.io-client';
 import { useRideRequest } from './RideRequestContext';
@@ -80,11 +80,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     
     const handleNewRide = (ride: any) => {
       console.log('[Socket] RECEIVED NEW RIDE EVENT:', ride.id);
+      console.log('[Socket] Ride details:', JSON.stringify(ride, null, 2));
 
       // ─── Stale Ride Guard ─────────────────────────────────────────────────
-      // Discard any ride older than 30 minutes — prevents "replay" of old
-      // test/simulator rides flooding new driver logins.
-      const AGE_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
+      // Discard rides older than 30 minutes to prevent replay of old requests
+      const AGE_LIMIT_MS = 30 * 60 * 1000;
       const rideCreatedAt = ride.created_at || ride.requested_at;
       if (rideCreatedAt) {
         const rideAgeMs = Date.now() - new Date(rideCreatedAt).getTime();
@@ -94,15 +94,6 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       // ──────────────────────────────────────────────────────────────────────
-
-      if (__DEV__) {
-        // More descriptive debug alert
-        Alert.alert(
-          '🔔 DEBUG: New Ride!',
-          `Ride ID: ${ride.id.substring(0, 8)}...\n\nFrom: ${ride.pickup_address || 'Unknown'}\nTo: ${ride.dropoff_address || 'Unknown'}\n\nCheck logs for full object.`,
-          [{ text: 'Dismiss' }]
-        );
-      }
 
       setRideRequest({
         rideId: ride.id,

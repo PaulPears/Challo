@@ -22,6 +22,7 @@ Notifications.setNotificationHandler({
 
 import { ConfigProvider, useAppConfig } from './src/context/ConfigContext';
 import UpdateModal from './src/components/UpdateModal';
+import { SocketProvider } from './src/context/SocketContext';
 
 import LoadingScreen from './src/screens/LoadingScreen';
 
@@ -86,7 +87,9 @@ function AppContent() {
 export default function App() {
   return (
     <ConfigProvider>
-      <AppContent />
+      <SocketProvider>
+        <AppContent />
+      </SocketProvider>
     </ConfigProvider>
   );
 }
