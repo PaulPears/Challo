@@ -8,7 +8,7 @@ const { width } = Dimensions.get('window');
 const RideStatusBar = () => {
     const { currentRide, isMinimized, setMinimized, activeAlert } = useRideStore();
 
-    if (!activeAlert || !isMinimized || !currentRide) return null;
+    if (!currentRide || !isMinimized) return null;
 
     const getStatusText = () => {
         switch (currentRide.status) {

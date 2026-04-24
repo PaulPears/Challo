@@ -25,7 +25,11 @@ const RideStatusModal = () => {
     };
 
     useEffect(() => {
-        if (activeAlert && !isMinimized) {
+        // Show modal if we have a ride and it's NOT minimized
+        // If it's a cancellation alert, always show it
+        const shouldShow = (currentRide || activeAlert) && !isMinimized;
+        
+        if (shouldShow) {
             // Slide up
             Animated.spring(slideAnim, {
                 toValue: 0,
@@ -40,7 +44,7 @@ const RideStatusModal = () => {
                 useNativeDriver: true,
             }).start();
         }
-    }, [activeAlert, isMinimized]);
+    }, [activeAlert, isMinimized, currentRide]);
 
     const handleClose = () => {
         setMinimized(true);
@@ -56,19 +60,48 @@ const RideStatusModal = () => {
         }
     };
 
-    if (!activeAlert) return null;
+    const handleCancelRide = async () => {
+        if (!currentRide?.id) return;
+        try {
+            import('react-native').then(({ Alert }) => {
+                Alert.alert(
+                    'Cancel Ride',
+                    'Are you sure you want to cancel this ride?',
+                    [
+                        { text: 'No', style: 'cancel' },
+                        { 
+                            text: 'Yes, Cancel', 
+                            style: 'destructive',
+                            onPress: async () => {
+                                await rideAPI.cancelRide(currentRide.id);
+                                useRideStore.getState().clearRide();
+                                navigation.navigate('App');
+                            }
+                        }
+                    ]
+                );
+            });
+        } catch (error) {
+            console.error('Failed to cancel ride:', error);
+        }
+    };
 
-    const isCancelled = activeAlert.type === 'RIDE_CANCELLED';
+    if (!currentRide && !activeAlert) return null;
+
+    const isCancelled = activeAlert?.type === 'RIDE_CANCELLED';
+    const title = activeAlert?.title || (currentRide?.status === 'SEARCHING' ? 'Searching for Captain...' : 'Ride Progress');
+    const message = activeAlert?.message || (currentRide?.status === 'ACCEPTED' ? 'Driver is on the way' : currentRide?.status === 'ARRIVED' ? 'Driver is at the pickup' : 'Your ride is in progress');
 
     const handleBookAgain = () => {
         setAlert(null);
-        navigation.navigate('App'); // Go to Home since it has the new Book a Ride flow
+        useRideStore.getState().clearRide();
+        navigation.navigate('App');
     };
 
     return (
         <Animated.View style={[styles.container, { transform: [{ translateY: slideAnim }] }]}>
             <View style={styles.header}>
-                <Text style={styles.title}>{activeAlert.title}</Text>
+                <Text style={styles.title}>{title}</Text>
                 <TouchableOpacity onPress={handleClose}>
                     <FontAwesome name="close" size={24} color="#6b7280" />
                 </TouchableOpacity>
@@ -109,11 +142,11 @@ const RideStatusModal = () => {
                         <View style={styles.rideInfoSection}>
                             <View style={styles.iconContainer}>
                                 <Text style={{ fontSize: 40 }}>
-                                    {getVehicleEmoji(currentRide?.driver?.vehicle_model?.split(' ')[0] || 'cab')}
+                                    {getVehicleEmoji(currentRide?.vehicle_type || 'cab')}
                                 </Text>
                             </View>
 
-                            <Text style={styles.message}>{activeAlert.message}</Text>
+                            <Text style={styles.message}>{message}</Text>
                         </View>
 
                         {currentRide?.otp && (
@@ -166,6 +199,15 @@ const RideStatusModal = () => {
                             <Ionicons name="call" size={20} color="white" style={{ marginRight: 8 }} />
                             <Text style={styles.actionButtonText}>Call Driver</Text>
                         </TouchableOpacity>
+
+                        {(currentRide?.status === 'SEARCHING' || currentRide?.status === 'ACCEPTED' || currentRide?.status === 'ARRIVED') && (
+                            <TouchableOpacity
+                                style={[styles.cancelButton, { backgroundColor: '#fee2e2', borderWidth: 0 }]}
+                                onPress={handleCancelRide}
+                            >
+                                <Text style={[styles.cancelButtonText, { color: '#ef4444' }]}>Cancel Ride</Text>
+                            </TouchableOpacity>
+                        )}
 
                         <TouchableOpacity
                             style={[styles.cancelButton]}
