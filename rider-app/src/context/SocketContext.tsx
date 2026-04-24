@@ -44,7 +44,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
       const socket = io(API_URL, {
         auth: { token },               // ✅ Authenticated connection
-        transports: ['websocket'],     // Force WS for App Runner stability
+        transports: ['polling', 'websocket'], // Allow upgrade from polling to websocket
+        forceNew: true,
         reconnection: true,
         reconnectionDelay: 2000,
         reconnectionAttempts: Infinity,
