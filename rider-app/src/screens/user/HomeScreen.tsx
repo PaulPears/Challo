@@ -86,14 +86,13 @@ const HomeScreen = ({ navigation }: any) => {
       setIsSubmittingRating(true);
       await api.post('/ratings', {
         ride_id: currentRide.id,
-        rating: ratingValue,
+        stars: ratingValue,
         comment: ratingComment || 'Excellent ride',
-        tags: [],
         rated_user_role: 'driver',
       });
       setRatingModalVisible(false);
       clearRide();
-      alert('Thank you for your feedback!');
+      Alert.alert('Thank You', 'Thank you for your feedback!');
     } catch (error) {
       console.error('Rating error:', error);
       alert('Failed to submit rating. Please try again.');

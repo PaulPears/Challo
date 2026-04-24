@@ -46,7 +46,7 @@ export class NotificationsService {
         title, 
         body, 
         { rideId: ride.id, type: NotificationType.RIDE_REQUEST, target: 'driver' },
-        'ride-requests' // Explicit channel for sound/priority
+        'ride-alerts' // New channel ID for sound/priority
       );
     }
   }
@@ -142,7 +142,7 @@ export class NotificationsService {
 
   private async sendPushBatch(tokens: string[], title: string, body: string, data?: any, channelId: string = 'default') {
     // Use custom alert sound for ride requests, default for everything else
-    const isRideRequest = channelId === 'ride-requests';
+    const isRideRequest = channelId === 'ride-alerts';
     const messages: ExpoPushMessage[] = tokens.map(token => ({
       to: token,
       sound: isRideRequest ? 'ride_alert.mp3' : 'default',

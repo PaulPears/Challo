@@ -48,9 +48,9 @@ export const usePushNotifications = (userId: string | null) => {
                 lightColor: '#FF231F7C',
             });
 
-            // High-priority Ride Request channel with custom alert sound
-            await Notifications.setNotificationChannelAsync('ride-requests', {
-                name: 'Ride Requests',
+            // High-priority Ride Alert channel with custom sound
+            await Notifications.setNotificationChannelAsync('ride-alerts', {
+                name: 'Ride Alerts',
                 description: 'Alerts for incoming ride requests',
                 importance: Notifications.AndroidImportance.MAX,
                 vibrationPattern: [0, 500, 200, 500, 200, 500],

@@ -611,7 +611,6 @@ const HomeScreen = () => {
         ride_id: rideToRate,
         stars: ratingValue,
         comment: ratingComment || 'Good passenger',
-        tags: [],
         rated_user_role: 'rider',
       });
       setRatingModalVisible(false);
