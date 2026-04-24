@@ -141,20 +141,32 @@ export class NotificationsService {
   }
 
   private async sendPushBatch(tokens: string[], title: string, body: string, data?: any, channelId: string = 'default') {
+    // Use custom alert sound for ride requests, default for everything else
+    const isRideRequest = channelId === 'ride-requests';
     const messages: ExpoPushMessage[] = tokens.map(token => ({
       to: token,
-      sound: 'default', // Keep 'default' for Expo server sdk as it translates to system default
+      sound: isRideRequest ? 'ride_alert.mp3' : 'default',
       title,
       body,
       data: data || {},
-      channelId, // Dynamic channel for priority
-      priority: 'high',     // Required for Android "Heads-up" / Pop-up banner
+      channelId,
+      priority: 'high',
+      // Android-specific: ensure notification appears even on locked screen
+      ...(isRideRequest ? {
+        ttl: 30,            // Expire after 30s if not delivered (stale ride requests)
+        expiration: Math.floor(Date.now() / 1000) + 30,
+      } : {}),
     }));
 
     const chunks = this.expo.chunkPushNotifications(messages);
     for (const chunk of chunks) {
       try {
-        await this.expo.sendPushNotificationsAsync(chunk);
+        const results = await this.expo.sendPushNotificationsAsync(chunk);
+        results.forEach((result, i) => {
+          if (result.status === 'error') {
+            console.error(`[Push] Error sending to ${tokens[i]}: ${result.message}`);
+          }
+        });
       } catch (error) {
         console.error('Error sending Expo push chunk:', error);
       }

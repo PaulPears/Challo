@@ -40,25 +40,45 @@ export const usePushNotifications = (userId: string | null) => {
     const registerForPushNotificationsAsync = async (): Promise<string | undefined> => {
         // ── 1. Create Android notification channels ──────────────────────────
         if (Platform.OS === 'android') {
+            // Default channel
             await Notifications.setNotificationChannelAsync('default', {
                 name: 'Default',
-                importance: Notifications.AndroidImportance.MAX,
+                importance: Notifications.AndroidImportance.HIGH,
                 vibrationPattern: [0, 250, 250, 250],
                 lightColor: '#FF231F7C',
             });
+
+            // High-priority Ride Request channel with custom alert sound
             await Notifications.setNotificationChannelAsync('ride-requests', {
                 name: 'Ride Requests',
+                description: 'Alerts for incoming ride requests',
                 importance: Notifications.AndroidImportance.MAX,
-                vibrationPattern: [0, 500, 200, 500],
+                vibrationPattern: [0, 500, 200, 500, 200, 500],
                 lightColor: '#FF7009',
                 enableVibrate: true,
                 showBadge: true,
+                sound: 'ride_alert.mp3',  // Custom sound bundled in res/raw
+                lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+                bypassDnd: true,  // Override Do Not Disturb for ride alerts
             });
         }
 
         // ── 2. Request permissions ────────────────────────────────────────────
         let token: string | undefined;
         try {
+            // On Android 13+ (API 33+) we must explicitly request POST_NOTIFICATIONS
+            if (Platform.OS === 'android' && Platform.Version >= 33) {
+                const { status: existingAndroid } = await Notifications.getPermissionsAsync();
+                if (existingAndroid !== 'granted') {
+                    const { status: androidStatus } = await Notifications.requestPermissionsAsync({
+                        android: {},
+                    });
+                    if (androidStatus !== 'granted') {
+                        console.warn('[PushNotifications] POST_NOTIFICATIONS permission denied on Android 13+');
+                    }
+                }
+            }
+
             const { status: existingStatus } = await Notifications.getPermissionsAsync();
             let finalStatus = existingStatus;
             if (existingStatus !== 'granted') {

@@ -41,8 +41,8 @@ export default {
                 "expo-notifications",
                 {
                     icon: "./assets/adaptive-icon.png",
-                    color: "#ffffff",
-                    sounds: [],
+                    color: "#FF7009",
+                    sounds: ["./assets/sounds/ride_alert.mp3"],
                     mode: "production"
                 }
             ]
@@ -84,7 +84,11 @@ export default {
                 "android.permission.WRITE_EXTERNAL_STORAGE",
                 "android.permission.FOREGROUND_SERVICE",
                 "android.permission.FOREGROUND_SERVICE_LOCATION",
-                "android.permission.RECORD_AUDIO"
+                "android.permission.RECORD_AUDIO",
+                "android.permission.POST_NOTIFICATIONS",
+                "android.permission.RECEIVE_BOOT_COMPLETED",
+                "android.permission.VIBRATE",
+                "android.permission.USE_FULL_SCREEN_INTENT"
             ]
         },
         web: {
