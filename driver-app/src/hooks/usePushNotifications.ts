@@ -5,11 +5,16 @@ import Constants from 'expo-constants';
 import api from '../config/api';
 import { navigationRef } from '../utils/NavigationService';
 
+import { useRideRequest } from '../context/RideRequestContext';
+import { useSound } from '../context/SoundContext';
+
 export const usePushNotifications = (userId: string | null) => {
     const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
     const notificationListener = useRef<any>(null);
     const responseListener = useRef<any>(null);
     const [unreadCount, setUnreadCount] = useState(0);
+    const { setRideRequest } = useRideRequest();
+    const { playAlert } = useSound();
 
     const fetchUnreadCount = async () => {
         if (!userId) return;
@@ -105,6 +110,10 @@ export const usePushNotifications = (userId: string | null) => {
         // Listen for notifications received while app is in foreground
         notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
             console.log('[PushNotifications] Received in foreground:', notification.request.content.title);
+            const data = notification.request.content.data;
+            if (data?.type === 'RIDE_REQUEST' || data?.rideId) {
+                playAlert('RIDE_REQUEST');
+            }
             fetchUnreadCount();
         });
 
@@ -115,8 +124,34 @@ export const usePushNotifications = (userId: string | null) => {
             fetchUnreadCount();
 
             if (data?.type === 'RIDE_REQUEST' || data?.rideId) {
-                // Navigate to Main/Home (which corresponds to Tab Navigator -> 'Home' screen)
-                // In our AppNavigator, 'Main' is the HomeTabs
+                // If the app was closed, we need to populate the RideRequestContext
+                // so the modal appears on the Home screen.
+                if (data.rideId) {
+                    // Try to fetch ride details from backend or use data from payload
+                    api.get(`/rides/${data.rideId}`).then(res => {
+                        const ride = res.data;
+                        if (ride) {
+                            setRideRequest({
+                                rideId: ride.id,
+                                pickupLocation: ride.pickup_address,
+                                pickupLatitude: ride.pickup_latitude,
+                                pickupLongitude: ride.pickup_longitude,
+                                dropoffLocation: ride.dropoff_address,
+                                dropoffLatitude: ride.dropoff_latitude,
+                                dropoffLongitude: ride.dropoff_longitude,
+                                fare: ride.estimated_fare || ride.fare,
+                                distance: ride.estimated_distance_km,
+                                duration: ride.estimated_duration_min,
+                                riderName: ride.rider?.name || ride.user?.name || 'Rider',
+                                riderPhone: ride.rider?.phone_number || ride.user?.phone_number,
+                            });
+                        }
+                    }).catch(err => {
+                        console.error('[Push] Failed to fetch ride details on tap:', err);
+                    });
+                }
+
+                // Navigate to Main/Home
                 // @ts-ignore
                 navigationRef.current?.navigate('Main', { screen: 'Home' });
             }
