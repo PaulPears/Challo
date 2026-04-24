@@ -45,7 +45,7 @@ export class NotificationsService {
         [user.push_token], 
         title, 
         body, 
-        { rideId: ride.id, type: NotificationType.RIDE_REQUEST },
+        { rideId: ride.id, type: NotificationType.RIDE_REQUEST, target: 'driver' },
         'ride-requests' // Explicit channel for sound/priority
       );
     }
@@ -109,7 +109,8 @@ export class NotificationsService {
       // 3. Send Push Notifications (Expo)
       const tokens = users.map(u => u.push_token).filter(t => Expo.isExpoPushToken(t));
       if (tokens.length > 0) {
-        await this.sendPushBatch(tokens, title, body, data);
+        const enhancedData = { ...data, target: target === 'drivers' ? 'driver' : target === 'riders' ? 'rider' : 'all' };
+        await this.sendPushBatch(tokens, title, body, enhancedData);
       }
 
       // 4. Send via Socket as well (Broadcast)
@@ -142,7 +143,7 @@ export class NotificationsService {
   private async sendPushBatch(tokens: string[], title: string, body: string, data?: any, channelId: string = 'default') {
     const messages: ExpoPushMessage[] = tokens.map(token => ({
       to: token,
-      sound: 'default',
+      sound: 'default', // Keep 'default' for Expo server sdk as it translates to system default
       title,
       body,
       data: data || {},

@@ -40,13 +40,11 @@ export const usePushNotifications = (userId: string | null) => {
                 importance: Notifications.AndroidImportance.MAX,
                 vibrationPattern: [0, 250, 250, 250],
                 lightColor: '#FF231F7C',
-                sound: 'default',
             });
             await Notifications.setNotificationChannelAsync('ride-requests', {
                 name: 'Ride Requests',
                 importance: Notifications.AndroidImportance.MAX,
                 vibrationPattern: [0, 500, 200, 500],
-                sound: 'default',
                 lightColor: '#FF7009',
                 enableVibrate: true,
                 showBadge: true,

@@ -95,12 +95,22 @@ export const usePushNotifications = (userId: string | null) => {
 
         // Listen for notifications received while app is in foreground
         notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
+            const data = notification.request.content.data;
+            // Ignore notifications meant for the driver app
+            if (data?.target === 'driver') {
+                console.log('[Notification] Ignoring driver-targeted notification in Rider app');
+                return;
+            }
             console.log('[Notification] Received foreground:', notification.request.content.title);
             fetchUnreadCount();
         });
 
         // Listen for notification taps (from background or killed state)
         responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+            const data = response.notification.request.content.data;
+            if (data?.target === 'driver') {
+                 return;
+            }
             console.log('[Notification] Response received:', response.notification.request.content.title);
             fetchUnreadCount();
         });
