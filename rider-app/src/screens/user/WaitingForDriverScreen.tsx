@@ -20,11 +20,18 @@ const WaitingForDriverScreen = ({ route }: any) => {
     ? 'Driver found! En route to your location.'
     : 'Searching for a nearby driver...';
 
+  // React to ANY ride status change pushed from socket/store
   useEffect(() => {
-    if (currentRide?.status === 'ACCEPTED' || currentRide?.status === 'ARRIVED' || currentRide?.status === 'STARTED') {
+    const status = currentRide?.status;
+    if (!status) return;
+
+    if (status === 'ACCEPTED' || status === 'ARRIVED' || status === 'STARTED' || status === 'IN_PROGRESS') {
       navigation.navigate('DriverDetails');
+    } else if (status === 'COMPLETED' || status === 'CANCELLED') {
+      // Reset stack so back button never returns to WaitingForDriver
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
     }
-  }, [currentRide?.status, navigation]);
+  }, [currentRide?.status]);
 
   useEffect(() => {
     if (!rideId) return;
@@ -36,24 +43,23 @@ const WaitingForDriverScreen = ({ route }: any) => {
         if (updatedRide) {
           const status = updatedRide.status?.toUpperCase();
           if (status === 'ACCEPTED' || status === 'ARRIVED' || status === 'STARTED' || status === 'IN_PROGRESS') {
-            console.log('[WaitingScreen] Polling detected ride status change:', status);
-            
+            console.log('[WaitingScreen] Polling detected status change:', status);
             const driverData = updatedRide.driver ? {
               name: updatedRide.driver.name,
-              phone: updatedRide.driver.phone_number,
+              phone: updatedRide.driver.phone_number || updatedRide.driver.phone,
               vehicle_number: updatedRide.driver.vehicle_number,
               vehicle_model: updatedRide.driver.vehicle_model,
               rating: updatedRide.driver.rating,
+              photo: updatedRide.driver.profile_image || updatedRide.driver.avatar,
             } : undefined;
-
             const mappedStatus = status === 'IN_PROGRESS' ? 'STARTED' : status;
             updateRideStatus(mappedStatus, driverData);
             clearInterval(pollInterval);
-            navigation.navigate('DriverDetails');
-          } else if (status === 'CANCELLED') {
-            updateRideStatus('CANCELLED');
+            // useEffect above will handle navigation via status change
+          } else if (status === 'CANCELLED' || status === 'COMPLETED') {
+            updateRideStatus(status as any);
             clearInterval(pollInterval);
-            navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
+            // useEffect above will handle navigation via status change
           }
         }
       } catch (error) {
