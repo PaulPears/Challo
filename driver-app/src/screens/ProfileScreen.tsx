@@ -85,7 +85,7 @@ const ProfileScreen = () => {
       text: 'Sync Notifications', 
       onPress: async () => {
         try {
-          const { Notifications } = await import('expo-notifications');
+          const Notifications = await import('expo-notifications');
           const { status } = await Notifications.getPermissionsAsync();
           if (status !== 'granted') {
             await Notifications.requestPermissionsAsync();
