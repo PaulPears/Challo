@@ -46,6 +46,7 @@ const UserNavigator = () => {
         vehicle_number: driverObj.vehicle_number || rideInfo.vehiclePlateNumber,
         rating: driverObj.rating || rideInfo.driverRating,
         phone: driverObj.phone_number || driverObj.phone || rideInfo.driverPhone,
+        photo: driverObj.profile_image || driverObj.avatar || rideInfo.driverPhoto,
       };
 
       if (status === 'ACCEPTED' || status === 'RIDE_ACCEPTED') {

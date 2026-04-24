@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, Linking, ScrollView } from 'react-native';
-import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated, Linking, ScrollView, Image } from 'react-native';
+import { FontAwesome, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import useRideStore from '../store/rideStore';
 import useUserStore from '../store/userStore';
 import { useNavigation } from '@react-navigation/native';
@@ -109,9 +109,11 @@ const RideStatusModal = () => {
         <Animated.View style={[styles.container, { transform: [{ translateY: slideAnim }] }]}>
             <View style={styles.header}>
                 <Text style={styles.title}>{title}</Text>
-                <TouchableOpacity onPress={handleClose}>
-                    <FontAwesome name="close" size={24} color="#6b7280" />
-                </TouchableOpacity>
+                {!isCompleted && !isCancelled && (
+                    <TouchableOpacity onPress={handleClose}>
+                        <FontAwesome name="close" size={24} color="#6b7280" />
+                    </TouchableOpacity>
+                )}
             </View>
 
             <ScrollView
@@ -181,10 +183,21 @@ const RideStatusModal = () => {
                         {currentRide?.driver && (
                             <View style={styles.driverInfo}>
                                 <View style={styles.driverHeader}>
-                                    <Text style={styles.driverName}>{currentRide.driver.name}</Text>
-                                    <View style={styles.ratingContainer}>
-                                        <FontAwesome name="star" size={14} color="#f59e0b" />
-                                        <Text style={styles.ratingText}>{currentRide.driver.rating || '4.8'}</Text>
+                                    <View style={styles.driverPhotoContainer}>
+                                        {currentRide.driver.photo ? (
+                                            <Image source={{ uri: currentRide.driver.photo }} style={styles.driverPhoto} />
+                                        ) : (
+                                            <View style={styles.driverInitial}>
+                                                <Text style={styles.driverInitialText}>{currentRide.driver.name?.charAt(0)}</Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                    <View style={{ flex: 1, marginLeft: 12 }}>
+                                        <Text style={styles.driverName}>{currentRide.driver.name}</Text>
+                                        <View style={styles.ratingContainer}>
+                                            <FontAwesome name="star" size={12} color="#f59e0b" />
+                                            <Text style={styles.ratingText}>{currentRide.driver.rating || '4.8'}</Text>
+                                        </View>
                                     </View>
                                 </View>
                                 <Text style={styles.vehicleInfo}>
@@ -192,6 +205,18 @@ const RideStatusModal = () => {
                                 </Text>
                             </View>
                         )}
+
+                        <View style={styles.myDetailsSection}>
+                            <Text style={styles.sectionTitle}>Trip Details</Text>
+                            <View style={styles.detailRow}>
+                                <MaterialCommunityIcons name="account-circle-outline" size={18} color="#64748b" />
+                                <Text style={styles.detailText}>Rider: {user?.name || 'You'}</Text>
+                            </View>
+                            <View style={styles.detailRow}>
+                                <MaterialCommunityIcons name="cash" size={18} color="#64748b" />
+                                <Text style={styles.detailText}>Estimated Fare: ₹{currentRide?.estimated_fare}</Text>
+                            </View>
+                        </View>
                     </>
                 )}
             </ScrollView>
@@ -221,13 +246,15 @@ const RideStatusModal = () => {
                     </TouchableOpacity>
                 ) : (
                     <>
-                        <TouchableOpacity
-                            style={[styles.actionButton, { backgroundColor: '#22c55e' }]}
-                            onPress={handleCall}
-                        >
-                            <Ionicons name="call" size={20} color="white" style={{ marginRight: 8 }} />
-                            <Text style={styles.actionButtonText}>Call Driver</Text>
-                        </TouchableOpacity>
+                        {currentRide?.status !== 'SEARCHING' && (
+                            <TouchableOpacity
+                                style={[styles.actionButton, { backgroundColor: '#22c55e' }]}
+                                onPress={handleCall}
+                            >
+                                <Ionicons name="call" size={20} color="white" style={{ marginRight: 8 }} />
+                                <Text style={styles.actionButtonText}>Call Driver</Text>
+                            </TouchableOpacity>
+                        )}
 
                         {(currentRide?.status === 'SEARCHING' || currentRide?.status === 'ACCEPTED' || currentRide?.status === 'ARRIVED') && (
                             <TouchableOpacity
@@ -452,6 +479,53 @@ const styles = StyleSheet.create({
         backgroundColor: '#e5e7eb',
         marginLeft: 9.5,
         marginVertical: 4,
+    },
+    driverPhotoContainer: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        overflow: 'hidden',
+        backgroundColor: '#e5e7eb',
+    },
+    driverPhoto: {
+        width: '100%',
+        height: '100%',
+    },
+    driverInitial: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#3b82f6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    driverInitialText: {
+        color: 'white',
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    myDetailsSection: {
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+        paddingTop: 16,
+        marginTop: 10,
+    },
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#64748b',
+        marginBottom: 10,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    detailRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    detailText: {
+        marginLeft: 8,
+        fontSize: 14,
+        color: '#1e293b',
     },
 });
 
