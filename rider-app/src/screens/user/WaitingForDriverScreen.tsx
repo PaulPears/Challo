@@ -20,7 +20,7 @@ const WaitingForDriverScreen = ({ route, navigation }: any) => {
 
   useEffect(() => {
     if (currentRide?.status === 'ACCEPTED' || currentRide?.status === 'ARRIVED' || currentRide?.status === 'STARTED') {
-      navigation.navigate('App');
+      navigation.navigate('DriverDetails');
     }
   }, [currentRide?.status, navigation]);
 
@@ -46,7 +46,7 @@ const WaitingForDriverScreen = ({ route, navigation }: any) => {
 
             updateRideStatus(status, driverData);
             clearInterval(pollInterval);
-            navigation.navigate('App');
+            navigation.navigate('DriverDetails');
           } else if (status === 'CANCELLED') {
             updateRideStatus('CANCELLED');
             clearInterval(pollInterval);

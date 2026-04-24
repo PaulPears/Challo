@@ -56,7 +56,7 @@ const UserNavigator = () => {
           data: data
         });
         updateRideStatus('ACCEPTED', driverData);
-        navigation.navigate('App');
+        navigation.navigate('DriverDetails', { ride: { ...currentRide, status: 'ACCEPTED', driver: driverData } });
       } else if (status === 'ARRIVED' || status === 'DRIVER_ARRIVED') {
         setAlert({
           type: 'DRIVER_ARRIVED',
