@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StatusBar, StyleSheet, Modal, Dimensions, TextInput, Image, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, StyleSheet, Modal, Dimensions, TextInput, Image, BackHandler, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -84,18 +84,20 @@ const HomeScreen = ({ navigation }: any) => {
     if (!currentRide) return;
     try {
       setIsSubmittingRating(true);
-      await api.post('/ratings', {
+      const response = await api.post('/ratings', {
         ride_id: currentRide.id,
         stars: ratingValue,
         comment: ratingComment || 'Excellent ride',
         rated_user_role: 'driver',
       });
+      console.log('[Rating] Success:', response.data);
       setRatingModalVisible(false);
       clearRide();
       Alert.alert('Thank You', 'Thank you for your feedback!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Rating error:', error);
-      alert('Failed to submit rating. Please try again.');
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to submit rating';
+      Alert.alert('Rating Failed', errorMsg);
     } finally {
       setIsSubmittingRating(false);
     }

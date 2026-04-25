@@ -46,14 +46,16 @@ export class RatingsService {
                 // Map 'rating' to 'stars' if 'stars' is missing but 'rating' was passed (common frontend mismatch)
                 const starCount = dto.stars || (dto as any).rating || 5;
 
-                // Infer rated user and role if missing
-                const ratedUserId = dto.rated_user_id || (isDriver ? ride.rider_id : ride.driver_id);
-                const ratedUserRole = dto.rated_user_role || (isDriver ? RatingRole.RIDER : RatingRole.DRIVER);
+                // Infer rated user and role
+                const isRiderRater = ride.rider_id === raterUserId;
+                const ratedUserId = dto.rated_user_id || (isRiderRater ? ride.driver_id : ride.rider_id);
+                const ratedUserRole = dto.rated_user_role || (isRiderRater ? RatingRole.DRIVER : RatingRole.RIDER);
 
                 console.log(`[Ratings] Submitting: Ride=${dto.ride_id}, Rater=${raterUserId}, Rated=${ratedUserId}, Role=${ratedUserRole}, Stars=${starCount}`);
+                console.log(`[Ratings] Participants: Rider=${ride.rider_id}, Driver=${ride.driver_id}`);
 
                 if (!ratedUserId) {
-                    throw new BadRequestException('Could not identify the user to be rated');
+                    throw new BadRequestException(`Could not identify the ${ratedUserRole || 'user'} to be rated. Please ensure the ride has an assigned driver/rider.`);
                 }
 
                 // Validate rater is rating the correct role
