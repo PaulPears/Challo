@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import useRideStore from '../store/rideStore';
 
@@ -28,7 +28,17 @@ const RideStatusBar = () => {
             <View style={styles.content}>
                 <View style={styles.leftSection}>
                     <View style={styles.iconContainer}>
-                        <FontAwesome name="car" size={20} color="#FF5722" />
+                        <Image 
+                            source={
+                                (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('luxury_bike') || (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('premium') ? require('../../assets/premium_bike.png') :
+                                (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('bike_lite') || (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('bike-lite') ? require('../../assets/bike_lite_icon.png') :
+                                (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('bike') ? require('../../assets/bike_icon.png') :
+                                (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('auto') ? require('../../assets/auto_icon.png') :
+                                require('../../assets/cab_icon.png')
+                            }
+                            style={{ width: 24, height: 24 }}
+                            resizeMode="contain"
+                        />
                     </View>
                     <View style={styles.textContainer}>
                         <Text style={styles.driverName}>{currentRide.driver?.name || 'Your Driver'}</Text>

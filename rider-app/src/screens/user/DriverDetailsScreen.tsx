@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Linking, Alert } from 'react-native';
 import { rideAPI } from '../../api/rideAPI';
 import { CommonActions } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import { FontAwesome } from '@expo/vector-icons';
 import useRideStore from '../../store/rideStore';
@@ -10,6 +10,7 @@ import useRideStore from '../../store/rideStore';
 const { width, height } = Dimensions.get('window');
 
 const DriverDetailsScreen = ({ route, navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const { ride } = route.params || {};
   const { currentRide } = useRideStore();
   const activeRide = ride || currentRide;
@@ -20,14 +21,13 @@ const DriverDetailsScreen = ({ route, navigation }: any) => {
   });
 
   const getVehicleEmoji = (model: string) => {
-    const type = model?.toLowerCase().split(' ')[0];
-    switch (type) {
-      case 'auto': return '🛺';
-      case 'bike': return '🏍️';
-      case 'cab': return '🚘';
-      case 'bike-lite': return '🛵';
-      default: return '🚗';
-    }
+    const type = model?.toLowerCase();
+    if (type?.includes('auto')) return '🛺';
+    if (type?.includes('luxury_bike') || type?.includes('premium')) return '🏍️';
+    if (type?.includes('bike-lite') || type?.includes('bike_lite')) return '🛵';
+    if (type?.includes('bike')) return '🏍️';
+    if (type?.includes('cab') || type?.includes('car')) return '🚘';
+    return '🚗';
   };
 
   const handleCall = () => {
@@ -65,7 +65,7 @@ const DriverDetailsScreen = ({ route, navigation }: any) => {
               useRideStore.getState().clearRide();
               navigation.dispatch(CommonActions.reset({
                 index: 0,
-                routes: [{ name: 'App' }],
+                routes: [{ name: 'UserNavigator' }],
               }));
             } catch (error) {
               console.error('Failed to cancel ride:', error);
@@ -106,7 +106,7 @@ const DriverDetailsScreen = ({ route, navigation }: any) => {
       </TouchableOpacity>
 
       {/* Bottom Sheet */}
-      <View style={styles.bottomSheet}>
+      <View style={[styles.bottomSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         <View style={styles.handle} />
 
         <View style={styles.driverSection}>

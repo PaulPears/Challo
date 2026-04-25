@@ -36,6 +36,11 @@ async function bootstrap() {
         forbidNonWhitelisted: true, // Throw error if extra properties are present
       }),
     );
+    
+    // Increase payload limits for document uploads
+    const express = require('express');
+    app.use(express.json({ limit: '50mb' }));
+    app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
     // Security Headers - Helmet.js
     app.use(

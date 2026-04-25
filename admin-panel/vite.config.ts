@@ -7,12 +7,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://sy5b8p7tug.us-east-1.awsapprunner.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/uploads': {
-        target: 'http://localhost:3000',
+        target: 'https://sy5b8p7tug.us-east-1.awsapprunner.com',
         changeOrigin: true
       }
     }

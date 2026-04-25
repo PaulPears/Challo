@@ -18,7 +18,12 @@ export class DriversController {
     { name: 'rcPhoto', maxCount: 1 },
     { name: 'rcBackPhoto', maxCount: 1 },
     { name: 'insurancePhoto', maxCount: 1 },
-  ]))
+  ], {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB per file
+      fieldSize: 10 * 1024 * 1024, // 10MB for text fields
+    }
+  }))
   async registerDriver(
     @Request() req,
     @Body() body: any,

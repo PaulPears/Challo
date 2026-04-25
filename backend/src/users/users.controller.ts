@@ -23,7 +23,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Post('favorites')
-  async addFavorite(@Request() req, @Body('driver_id') driverId: number) {
+  async addFavorite(@Request() req, @Body('driver_id') driverId: string) {
     return this.usersService.addFavoriteDriver(req.user.id, driverId);
   }
 
@@ -35,7 +35,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Delete('favorites/:driverId')
-  async removeFavorite(@Request() req, @Param('driverId') driverId: number) {
+  async removeFavorite(@Request() req, @Param('driverId') driverId: string) {
     await this.usersService.removeFavoriteDriver(req.user.id, driverId);
     return { success: true };
   }

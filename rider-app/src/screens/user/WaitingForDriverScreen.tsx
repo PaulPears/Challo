@@ -6,9 +6,11 @@ import { rideAPI } from '../../api/rideAPI';
 import useRideStore from '../../store/rideStore';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const { width, height } = Dimensions.get('window');
 
 const WaitingForDriverScreen = ({ route }: any) => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { ride } = route.params;
   const rideId = ride?.id;
@@ -29,7 +31,7 @@ const WaitingForDriverScreen = ({ route }: any) => {
       navigation.navigate('DriverDetails');
     } else if (status === 'COMPLETED' || status === 'CANCELLED') {
       // Reset stack so back button never returns to WaitingForDriver
-      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
     }
   }, [currentRide?.status]);
 
@@ -77,7 +79,7 @@ const WaitingForDriverScreen = ({ route }: any) => {
       setAlert(null);
       updateRideStatus('CANCELLED');
       setCancelModalVisible(false);
-      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
     } catch (error) {
       console.error('Failed to cancel ride:', error);
       Alert.alert('Error', 'Failed to cancel ride. Please try again.');
@@ -89,7 +91,7 @@ const WaitingForDriverScreen = ({ route }: any) => {
   return (
     <View style={styles.container}>
       {/* Upper Section: Animation */}
-      <View style={styles.headerSection}>
+      <View style={[styles.headerSection, { paddingTop: Math.max(insets.top, 20) }]}>
         <View style={styles.animationWrapper}>
           <LottieView
             source={{ uri: 'https://lottie.host/ab5ba586-78ca-44ea-b2e7-9a3e64781017/AByInMd7Tg.lottie' }}
@@ -105,7 +107,7 @@ const WaitingForDriverScreen = ({ route }: any) => {
 
       {/* Lower Section: Details */}
       <View style={styles.detailsSection}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollPadding}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollPadding, { paddingBottom: Math.max(insets.bottom, 30) }]}>
           {/* Location Path */}
           <View style={styles.locationContainer}>
             <View style={styles.pathLine}>
@@ -149,10 +151,19 @@ const WaitingForDriverScreen = ({ route }: any) => {
             </View>
           </View>
 
-          {/* Vehicle Info */}
           <View style={styles.vehicleInfoCard}>
-             <Ionicons name="car-sport" size={24} color="#FF5722" />
-             <Text style={styles.vehicleInfoText}>Requesting {ride.vehicle_type?.toUpperCase() || 'Ride'}</Text>
+             <Image 
+               source={
+                 ride.vehicle_type?.includes('luxury_bike') ? require('../../../assets/premium_bike.png') :
+                 ride.vehicle_type?.includes('bike_lite') ? require('../../../assets/bike_lite_icon.png') :
+                 ride.vehicle_type?.includes('bike') ? require('../../../assets/bike_icon.png') :
+                 ride.vehicle_type?.includes('auto') ? require('../../../assets/auto_icon.png') :
+                 require('../../../assets/cab_icon.png')
+               } 
+               style={{ width: 24, height: 24 }} 
+               resizeMode="contain" 
+             />
+              <Text style={styles.vehicleInfoText}>Requesting {ride.vehicle_type?.includes('luxury_bike') ? 'PREMIUM BIKE' : ride.vehicle_type?.replace('_', ' ')?.toUpperCase() || 'Ride'}</Text>
           </View>
 
           <TouchableOpacity onPress={() => setCancelModalVisible(true)} style={styles.cancelButton}>
@@ -209,7 +220,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#fff',
-    paddingTop: 40,
   },
   animationWrapper: {
     width: 250,

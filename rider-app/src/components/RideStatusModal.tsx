@@ -6,9 +6,11 @@ import useRideStore from '../store/rideStore';
 import useUserStore from '../store/userStore';
 import { useNavigation } from '@react-navigation/native';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const { width, height } = Dimensions.get('window');
 
 const RideStatusModal = () => {
+    const insets = useSafeAreaInsets();
     const { activeAlert, setAlert, currentRide, setMinimized, isMinimized } = useRideStore();
     const { user } = useUserStore();
     const slideAnim = useRef(new Animated.Value(height)).current;
@@ -82,7 +84,7 @@ const RideStatusModal = () => {
                         try {
                             await rideAPI.cancelRide(currentRide.id);
                             useRideStore.getState().clearRide();
-                            navigation.navigate('App');
+                            navigation.navigate('UserNavigator');
                         } catch (error) {
                             console.error('Failed to cancel ride:', error);
                             Alert.alert('Error', 'Failed to cancel ride. Please try again.');
@@ -103,13 +105,13 @@ const RideStatusModal = () => {
     const handleBookAgain = () => {
         setAlert(null);
         useRideStore.getState().clearRide();
-        navigation.navigate('App');
+        navigation.navigate('UserNavigator');
     };
 
     const handleFinishRide = () => {
         setAlert(null);
         useRideStore.getState().clearRide();
-        navigation.navigate('App');
+        navigation.navigate('UserNavigator');
     };
 
     return (
@@ -228,7 +230,7 @@ const RideStatusModal = () => {
                 )}
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                 {isCancelled ? (
                     <>
                         <TouchableOpacity
@@ -416,7 +418,6 @@ const styles = StyleSheet.create({
     },
     footer: {
         paddingHorizontal: 24,
-        paddingBottom: 30, // Safe area padding
         paddingTop: 10,
         backgroundColor: 'white',
         borderTopWidth: 1,

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://sy5b8p7tug.us-east-1.awsapprunner.com',
 });
 
 // Add a request interceptor to include the JWT token

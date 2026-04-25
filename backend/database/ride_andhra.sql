@@ -34,7 +34,7 @@ BEGIN
         CREATE TYPE payment_method_enum AS ENUM ('cash','card','wallet','upi');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'vehicle_type_enum') THEN
-        CREATE TYPE vehicle_type_enum AS ENUM ('cab','bike','auto','bike_lite','parcel','premium');
+        CREATE TYPE vehicle_type_enum AS ENUM ('cab','bike','auto','bike_lite','parcel','premium','luxury_bike');
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'transaction_type_enum') THEN
         CREATE TYPE transaction_type_enum AS ENUM ('ride_fare_credit','ride_fare_debit','payout','wallet_top_up','refund','cashback');
@@ -872,7 +872,8 @@ VALUES
 ('auto', 30.00, 12.00, 1.50, 50.00, 1.00),
 ('bike_lite', 15.00, 6.00, 0.80, 20.00, 1.00),
 ('parcel', 60.00, 18.00, 0.00, 100.00, 1.00),
-('premium', 80.00, 22.00, 3.00, 150.00, 1.00)
+('premium', 80.00, 22.00, 3.00, 150.00, 1.00),
+('luxury_bike', 35.00, 10.00, 1.50, 45.00, 1.00)
 ON CONFLICT (vehicle_type) DO NOTHING;
 
 -- Example fare tiers: 0-10, 10.01-20, 20.01+

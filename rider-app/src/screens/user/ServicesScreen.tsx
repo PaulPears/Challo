@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'rea
 const services = [
   { image: require('../../../assets/auto_icon.png'), name: 'Auto' },
   { image: require('../../../assets/bike_icon.png'), name: 'Bike' },
+  { image: require('../../../assets/premium_bike.png'), name: 'Premium Bike' },
   { image: require('../../../assets/bike_lite_icon.png'), name: 'Bike-lite' },
   { image: require('../../../assets/cab_icon.png'), name: 'Cab' },
   { image: require('../../../assets/parcel_icon.png'), name: 'Parcel' },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Switch, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import { GOOGLE_MAPS_API_KEY } from '../../config/constants';
@@ -11,12 +11,14 @@ import FareBreakdownCard from '../../components/FareBreakdownCard';
 
 interface VehicleOption {
   vehicle: string;
+  type: string;
   cost: number;
   estimatedTime: number;
   breakdown?: any;
 }
 
 const BookingScreen = ({ navigation, route }: any) => {
+  const insets = useSafeAreaInsets();
   const { pickup, dropoff } = route.params;
   const { setRide } = useRideStore();
   const { user, fetchUserProfile } = useUserStore();
@@ -38,10 +40,10 @@ const BookingScreen = ({ navigation, route }: any) => {
     const type = vehicle.toLowerCase();
     if (type.includes('cab') || type.includes('car')) return require('../../../assets/cab_icon.png');
     if (type.includes('bike-lite') || type.includes('bike_lite')) return require('../../../assets/bike_lite_icon.png');
+    if (type.includes('luxury_bike') || type.includes('luxury bike') || type.includes('premium')) return require('../../../assets/premium_bike.png');
     if (type.includes('bike')) return require('../../../assets/bike_icon.png');
     if (type.includes('auto')) return require('../../../assets/auto_icon.png');
     if (type.includes('parcel')) return require('../../../assets/parcel_icon.png');
-    if (type.includes('luxury_bike') || type.includes('luxury bike')) return require('../../../assets/bike_icon.png'); // Fallback icon
     return require('../../../assets/cab_icon.png');
   };
 
@@ -113,11 +115,12 @@ const BookingScreen = ({ navigation, route }: any) => {
               // 'bike_lite' -> 'Bike-lite', 'luxury_bike' -> 'Luxury Bike', etc.
               const displayVehicle = 
                 vehicleType === 'bike_lite' ? 'Bike-lite' :
-                vehicleType === 'luxury_bike' ? 'Luxury Bike' :
+                vehicleType === 'luxury_bike' ? 'Premium Bike' :
                 vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1);
 
               return {
                 vehicle: displayVehicle,
+                type: vehicleType,
                 cost: estimate.totalFare || estimate.fare || 0,
                 estimatedTime: estimatedTime,
                 breakdown: estimate
@@ -189,7 +192,7 @@ const BookingScreen = ({ navigation, route }: any) => {
           }}
         />
       </MapView>
-      <View style={styles.detailsContainer}>
+      <View style={[styles.detailsContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <Text style={styles.distanceText}>Distance: {distance ? distance.toFixed(2) : '0.00'} km</Text>
         <ScrollView 
           contentContainerStyle={{ paddingBottom: 100 }}
@@ -327,7 +330,8 @@ const BookingScreen = ({ navigation, route }: any) => {
 
             rideData.distance = distance;
             rideData.duration = Math.round(duration);
-            rideData.vehicle_type = selectedVehicle.toLowerCase().replace('-', '_');
+            rideData.vehicle_type = vehicleOptions.find(v => v.vehicle === selectedVehicle)?.type || 
+                                   (selectedVehicle === 'Premium Bike' ? 'luxury_bike' : selectedVehicle.toLowerCase().replace('-', '_').replace(' ', '_'));
 
             console.log('Sending ride data:', rideData);
             const newRide = await rideAPI.createRide(rideData);

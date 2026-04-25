@@ -21,7 +21,7 @@
         },
         "production-apk": {
             "env": {
-                "API_URL": "https://ride-andhra-baceknd-final.onrender.com"
+                "EXPO_PUBLIC_API_URL": "https://sy5b8p7tug.us-east-1.awsapprunner.com"
             },
             "android": {
                 "buildType": "apk"

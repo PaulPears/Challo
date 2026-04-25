@@ -48,15 +48,27 @@ export class DriversService {
       return pathUrl;
     };
 
-    // Save uploaded files to Bunny.net sequentially to reduce memory spikes and ensure reliable logging
-    const profileImagePath = await saveFile(files.profilePhoto?.[0], 'profile');
-    const licenseFrontPath = await saveFile(files.licenseFrontPhoto?.[0], 'license_front');
-    const licenseBackPath = await saveFile(files.licenseBackPhoto?.[0], 'license_back');
-    const aadhaarPath = await saveFile(files.aadhaarPhoto?.[0], 'aadhaar');
-    const panPath = await saveFile(files.panPhoto?.[0], 'pan');
-    const rcFrontPath = await saveFile(files.rcPhoto?.[0], 'rc_front');
-    const rcBackPath = await saveFile(files.rcBackPhoto?.[0], 'rc_back');
-    const insurancePath = await saveFile(files.insurancePhoto?.[0], 'insurance_document');
+    // Save uploaded files to Bunny.net in parallel to minimize response time
+    console.log(`[Drivers] Uploading 8 document fields to Bunny.net in parallel...`);
+    const [
+      profileImagePath,
+      licenseFrontPath,
+      licenseBackPath,
+      aadhaarPath,
+      panPath,
+      rcFrontPath,
+      rcBackPath,
+      insurancePath
+    ] = await Promise.all([
+      saveFile(files.profilePhoto?.[0], 'profile'),
+      saveFile(files.licenseFrontPhoto?.[0], 'license_front'),
+      saveFile(files.licenseBackPhoto?.[0], 'license_back'),
+      saveFile(files.aadhaarPhoto?.[0], 'aadhaar'),
+      saveFile(files.panPhoto?.[0], 'pan'),
+      saveFile(files.rcPhoto?.[0], 'rc_front'),
+      saveFile(files.rcBackPhoto?.[0], 'rc_back'),
+      saveFile(files.insurancePhoto?.[0], 'insurance_document')
+    ]);
 
     console.log(`[Drivers] All files processed for user ${userId}`);
 

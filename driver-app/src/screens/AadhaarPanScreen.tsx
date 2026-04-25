@@ -23,7 +23,7 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
     // 2. Launch image library
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
-      quality: 0.5,
+      quality: 0.3,
     });
 
     if (pickerResult.canceled === true) {
@@ -158,6 +158,9 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
 
       const response = await api.post('/profile/register-driver', formData, {
         timeout: 120000, // 2-minute timeout for document uploads
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
       console.log('[Drivers] Registration response:', response.data);

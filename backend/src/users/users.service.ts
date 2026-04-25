@@ -174,7 +174,7 @@ export class UsersService {
     await repo.decrement({ user_id: userId }, 'super_km_balance', amount);
   }
 
-  async addFavoriteDriver(riderId: string, driverId: number): Promise<FavoriteDriver> {
+  async addFavoriteDriver(riderId: string, driverId: string): Promise<FavoriteDriver> {
     const existing = await this.favoriteDriverRepository.findOne({ where: { rider_id: riderId, driver_id: driverId } });
     if (existing) return existing;
     const favorite = this.favoriteDriverRepository.create({ rider_id: riderId, driver_id: driverId });
@@ -185,7 +185,7 @@ export class UsersService {
     return this.favoriteDriverRepository.find({ where: { rider_id: riderId }, relations: ['driver'] });
   }
 
-  async removeFavoriteDriver(riderId: string, driverId: number): Promise<void> {
+  async removeFavoriteDriver(riderId: string, driverId: string): Promise<void> {
     await this.favoriteDriverRepository.delete({ rider_id: riderId, driver_id: driverId });
   }
 

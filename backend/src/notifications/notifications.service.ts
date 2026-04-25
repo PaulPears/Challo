@@ -21,8 +21,58 @@ export class NotificationsService {
   }
 
   // --- Socket.IO Notifications ---
-  sendRideUpdate(rideId: string, status: string, ride: any) {
+  async sendRideUpdate(rideId: string, status: string, ride: any) {
     this.notificationsGateway.sendRideUpdate(rideId, status, ride);
+
+    try {
+      // 1. Get Rider ID from ride object
+      const riderId = ride.rider_id || ride.riderId;
+      if (!riderId) return;
+
+      // 2. Fetch Rider's push token
+      const user = await this.userRepository.findOne({ 
+        where: { id: riderId }, 
+        select: { id: true, rider_push_token: true } 
+      });
+
+      if (user && user.rider_push_token && Expo.isExpoPushToken(user.rider_push_token)) {
+        let title = 'Ride Update';
+        let body = `Your ride status is now ${status.replace('_', ' ').toLowerCase()}.`;
+
+        // Customize messages based on status
+        switch (status.toUpperCase()) {
+          case 'ACCEPTED':
+            title = 'Driver Found! 🚗';
+            body = `${ride.driver?.name || 'A driver'} is on the way to pick you up.`;
+            break;
+          case 'ARRIVED':
+            title = 'Driver Arrived 📍';
+            body = 'Your driver is waiting at the pickup location.';
+            break;
+          case 'STARTED':
+            title = 'Trip Started 🚀';
+            body = 'Your trip has officially begun. Have a safe journey!';
+            break;
+          case 'COMPLETED':
+            title = 'Ride Completed ✅';
+            body = `You've arrived! Final fare: ₹${Number(ride.rider_payable || ride.final_fare || 0).toFixed(2)}`;
+            break;
+          case 'CANCELLED':
+            title = 'Ride Cancelled ❌';
+            body = 'Your ride request has been cancelled.';
+            break;
+        }
+
+        await this.sendPushBatch(
+          [user.rider_push_token], 
+          title, 
+          body, 
+          { rideId, status, type: 'RIDE_UPDATE', target: 'rider' }
+        );
+      }
+    } catch (error) {
+      console.error('[Push] Failed to send ride update notification:', error);
+    }
   }
 
   sendDriverLocation(driverUserId: string, location: { latitude: number; longitude: number }, rideId?: string) {

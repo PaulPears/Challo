@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
+import { FontAwesome, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import useUserStore from '../../store/userStore';
 import { rideAPI } from '../../api/rideAPI';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ProfileStackParamList } from '../../navigation/ProfileNavigator';
 
-type RewardsScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'Rewards'>;
+const { width } = Dimensions.get('window');
 
-const FREE_RIDE_MILESTONE_KM = 100; // e.g., 100km total = 1 free ride
+type RewardsScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'Rewards'>;
 
 const RewardsScreen = ({ navigation }: { navigation: RewardsScreenNavigationProp }) => {
   const { user, fetchUserProfile } = useUserStore();
@@ -31,7 +31,8 @@ const RewardsScreen = ({ navigation }: { navigation: RewardsScreenNavigationProp
       let kmSum = 0;
       if (Array.isArray(rides)) {
         rides.forEach(ride => {
-          if (ride.status === 'COMPLETED' || ride.status === 'completed') {
+          const status = (ride.status || '').toUpperCase();
+          if (status === 'COMPLETED') {
             const distance = parseFloat(ride.actual_distance_km || ride.estimated_distance_km || '0');
             if (!isNaN(distance)) {
               kmSum += distance;
@@ -47,9 +48,9 @@ const RewardsScreen = ({ navigation }: { navigation: RewardsScreenNavigationProp
     }
   };
 
-  const freeRidesAvailable = Math.floor(totalKm / FREE_RIDE_MILESTONE_KM);
-  const kmTowardsNextMilestone = totalKm % FREE_RIDE_MILESTONE_KM;
-  const progressPercentage = (kmTowardsNextMilestone / FREE_RIDE_MILESTONE_KM) * 100;
+  // Milestone logic (visual only now)
+  const NEXT_MILESTONE = totalKm > 500 ? 1000 : totalKm > 100 ? 500 : 100;
+  const progressPercentage = Math.min((totalKm / NEXT_MILESTONE) * 100, 100);
 
   if (loading) {
     return (
@@ -64,101 +65,139 @@ const RewardsScreen = ({ navigation }: { navigation: RewardsScreenNavigationProp
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <FontAwesome name="arrow-left" size={24} color="#1f2937" />
+          <Ionicons name="arrow-back" size={24} color="#1f2937" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Rewards & Free Rides</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.headerTitle}>Super Rewards</Text>
+        <TouchableOpacity onPress={fetchRidesData}>
+          <Ionicons name="refresh" size={22} color="#4b5563" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         
         {/* Super Coins Banner */}
         <LinearGradient
-          colors={['#FFD54F', '#FFB300']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.rewardsCard}
+          colors={['#FFD54F', '#FF9800']}
+          style={styles.rewardCard}
         >
+          <View style={styles.cardOverlay}>
+            <MaterialCommunityIcons name="star-circle" size={120} color="rgba(255,255,255,0.1)" style={styles.cardBgIcon} />
+          </View>
+          
           <View style={styles.pointsBadge}>
-            <MaterialCommunityIcons name="star-four-points" size={20} color="#FF9800" />
+            <MaterialCommunityIcons name="star-four-points" size={16} color="#FF9800" />
             <Text style={styles.pointsText}>Super Coins</Text>
           </View>
-          <Text style={styles.balanceText}>{user?.super_coins_balance || 0}</Text>
-          <Text style={styles.balanceSubtext}>Total Available Coins</Text>
+          
+          <View style={styles.balanceContainer}>
+            <Text style={styles.currencySymbol}>₹</Text>
+            <Text style={styles.balanceValue}>{user?.super_coins_balance || 0}</Text>
+          </View>
+          <Text style={styles.balanceLabel}>Available for instant discount</Text>
 
-          <View style={styles.infoRow}>
-            <FontAwesome name="info-circle" size={16} color="white" />
-            <Text style={styles.infoText}>Use coins at checkout to reduce fare (1 Coin = ₹1)</Text>
+          <View style={styles.cardFooter}>
+            <Ionicons name="information-circle-outline" size={16} color="white" />
+            <Text style={styles.footerText}>1 Super Coin = ₹1 Discount</Text>
           </View>
         </LinearGradient>
 
-        {/* Milestone Card */}
+        {/* Super Kilometer Meter Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Milestone Rewards</Text>
+          <Text style={styles.sectionTitle}>Super Kilometer Meter</Text>
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>LIVE TRACKING</Text>
+          </View>
         </View>
 
-        <View style={styles.milestoneCard}>
-          <View style={styles.milestoneHeader}>
-             <MaterialCommunityIcons name="road-variant" size={28} color="#FF5722" />
-             <View style={styles.milestoneTextContainer}>
-                <Text style={styles.milestoneTitle}>Free Ride Progress</Text>
-                <Text style={styles.milestoneSub}>Unlock a free ride every {FREE_RIDE_MILESTONE_KM} km!</Text>
+        <LinearGradient
+          colors={['#00B4DB', '#0083B0']}
+          style={styles.meterCard}
+        >
+          <View style={styles.meterHeader}>
+            <View style={styles.meterIconContainer}>
+               <MaterialCommunityIcons name="speedometer" size={32} color="white" />
+            </View>
+            <View style={styles.meterTitleContainer}>
+               <Text style={styles.meterTitle}>Distance Travelled</Text>
+               <Text style={styles.meterSubtitle}>Only completed rides count</Text>
+            </View>
+            <View style={styles.kmBadge}>
+               <Text style={styles.kmBadgeText}>TOTAL</Text>
+            </View>
+          </View>
+
+          <View style={styles.distanceDisplay}>
+            <Text style={styles.totalKmValue}>{totalKm.toFixed(1)}</Text>
+            <Text style={styles.totalKmUnit}>KM</Text>
+          </View>
+
+          <View style={styles.meterProgressContainer}>
+            <View style={styles.meterProgressBackground}>
+              <LinearGradient
+                colors={['#4facfe', '#00f2fe']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.meterProgressFill, { width: `${progressPercentage}%` }]}
+              />
+            </View>
+            <View style={styles.meterTicks}>
+               <Text style={styles.tickText}>0</Text>
+               <Text style={styles.tickText}>{NEXT_MILESTONE / 2}</Text>
+               <Text style={styles.tickText}>{NEXT_MILESTONE}</Text>
+            </View>
+          </View>
+
+          <View style={styles.superKmBalanceCard}>
+             <View style={styles.superKmInfo}>
+                <Text style={styles.superKmLabel}>Super KM Balance</Text>
+                <Text style={styles.superKmValue}>{user?.super_km_balance?.toFixed(2) || '0.00'} KM</Text>
+             </View>
+             <View style={styles.superKmAction}>
+                <MaterialCommunityIcons name="shield-check" size={24} color="#4CAF50" />
+                <Text style={styles.superKmActionText}>VERIFIED</Text>
              </View>
           </View>
+        </LinearGradient>
 
-          <View style={styles.progressContainer}>
-            <View style={styles.progressTextRow}>
-              <Text style={styles.progressLabel}>{kmTowardsNextMilestone.toFixed(1)} km traveled</Text>
-              <Text style={styles.progressLabel}>{FREE_RIDE_MILESTONE_KM} km</Text>
-            </View>
-            <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, { width: `${progressPercentage}%` }]} />
-            </View>
-            <Text style={styles.progressRemaining}>
-              {(FREE_RIDE_MILESTONE_KM - kmTowardsNextMilestone).toFixed(1)} km more to your next free ride!
-            </Text>
-          </View>
-
-          <View style={styles.freeRidesContainer}>
-            <MaterialCommunityIcons name="ticket-percent" size={24} color="#4CAF50" />
-            <Text style={styles.freeRidesText}>
-              Available Free Rides: <Text style={styles.freeRidesCount}>{freeRidesAvailable}</Text>
-            </Text>
-          </View>
-        </View>
-
-        {/* How to earn */}
+        {/* How to earn? */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>How to earn?</Text>
+          <Text style={styles.sectionTitle}>Earning Rules</Text>
         </View>
 
-        <View style={styles.rulesCard}>
+        <View style={styles.rulesList}>
           <View style={styles.ruleItem}>
-            <View style={styles.ruleIconContainer}>
-               <FontAwesome name="car" size={16} color="#FF5722" />
+            <View style={[styles.ruleIconBox, { backgroundColor: '#FFF8E1' }]}>
+               <MaterialCommunityIcons name="cash-plus" size={20} color="#FFA000" />
             </View>
-            <Text style={styles.ruleText}>Complete rides to earn 3% cashback as Super Coins.</Text>
+            <View style={styles.ruleContent}>
+               <Text style={styles.ruleTitle}>3% Super Coins</Text>
+               <Text style={styles.ruleDescription}>Earn 3% of trip fare as Super Coins on every ride.</Text>
+            </View>
           </View>
+
           <View style={styles.ruleItem}>
-            <View style={styles.ruleIconContainer}>
-               <MaterialCommunityIcons name="map-marker-distance" size={18} color="#FF5722" />
+            <View style={[styles.ruleIconBox, { backgroundColor: '#E1F5FE' }]}>
+               <MaterialCommunityIcons name="map-marker-distance" size={20} color="#0288D1" />
             </View>
-            <Text style={styles.ruleText}>Earn 5% of your trip distance back as Super KM balance!</Text>
+            <View style={styles.ruleContent}>
+               <Text style={styles.ruleTitle}>5% Super KM</Text>
+               <Text style={styles.ruleDescription}>Get 5% of your travelled distance added to Super KM balance.</Text>
+            </View>
           </View>
+
           <View style={styles.ruleItem}>
-            <View style={styles.ruleIconContainer}>
-               <MaterialCommunityIcons name="road" size={18} color="#FF5722" />
+            <View style={[styles.ruleIconBox, { backgroundColor: '#E8F5E9' }]}>
+               <MaterialCommunityIcons name="ticket-percent" size={20} color="#388E3C" />
             </View>
-            <Text style={styles.ruleText}>Every kilometer traveled counts towards your milestone.</Text>
-          </View>
-          <View style={styles.ruleItem}>
-            <View style={[styles.ruleIconContainer, { borderBottomWidth: 0 }]}>
-               <FontAwesome name="gift" size={16} color="#FF5722" />
+            <View style={styles.ruleContent}>
+               <Text style={styles.ruleTitle}>Direct Discounts</Text>
+               <Text style={styles.ruleDescription}>Use Super KM to pay for future rides directly from the wallet.</Text>
             </View>
-            <Text style={styles.ruleText}>Reach the km milestone to unlock completely free rides!</Text>
           </View>
         </View>
 
+        <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -167,7 +206,7 @@ const RewardsScreen = ({ navigation }: { navigation: RewardsScreenNavigationProp
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F8FAFC',
   },
   centerContent: {
     justifyContent: 'center',
@@ -177,191 +216,288 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: '#1e293b',
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: 20,
   },
-  rewardsCard: {
-    borderRadius: 16,
+  rewardCard: {
+    borderRadius: 24,
     padding: 24,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    elevation: 8,
+    shadowColor: '#FF9800',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
     position: 'relative',
     overflow: 'hidden',
   },
+  cardOverlay: {
+    position: 'absolute',
+    right: -20,
+    top: -20,
+  },
+  cardBgIcon: {
+    opacity: 0.2,
+  },
   pointsBadge: {
     flexDirection: 'row',
-    backgroundColor: '#FFF8E1',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   pointsText: {
-    color: '#FF9800',
+    color: 'white',
     fontWeight: 'bold',
     marginLeft: 6,
+    fontSize: 12,
   },
-  balanceText: {
+  balanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 4,
+  },
+  currencySymbol: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: 'white',
+    marginRight: 4,
+  },
+  balanceValue: {
     fontSize: 48,
     fontWeight: '900',
     color: 'white',
-    marginBottom: 4,
   },
-  balanceSubtext: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.9)',
+  balanceLabel: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
     marginBottom: 20,
     fontWeight: '500',
   },
-  infoRow: {
+  cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.1)',
-    padding: 12,
-    borderRadius: 8,
+    padding: 10,
+    borderRadius: 12,
   },
-  infoText: {
+  footerText: {
     color: 'white',
     marginLeft: 8,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    flex: 1,
   },
   sectionHeader: {
-    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#374151',
+    color: '#1e293b',
   },
-  milestoneCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  milestoneHeader: {
+  liveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  milestoneTextContainer: {
-    marginLeft: 12,
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#EF4444',
+    marginRight: 6,
+  },
+  liveText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  meterCard: {
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
+    elevation: 8,
+    shadowColor: '#0083B0',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+  },
+  meterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  meterIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  meterTitleContainer: {
+    marginLeft: 16,
     flex: 1,
   },
-  milestoneTitle: {
+  meterTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: 'white',
   },
-  milestoneSub: {
-    fontSize: 13,
-    color: '#6b7280',
+  meterSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
   },
-  progressContainer: {
+  kmBadge: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  kmBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  distanceDisplay: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
     marginBottom: 20,
   },
-  progressTextRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+  totalKmValue: {
+    fontSize: 64,
+    fontWeight: '900',
+    color: 'white',
+    letterSpacing: -2,
   },
-  progressLabel: {
-    fontSize: 14,
-    color: '#4b5563',
-    fontWeight: '600',
+  totalKmUnit: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.6)',
+    marginLeft: 8,
   },
-  progressBarBackground: {
-    height: 12,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 6,
+  meterProgressContainer: {
+    marginBottom: 24,
+  },
+  meterProgressBackground: {
+    height: 14,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    borderRadius: 7,
     overflow: 'hidden',
   },
-  progressBarFill: {
+  meterProgressFill: {
     height: '100%',
-    backgroundColor: '#FF5722',
-    borderRadius: 6,
+    borderRadius: 7,
   },
-  progressRemaining: {
-    fontSize: 12,
-    color: '#FF5722',
-    marginTop: 8,
-    textAlign: 'right',
-    fontWeight: '500',
-  },
-  freeRidesContainer: {
+  meterTicks: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E8F5E9',
-    padding: 12,
-    borderRadius: 8,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingHorizontal: 4,
   },
-  freeRidesText: {
-    marginLeft: 8,
-    fontSize: 15,
-    color: '#2E7D32',
+  tickText: {
+    fontSize: 12,
     fontWeight: '600',
+    color: 'rgba(255,255,255,0.6)',
   },
-  freeRidesCount: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  rulesCard: {
+  superKmBalanceCard: {
+    flexDirection: 'row',
     backgroundColor: 'white',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 40,
+    alignItems: 'center',
+  },
+  superKmInfo: {
+    flex: 1,
+  },
+  superKmLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  superKmValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0083B0',
+    marginTop: 2,
+  },
+  superKmAction: {
+    alignItems: 'center',
+  },
+  superKmActionText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#4CAF50',
+    marginTop: 2,
+  },
+  rulesList: {
+    backgroundColor: 'white',
+    borderRadius: 24,
+    padding: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
   ruleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    padding: 16,
   },
-  ruleIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFF3E0',
+  ruleIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
-  ruleText: {
+  ruleContent: {
     flex: 1,
-    fontSize: 14,
-    color: '#4b5563',
-    lineHeight: 20,
+  },
+  ruleTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1e293b',
+  },
+  ruleDescription: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 2,
+    lineHeight: 18,
   },
 });
 

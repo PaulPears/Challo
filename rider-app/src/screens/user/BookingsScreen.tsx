@@ -10,6 +10,7 @@ const BookingCard = ({ item, navigation }: any) => {
     const type = (vehicleType || '').toLowerCase();
     if (type.includes('cab') || type.includes('car')) return require('../../../assets/cab_icon.png');
     if (type.includes('bike_lite') || type.includes('bike-lite')) return require('../../../assets/bike_lite_icon.png');
+    if (type.includes('luxury_bike') || type.includes('premium')) return require('../../../assets/premium_bike.png');
     if (type.includes('bike')) return require('../../../assets/bike_icon.png');
     if (type.includes('auto')) return require('../../../assets/auto_icon.png');
     if (type.includes('parcel')) return require('../../../assets/parcel_icon.png');

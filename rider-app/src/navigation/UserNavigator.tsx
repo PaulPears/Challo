@@ -83,7 +83,7 @@ const UserNavigator = () => {
           data: data
         });
         // Reset the stack so pressing back does NOT go back to WaitingForDriver
-        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
+        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
       } else if (status === 'CANCELLED' || status === 'RIDE_CANCELLED') {
         updateRideStatus('CANCELLED');
         setAlert({
@@ -92,7 +92,7 @@ const UserNavigator = () => {
           message: 'This ride has been cancelled.',
           data: data
         });
-        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
+        navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
       }
     };
 
@@ -193,14 +193,14 @@ const UserNavigator = () => {
                   title: 'Ride Completed! 🏁',
                   message: 'Thank you for riding with RideAndhra.',
                });
-               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
+               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
             } else if (mappedStatus === 'CANCELLED') {
                setAlert({
                   type: 'RIDE_CANCELLED',
                   title: 'Ride Cancelled',
                   message: 'This ride has been cancelled.',
                });
-               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'App' }] }));
+               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
             }
           }
         }

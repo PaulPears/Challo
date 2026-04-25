@@ -19,16 +19,16 @@ export class FavoriteDriver {
   @Column({ type: 'uuid' })
   rider_id: string;
 
-  @Column({ type: 'integer' })
-  driver_id: number;
+  @Column({ type: 'uuid' })
+  driver_id: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'rider_id' })
   rider: User;
 
-  @ManyToOne(() => Driver)
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'driver_id' })
-  driver: Driver;
+  driver: User;
 
   @CreateDateColumn()
   created_at: Date;

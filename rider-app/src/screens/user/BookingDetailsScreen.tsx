@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Image, Linking, Alert } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 import useRideStore from '../../store/rideStore';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { rideAPI } from '../../api/rideAPI';
 
 const BookingDetailsScreen = ({ navigation, route }: any) => {
+  const insets = useSafeAreaInsets();
   const { rideId } = route.params;
   const [ride, setRide] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +51,7 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
               }
               navigation.dispatch(CommonActions.reset({
                 index: 0,
-                routes: [{ name: 'App' }],
+                routes: [{ name: 'UserNavigator' }],
               }));
             } catch (error) {
               console.error('Failed to cancel ride:', error);
@@ -91,7 +92,7 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
         <Text style={styles.headerTitle}>Booking Details</Text>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}>
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View>
@@ -129,6 +130,7 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
                 source={
                   (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('cab') || (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('car') ? require('../../../assets/cab_icon.png') :
                     (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('bike_lite') || (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('bike-lite') ? require('../../../assets/bike_lite_icon.png') :
+                    (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('luxury_bike') || (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('premium') ? require('../../../assets/premium_bike.png') :
                       (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('bike') ? require('../../../assets/bike_icon.png') :
                         (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('auto') ? require('../../../assets/auto_icon.png') :
                           (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('parcel') ? require('../../../assets/parcel_icon.png') :

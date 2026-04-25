@@ -33,7 +33,7 @@ const VehicleInfoScreen = ({ navigation }) => {
 
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
-      quality: 0.5,
+      quality: 0.3,
     });
 
     if (pickerResult.canceled === true) {

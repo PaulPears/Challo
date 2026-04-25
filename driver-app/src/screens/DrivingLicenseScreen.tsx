@@ -15,7 +15,10 @@ const DrivingLicenseScreen = ({ navigation }) => {
       return;
     }
 
-    const pickerResult = await ImagePicker.launchImageLibraryAsync();
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      quality: 0.3,
+    });
     if (pickerResult.cancelled === true) {
       return;
     }

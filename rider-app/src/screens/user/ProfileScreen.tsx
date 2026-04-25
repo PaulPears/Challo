@@ -85,7 +85,7 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
         </View>
 
         <View style={styles.optionsCard}>
-          <ProfileRow icon="gift" label="Rewards & Free Rides" onPress={() => (navigation as any).navigate('Rewards')} />
+          <ProfileRow icon="gift" label="Super Rewards" onPress={() => (navigation as any).navigate('Rewards')} />
           <ProfileRow icon="shield" label="Privacy Policy" onPress={() => (navigation as any).navigate('PrivacyPolicy')} />
           <ProfileRow icon="question-circle" label="Help & Support" onPress={() => (navigation as any).navigate('HelpAndSupport')} />
           <ProfileRow icon="file-text" label="Terms & Service" onPress={() => (navigation as any).navigate('TermsAndService')} isLast />
