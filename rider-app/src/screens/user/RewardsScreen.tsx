@@ -137,7 +137,13 @@ const RewardsScreen = ({ navigation }: { navigation: RewardsScreenNavigationProp
             <View style={styles.ruleIconContainer}>
                <FontAwesome name="car" size={16} color="#FF5722" />
             </View>
-            <Text style={styles.ruleText}>Complete rides to earn 5% cashback as Super Coins.</Text>
+            <Text style={styles.ruleText}>Complete rides to earn 3% cashback as Super Coins.</Text>
+          </View>
+          <View style={styles.ruleItem}>
+            <View style={styles.ruleIconContainer}>
+               <MaterialCommunityIcons name="map-marker-distance" size={18} color="#FF5722" />
+            </View>
+            <Text style={styles.ruleText}>Earn 5% of your trip distance back as Super KM balance!</Text>
           </View>
           <View style={styles.ruleItem}>
             <View style={styles.ruleIconContainer}>

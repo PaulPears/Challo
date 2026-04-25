@@ -13,6 +13,7 @@ interface FareBreakdownProps {
   subtotal: number;
   superKmDiscount?: number;
   riderPayable?: number;
+  distance?: number;
 }
 
 const FareBreakdownCard: React.FC<FareBreakdownProps> = ({
@@ -26,6 +27,7 @@ const FareBreakdownCard: React.FC<FareBreakdownProps> = ({
   subtotal,
   superKmDiscount,
   riderPayable,
+  distance,
 }) => {
   return (
     <View style={styles.container}>
@@ -96,6 +98,18 @@ const FareBreakdownCard: React.FC<FareBreakdownProps> = ({
           </View>
         </>
       ) : null}
+
+      <View style={styles.rewardContainer}>
+        <Text style={styles.rewardTitle}>Expected Rewards</Text>
+        <View style={styles.rewardRow}>
+          <Text style={styles.rewardLabel}>🪙 Super Coins (3%)</Text>
+          <Text style={styles.rewardValue}>+ {Math.floor(totalFare * 0.03)} Coins</Text>
+        </View>
+        <View style={styles.rewardRow}>
+          <Text style={styles.rewardLabel}>🚀 Super KM (5%)</Text>
+          <Text style={styles.rewardValue}>+ {((distance || 0) * 0.05).toFixed(2)} KM</Text>
+        </View>
+      </View>
     </View>
   );
 };
@@ -173,6 +187,35 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FF5722',
+  },
+  rewardContainer: {
+    marginTop: 16,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  rewardTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#0369A1',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  rewardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  rewardLabel: {
+    fontSize: 12,
+    color: '#0369A1',
+  },
+  rewardValue: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#0EA5E9',
   },
 });
 

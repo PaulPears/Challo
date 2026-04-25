@@ -77,7 +77,7 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
     try {
       const formData = new FormData();
 
-      // 1. Profile Photo (from PersonalInfoScreen)
+      // 1. Profile Photo
       if (registrationData.profilePhoto) {
         formData.append('profilePhoto', {
           uri: registrationData.profilePhoto,
@@ -86,7 +86,7 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
         } as any);
       }
 
-      // 2. License Front Photo (from DrivingLicenseScreen)
+      // 2. License Photos
       if (registrationData.licenseFrontPhoto) {
         formData.append('licenseFrontPhoto', {
           uri: registrationData.licenseFrontPhoto,
@@ -94,8 +94,38 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
           type: 'image/jpeg',
         } as any);
       }
+      if (registrationData.licenseBackPhoto) {
+        formData.append('licenseBackPhoto', {
+          uri: registrationData.licenseBackPhoto,
+          name: 'license_back.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
 
-      // 3. RC Back Photo (New)
+      // 3. Aadhaar & PAN
+      if (registrationData.aadhaarPhoto) {
+        formData.append('aadhaarPhoto', {
+          uri: registrationData.aadhaarPhoto,
+          name: 'aadhaar.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
+      if (registrationData.panPhoto) {
+        formData.append('panPhoto', {
+          uri: registrationData.panPhoto,
+          name: 'pan.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
+
+      // 4. Vehicle Documents
+      if (registrationData.rcPhoto) {
+        formData.append('rcPhoto', {
+          uri: registrationData.rcPhoto,
+          name: 'rc.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
       if (registrationData.rcBackPhoto) {
         formData.append('rcBackPhoto', {
           uri: registrationData.rcBackPhoto,
@@ -103,34 +133,13 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
           type: 'image/jpeg',
         } as any);
       }
-
-      // 4. Aadhaar Photo
-      formData.append('aadhaarPhoto', {
-        uri: registrationData.aadhaarPhoto!,
-        name: 'aadhaar.jpg',
-        type: 'image/jpeg',
-      } as any);
-
-      // 5. PAN Photo
-      formData.append('panPhoto', {
-        uri: registrationData.panPhoto!,
-        name: 'pan.jpg',
-        type: 'image/jpeg',
-      } as any);
-
-      // 6. RC Photo (New)
-      formData.append('rcPhoto', {
-        uri: registrationData.rcPhoto!,
-        name: 'rc.jpg',
-        type: 'image/jpeg',
-      } as any);
-
-      // 7. Insurance Photo (New)
-      formData.append('insurancePhoto', {
-        uri: registrationData.insurancePhoto!,
-        name: 'insurance.jpg',
-        type: 'image/jpeg',
-      } as any);
+      if (registrationData.insurancePhoto) {
+        formData.append('insurancePhoto', {
+          uri: registrationData.insurancePhoto,
+          name: 'insurance.jpg',
+          type: 'image/jpeg',
+        } as any);
+      }
 
       // Ensure phone number is in E.164 format (+91...)
       const formattedPhoneNumber = currentPhoneNumber.startsWith('+')
@@ -147,20 +156,30 @@ const AadhaarPanScreen = ({ navigation }: { navigation: any }) => {
 
       markStepAsCompleted('5');
 
-      await api.post('/profile/register-driver', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await api.post('/profile/register-driver', formData, {
         timeout: 120000, // 2-minute timeout for document uploads
       });
+
+      console.log('[Drivers] Registration response:', response.data);
 
       // Instead of manual navigation, trigger a global status update.
       // AppNavigator will now see 'PENDING' status and flip automatically.
       await checkAuth();
 
     } catch (error: any) {
-      console.error('Driver registration failed', error.response?.data || error.message);
-      Alert.alert('Registration Failed', `An error occurred during submission: ${error.response?.data?.message || 'Please try again.'}`);
+      console.error('Driver registration failed:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      
+      if (error.message === 'Network Error' && !error.response) {
+        // Special diagnostic for Network Error
+        console.warn('[API Debug] Network Error often means CORS, timeout, or connection reset. Since backend says success, it might be a response parsing issue or the connection was closed prematurely.');
+      }
+
+      Alert.alert('Registration Failed', `An error occurred during submission: ${error.response?.data?.message || error.message || 'Please try again.'}`);
     } finally {
       setIsSubmitting(false);
     }

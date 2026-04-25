@@ -7,7 +7,7 @@ interface RegistrationData {
   email?: string;
   address?: string;
   profilePhoto?: string;
-  vehicleType?: 'Bike' | 'Auto' | 'Car' | 'bike-lite';
+  vehicleType?: 'bike' | 'auto' | 'cab' | 'bike_lite' | 'luxury_bike' | 'parcel';
   drivingLicenseNumber?: string;
   licenseFrontPhoto?: string;
   licenseBackPhoto?: string;

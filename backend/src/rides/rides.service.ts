@@ -317,8 +317,15 @@ export class RidesService {
       const updatedRide = await rideRepo.save(ride);
 
       if (updatedRide.final_fare > 0) {
-        const superCoinsEarned = updatedRide.final_fare * 0.05;
+        // Super Coins: 3% of fare
+        const superCoinsEarned = updatedRide.final_fare * 0.03;
         await this.usersService.awardSuperCoins(updatedRide.rider_id, superCoinsEarned, manager);
+
+        // Super KM: 5% of distance
+        if (updatedRide.actual_distance_km > 0) {
+          const superKmEarned = updatedRide.actual_distance_km * 0.05;
+          await this.usersService.awardSuperKm(updatedRide.rider_id, superKmEarned, manager);
+        }
 
         if (updatedRide.driver_id) {
           const serviceCharge = updatedRide.final_fare * 0.05;

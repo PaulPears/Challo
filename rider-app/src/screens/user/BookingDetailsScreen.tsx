@@ -224,6 +224,20 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
                   <Text style={styles.offerText}>🎯 {ride.super_km_applied} KM applied from your Super KM balance</Text>
                </View>
             )}
+
+            {ride.status === 'completed' && (
+              <View style={{ marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#0369A1', marginBottom: 8, textTransform: 'uppercase' }}>Rewards Earned</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, color: '#0369A1' }}>🪙 Super Coins (3%)</Text>
+                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0EA5E9' }}>+ {Math.floor((ride.final_fare || 0) * 0.03)} Coins</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 12, color: '#0369A1' }}>🚀 Super KM (5%)</Text>
+                  <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0EA5E9' }}>+ {(Number(ride.actual_distance_km || 0) * 0.05).toFixed(2)} KM</Text>
+                </View>
+              </View>
+            )}
           </View>
 
           {ride.status === 'completed' && (
@@ -232,7 +246,10 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
                  <Text style={{fontSize: 24, marginRight: 8}}>🪙</Text>
                  <View>
                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#F57F17' }}>Ride Completed!</Text>
-                   <Text style={{ color: '#F57F17', fontWeight: '500' }}>You earned {Math.floor((ride.finalFare || ride.fare || 0) * 0.1)} Super Coins!</Text>
+                    <Text style={{ color: '#F57F17', fontWeight: '500' }}>You earned {Math.floor((ride.final_fare || ride.finalFare || 0) * 0.03)} Super Coins!</Text>
+                    {Number(ride.actual_distance_km || 0) > 0 && (
+                      <Text style={{ color: '#0EA5E9', fontWeight: '500', fontSize: 13, marginTop: 2 }}>+ Earned {(Number(ride.actual_distance_km) * 0.05).toFixed(2)} Super KM distance reward!</Text>
+                    )}
                  </View>
               </View>
               

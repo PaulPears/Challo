@@ -17,3 +17,6 @@ ckm = 5
 Taf = 100 - (10 * 5) = 100 - 50 = 50
 
 Taf = 50 = Basic + Tc = 25 + 25 
+
+
+see the super cins must be upto 5 percent but not more than 3 percent actually and super kilometeres must be implemeted as the 5 percent of the diatnce for total kilometers rewarded back to the riders and all these must be mentoioned clearly in ride deatils screens and other screens with proper breakdown of the prices

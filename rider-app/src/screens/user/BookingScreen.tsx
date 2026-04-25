@@ -298,7 +298,7 @@ const BookingScreen = ({ navigation, route }: any) => {
               </TouchableOpacity>
               
               {selectedVehicle === option.vehicle && option.breakdown && (
-                <FareBreakdownCard {...option.breakdown} />
+                <FareBreakdownCard {...option.breakdown} distance={distance} />
               )}
             </View>
           ))}
