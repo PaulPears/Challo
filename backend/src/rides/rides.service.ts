@@ -146,28 +146,28 @@ export class RidesService {
       console.log(`[Matching] Found ${favorites.length} favorite drivers for rider ${newRide.rider_id}`);
       if (favorites.length > 0) {
         for (const fav of favorites) {
-          if (fav.driver && fav.driver.user_id) {
+          if (fav.driver && fav.driver.id) {
             // Fetch driver profile to check vehicle type
-            const driverProfileByUserId = await manager.getRepository(DriverProfile).findOne({ where: { user_id: fav.driver.user_id } });
+            const driverProfileByUserId = await manager.getRepository(DriverProfile).findOne({ where: { user_id: fav.driver.id } });
             
             if (driverProfileByUserId && driverProfileByUserId.vehicle_type === newRide.vehicle_type) {
               // Also check if they are busy
               const activeRideForFav = await manager.getRepository(Ride).findOne({
                 where: [
-                  { driver_id: fav.driver.user_id, status: RideStatus.ACCEPTED },
-                  { driver_id: fav.driver.user_id, status: RideStatus.IN_PROGRESS },
+                  { driver_id: fav.driver.id, status: RideStatus.ACCEPTED },
+                  { driver_id: fav.driver.id, status: RideStatus.IN_PROGRESS },
                 ]
               });
 
               if (activeRideForFav) {
-                console.log(`[Matching] Skipping favorite driver: ${fav.driver.user_id} (Currently Busy)`);
+                console.log(`[Matching] Skipping favorite driver: ${fav.driver.id} (Currently Busy)`);
                 continue;
               }
 
-              console.log(`[Matching] Notifying favorite driver: ${fav.driver.user_id} (Vehicle Match: ${driverProfileByUserId.vehicle_type})`);
-              this.notificationsService.sendNewRideToDriver(fav.driver.user_id, newRide);
+              console.log(`[Matching] Notifying favorite driver: ${fav.driver.id} (Vehicle Match: ${driverProfileByUserId.vehicle_type})`);
+              this.notificationsService.sendNewRideToDriver(fav.driver.id, newRide);
             } else {
-              console.log(`[Matching] Skipping favorite driver: ${fav.driver.user_id} (Vehicle Mismatch: ${driverProfileByUserId?.vehicle_type} vs Ride: ${newRide.vehicle_type})`);
+              console.log(`[Matching] Skipping favorite driver: ${fav.driver.id} (Vehicle Mismatch: ${driverProfileByUserId?.vehicle_type} vs Ride: ${newRide.vehicle_type})`);
             }
           }
         }
@@ -184,7 +184,7 @@ export class RidesService {
 
       nearbyDriverIds.forEach(driverId => {
         // Only notify if not already notified as a favorite
-        if (!favorites.some(f => f.driver?.user_id === driverId)) {
+        if (!favorites.some(f => f.driver?.id === driverId)) {
           console.log(`[Matching] Notifying nearby driver: ${driverId}`);
           this.notificationsService.sendNewRideToDriver(driverId, newRide);
         }
