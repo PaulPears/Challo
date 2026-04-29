@@ -4,7 +4,7 @@ import { View, Image, StyleSheet } from 'react-native';
 const SplashScreen = () => {
   return (
     <View style={styles.container}>
-      <Image source={require('../../assets/adaptive-icon.png')} style={styles.logo} />
+      <Image source={require('../../assets/splash-icon.png')} style={styles.logo} />
     </View>
   );
 };
@@ -17,8 +17,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   logo: {
-    width: 300,
-    height: 300,
+    width: 200,
+    height: 200,
     resizeMode: 'contain',
   },
 });

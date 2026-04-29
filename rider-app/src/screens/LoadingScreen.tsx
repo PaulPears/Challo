@@ -20,8 +20,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   logo: {
-    width: width * 0.65,
-    height: width * 0.65,
+    width: width * 0.5,
+    height: width * 0.5,
     resizeMode: 'contain',
     borderRadius: 20,
   },

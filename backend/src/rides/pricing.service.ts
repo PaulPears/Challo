@@ -129,8 +129,17 @@ export class PricingService {
         if (!peak.days_of_week.includes(currentDayOfWeek)) continue;
       }
 
-      // Check time window
-      if (currentTimeString >= peak.start_time && currentTimeString <= peak.end_time) {
+      // Check time window (handles midnight crossover)
+      let timeMatches = false;
+      if (peak.start_time <= peak.end_time) {
+        // Normal range (e.g., 09:00 to 17:00)
+        timeMatches = currentTimeString >= peak.start_time && currentTimeString <= peak.end_time;
+      } else {
+        // Crossover range (e.g., 22:00 to 05:00)
+        timeMatches = currentTimeString >= peak.start_time || currentTimeString <= peak.end_time;
+      }
+
+      if (timeMatches) {
         // Check location if provided
         let inRange = true;
         if (peak.latitude && peak.longitude && peak.radius_km && lat && lng) {
