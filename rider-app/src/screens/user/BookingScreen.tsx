@@ -198,17 +198,22 @@ const BookingScreen = ({ navigation, route }: any) => {
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
         >
-          {user?.super_coins_balance && user.super_coins_balance > 0 ? (
-            <View style={styles.coinsCard}>
+          {user ? (
+            <View style={[styles.coinsCard, (!user.super_coins_balance || user.super_coins_balance <= 0) && { opacity: 0.6 }]}>
               <View style={styles.coinsHeader}>
                 <Text style={styles.coinIcon}>🪙</Text>
                 <View style={{flex: 1}}>
                   <Text style={styles.coinsTitle}>Super Coins Reserve</Text>
-                  <Text style={styles.coinsSubtitle}>You have {user.super_coins_balance} coins available (₹{user.super_coins_balance} off)</Text>
+                  <Text style={styles.coinsSubtitle}>
+                    {(user.super_coins_balance && user.super_coins_balance > 0)
+                      ? `You have ${user.super_coins_balance} coins available (₹${user.super_coins_balance} off)`
+                      : `Earn coins on completed rides`}
+                  </Text>
                 </View>
                 <Switch
                   value={useCoins}
                   onValueChange={setUseCoins}
+                  disabled={!user.super_coins_balance || user.super_coins_balance <= 0}
                   trackColor={{ false: '#767577', true: '#FF9800' }}
                   thumbColor={useCoins ? '#f4f3f4' : '#f4f3f4'}
                 />
@@ -216,17 +221,22 @@ const BookingScreen = ({ navigation, route }: any) => {
             </View>
           ) : null}
 
-          {user?.super_km_balance && user.super_km_balance > 0 ? (
-            <View style={[styles.coinsCard, { backgroundColor: '#E3F2FD', borderColor: '#BBDEFB' }]}>
+          {user ? (
+            <View style={[styles.coinsCard, { backgroundColor: '#E3F2FD', borderColor: '#BBDEFB' }, (!user.super_km_balance || user.super_km_balance <= 0) && { opacity: 0.6 }]}>
               <View style={styles.coinsHeader}>
                 <Text style={styles.coinIcon}>🚀</Text>
                 <View style={{flex: 1}}>
                   <Text style={[styles.coinsTitle, { color: '#0D47A1' }]}>Super Kilometer Balance</Text>
-                  <Text style={[styles.coinsSubtitle, { color: '#1565C0' }]}>You have {user.super_km_balance} KM available</Text>
+                  <Text style={[styles.coinsSubtitle, { color: '#1565C0' }]}>
+                    {(user.super_km_balance && user.super_km_balance > 0)
+                      ? `You have ${user.super_km_balance} KM available`
+                      : `Complete rides to earn Super KM`}
+                  </Text>
                 </View>
                 <Switch
                   value={useSuperKm}
                   onValueChange={setUseSuperKm}
+                  disabled={!user.super_km_balance || user.super_km_balance <= 0}
                   trackColor={{ false: '#767577', true: '#2196F3' }}
                   thumbColor={useSuperKm ? '#f4f3f4' : '#f4f3f4'}
                 />

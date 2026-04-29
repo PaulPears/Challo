@@ -29,19 +29,19 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
 
   const handleCancelRide = async () => {
     if (!ride) return;
-    
+
     const status = (ride.status || '').toUpperCase();
     const isStarted = status === 'STARTED' || status === 'IN_PROGRESS';
 
     Alert.alert(
       isStarted ? 'Cancel Active Ride?' : 'Cancel Ride',
-      isStarted 
-        ? 'Your ride has already started. Cancelling now may result in full fare charges. Are you sure?' 
+      isStarted
+        ? 'Your ride has already started. Cancelling now may result in full fare charges. Are you sure?'
         : 'Are you sure you want to cancel this ride?',
       [
         { text: 'No', style: 'cancel' },
-        { 
-          text: 'Yes, Cancel', 
+        {
+          text: 'Yes, Cancel',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -101,28 +101,28 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
                 new Date(ride.created_at || ride.createdAt).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ' • ' +
                 new Date(ride.created_at || ride.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
               }</Text>
-              
+
               <View style={{ marginTop: 8 }}>
                 <Text style={styles.rideFare}>
                   {Number(ride.super_km_applied) > 0 ? 'Total Paid: ' : 'Trip Fare: '}
                   ₹ {Number(ride.rider_payable || ride.final_fare || ride.estimated_fare || 0).toFixed(2)}
                 </Text>
                 {Number(ride.super_km_discount) > 0 && (
-                   <View style={styles.superKmHeaderBadge}>
-                      <Text style={styles.superKmHeaderText}>SUPER KM APPLIED</Text>
-                   </View>
+                  <View style={styles.superKmHeaderBadge}>
+                    <Text style={styles.superKmHeaderText}>SUPER KM APPLIED</Text>
+                  </View>
                 )}
               </View>
-              
+
               <View style={styles.metricsContainer}>
-                 <View style={styles.metricItem}>
-                    <Text style={styles.metricLabel}>Distance</Text>
-                    <Text style={styles.metricValue}>{ride.actual_distance_km || ride.estimated_distance_km || ride.distance || '0'} km</Text>
-                 </View>
-                 <View style={[styles.metricItem, { marginLeft: 20 }]}>
-                    <Text style={styles.metricLabel}>Duration</Text>
-                    <Text style={styles.metricValue}>{ride.actual_duration_min || ride.estimated_duration_min || ride.duration || '0'} min</Text>
-                 </View>
+                <View style={styles.metricItem}>
+                  <Text style={styles.metricLabel}>Distance</Text>
+                  <Text style={styles.metricValue}>{ride.actual_distance_km || ride.estimated_distance_km || ride.distance || '0'} km</Text>
+                </View>
+                <View style={[styles.metricItem, { marginLeft: 20 }]}>
+                  <Text style={styles.metricLabel}>Duration</Text>
+                  <Text style={styles.metricValue}>{ride.actual_duration_min || ride.estimated_duration_min || ride.duration || '0'} min</Text>
+                </View>
               </View>
             </View>
             <View style={styles.rideStatusContainer}>
@@ -130,11 +130,11 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
                 source={
                   (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('cab') || (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('car') ? require('../../../assets/cab_icon.png') :
                     (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('bike_lite') || (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('bike-lite') ? require('../../../assets/bike_lite_icon.png') :
-                    (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('luxury_bike') || (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('premium') ? require('../../../assets/premium_bike.png') :
-                      (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('bike') ? require('../../../assets/bike_icon.png') :
-                        (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('auto') ? require('../../../assets/auto_icon.png') :
-                          (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('parcel') ? require('../../../assets/parcel_icon.png') :
-                            require('../../../assets/cab_icon.png')
+                      (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('luxury_bike') || (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('premium') ? require('../../../assets/premium_bike.png') :
+                        (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('bike') ? require('../../../assets/bike_icon.png') :
+                          (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('auto') ? require('../../../assets/auto_icon.png') :
+                            (ride.vehicle_type || ride.vehicleType)?.toLowerCase().includes('parcel') ? require('../../../assets/parcel_icon.png') :
+                              require('../../../assets/cab_icon.png')
                 }
                 style={{ width: 60, height: 60, marginBottom: 8 }}
                 resizeMode="contain"
@@ -158,11 +158,11 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
           </View>
 
           {ride.otp && (ride.status === 'SEARCHING' || ride.status === 'ACCEPTED' || ride.status === 'ARRIVED' || ride.status === 'PENDING') && (
-             <View style={styles.otpDetailContainer}>
-                <Text style={styles.otpDetailLabel}>TRIP PIN (OTP)</Text>
-                <Text style={styles.otpDetailValue}>{ride.otp}</Text>
-                <Text style={styles.otpDetailSub}>Share this PIN with your driver to start the trip</Text>
-             </View>
+            <View style={styles.otpDetailContainer}>
+              <Text style={styles.otpDetailLabel}>TRIP PIN (OTP)</Text>
+              <Text style={styles.otpDetailValue}>{ride.otp}</Text>
+              <Text style={styles.otpDetailSub}>Share this PIN with your driver to start the trip</Text>
+            </View>
           )}
 
           <View style={styles.addressDetails}>
@@ -198,7 +198,7 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
           {/* Fare Summary Section */}
           <View style={[styles.fareBreakdownCard, { marginBottom: 16 }]}>
             <Text style={styles.summaryTitle}>Fare Summary</Text>
-            
+
             <View style={styles.fareRow}>
               <Text style={styles.fareLabelSmall}>Trip Total</Text>
               <Text style={styles.fareValueSmall}>₹ {Number(ride.final_fare || ride.estimated_fare || 0).toFixed(2)}</Text>
@@ -207,10 +207,10 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
             {Number(ride.super_km_discount) > 0 && (
               <View style={[styles.fareRow, { marginTop: 8 }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={[styles.fareLabelSmall, { color: '#10b981', fontWeight: 'bold' }]}>Super KM Savings</Text>
-                    <View style={styles.savingsBadge}>
-                        <Text style={styles.savingsText}>PROMO</Text>
-                    </View>
+                  <Text style={[styles.fareLabelSmall, { color: '#10b981', fontWeight: 'bold' }]}>Super KM Savings</Text>
+                  <View style={styles.savingsBadge}>
+                    <Text style={styles.savingsText}>PROMO</Text>
+                  </View>
                 </View>
                 <Text style={[styles.fareValueSmall, { color: '#10b981', fontWeight: 'bold' }]}>- ₹ {Number(ride.super_km_discount).toFixed(2)}</Text>
               </View>
@@ -222,9 +222,9 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
             </View>
 
             {Number(ride.super_km_applied) > 0 && (
-               <View style={styles.offerBadgeContainer}>
-                  <Text style={styles.offerText}>🎯 {ride.super_km_applied} KM applied from your Super KM balance</Text>
-               </View>
+              <View style={styles.offerBadgeContainer}>
+                <Text style={styles.offerText}>🎯 {ride.super_km_applied} KM applied from your Super KM balance</Text>
+              </View>
             )}
 
             {ride.status === 'completed' && (
@@ -244,31 +244,31 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
 
           {ride.status === 'completed' && (
             <View style={{ backgroundColor: '#FFF8E1', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#FFE082' }}>
-              <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 8}}>
-                 <Text style={{fontSize: 24, marginRight: 8}}>🪙</Text>
-                 <View>
-                   <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#F57F17' }}>Ride Completed!</Text>
-                    <Text style={{ color: '#F57F17', fontWeight: '500' }}>You earned {Math.floor((ride.final_fare || ride.finalFare || 0) * 0.03)} Super Coins!</Text>
-                    {Number(ride.actual_distance_km || 0) > 0 && (
-                      <Text style={{ color: '#0EA5E9', fontWeight: '500', fontSize: 13, marginTop: 2 }}>+ Earned {(Number(ride.actual_distance_km) * 0.05).toFixed(2)} Super KM distance reward!</Text>
-                    )}
-                 </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Text style={{ fontSize: 24, marginRight: 8 }}>🪙</Text>
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#F57F17' }}>Ride Completed!</Text>
+                  <Text style={{ color: '#F57F17', fontWeight: '500' }}>You earned {Math.floor((ride.final_fare || ride.finalFare || 0) * 0.03)} Super Coins!</Text>
+                  {Number(ride.actual_distance_km || 0) > 0 && (
+                    <Text style={{ color: '#0EA5E9', fontWeight: '500', fontSize: 13, marginTop: 2 }}>+ Earned {(Number(ride.actual_distance_km) * 0.05).toFixed(2)} Super KM distance reward!</Text>
+                  )}
+                </View>
               </View>
-              
+
               {ride.driver_id && (
-                <TouchableOpacity 
-                   style={{ backgroundColor: '#FF9800', padding: 12, borderRadius: 8, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', marginTop: 8 }}
-                   onPress={async () => {
-                     try {
-                        const { default: axiosClient } = await import('../../api/axiosClient');
-                        await axiosClient.post('/users/favorites', { driver_id: ride.driver_id });
-                        import('react-native').then(({Alert}) => Alert.alert('Success', 'Added to favorite drivers!'));
-                     } catch(e) {
-                        import('react-native').then(({Alert}) => Alert.alert('Error', 'Could not add favorite'));
-                     }
-                   }}
+                <TouchableOpacity
+                  style={{ backgroundColor: '#FF9800', padding: 12, borderRadius: 8, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', marginTop: 8 }}
+                  onPress={async () => {
+                    try {
+                      const { default: axiosClient } = await import('../../api/axiosClient');
+                      await axiosClient.post('/users/favorites', { driver_id: ride.driver_id });
+                      import('react-native').then(({ Alert }) => Alert.alert('Success', 'Added to favorite drivers!'));
+                    } catch (e) {
+                      import('react-native').then(({ Alert }) => Alert.alert('Error', 'Could not add favorite'));
+                    }
+                  }}
                 >
-                  <Text style={{fontSize: 16, marginRight: 8}}>❤️</Text>
+                  <Text style={{ fontSize: 16, marginRight: 8 }}>❤️</Text>
                   <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>Add Driver to Favorites</Text>
                 </TouchableOpacity>
               )}
@@ -276,7 +276,7 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
           )}
 
           {ride.status && ['PENDING', 'SEARCHING', 'ACCEPTED', 'ARRIVED', 'STARTED', 'IN_PROGRESS'].includes(ride.status.toUpperCase()) && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.cancelActiveRideBtn}
               onPress={handleCancelRide}
             >
@@ -288,7 +288,6 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
 
 
 
-        <Text style={styles.disclaimer}>RideAndhra serves solely as a facilitator between you and independent Captains. The fare displayed is an estimate; the final fare is subject to change.</Text>
       </ScrollView>
     </SafeAreaView>
   );

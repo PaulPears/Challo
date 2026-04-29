@@ -9,7 +9,7 @@ const PrivacyPolicyScreen = () => {
   const navigation = useNavigation();
   const { config } = useAppConfig();
   
-  const policyText = config?.privacy_policy_driver || 'Loading policy...';
+  const policyText = config?.privacy_policy_driver || config?.privacy_policy_rider || 'Loading policy...';
 
   return (
     <SafeAreaView style={styles.container}>

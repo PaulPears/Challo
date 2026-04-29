@@ -9,6 +9,8 @@ interface AppConfig {
   latest_driver_app_version: string;
   privacy_policy_driver: string;
   terms_and_conditions_driver: string;
+  privacy_policy_rider?: string;
+  terms_and_conditions_rider?: string;
   support_contact_whatsapp: string;
   [key: string]: any;
 }

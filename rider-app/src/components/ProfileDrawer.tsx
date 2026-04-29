@@ -33,7 +33,12 @@ const ProfileDrawer = ({ onClose, onReadCountChange }: { onClose: () => void; on
     try {
       setLoading(true);
       const response = await axiosClient.get('/notifications');
-      setNotifications(response.data || []);
+      const filtered = (response.data || []).filter((n: NotificationItem) => {
+        const title = (n.title || '').toLowerCase();
+        const msg = (n.message || '').toLowerCase();
+        return !title.includes('new ride request') && !msg.includes('new ride request');
+      });
+      setNotifications(filtered);
     } catch (error) {
       console.error('[ProfileDrawer] Failed to fetch notifications:', error);
     } finally {

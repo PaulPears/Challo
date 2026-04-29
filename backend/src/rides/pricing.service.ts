@@ -4,6 +4,7 @@ import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { FareSetting } from './fare-setting.entity';
 import { FareTier } from './fare-tier.entity';
 import { SurgeEvent } from './surge-event.entity';
+import { PeakHourSurge } from './peak-hour-surge.entity';
 import { Ride, RideStatus, VehicleType } from './ride.entity';
 import { WeatherService } from './weather.service';
 import { TrafficService } from './traffic.service';
@@ -32,11 +33,25 @@ export class PricingService {
     private fareSettingsRepository: Repository<FareSetting>,
     @InjectRepository(SurgeEvent)
     private surgeEventRepository: Repository<SurgeEvent>,
+    @InjectRepository(PeakHourSurge)
+    private peakHourSurgeRepository: Repository<PeakHourSurge>,
     @InjectRepository(Ride)
     private ridesRepository: Repository<Ride>,
     private weatherService: WeatherService,
     private trafficService: TrafficService,
   ) {}
+
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
 
   async getFareEstimate(
     distance: number,
@@ -97,23 +112,44 @@ export class PricingService {
     let surgeMultiplier = 1.0;
     let surgeReason = 'Standard Pricing';
 
-    // 1. Time of Day Multiplier
     const now = new Date();
-    const hour = now.getHours();
-    
-    if (hour >= 18 && hour <= 21) {
-      surgeMultiplier = 1.4;
-      surgeReason = 'Evening Rush Hour';
-    } else if (hour >= 6 && hour <= 9) {
-      surgeMultiplier = 1.3;
-      surgeReason = 'Morning Peak';
-    } else if (hour >= 22 || hour <= 5) {
-      surgeMultiplier = 1.2;
-      surgeReason = 'Night Surcharge';
+    const currentTimeString = now.toTimeString().substring(0, 8); // e.g. "18:30:00"
+    const currentDayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+    // 1. Evaluate Peak Hour Surges
+    const activePeakHours = await this.peakHourSurgeRepository.find({
+      where: { is_active: true },
+    });
+
+    for (const peak of activePeakHours) {
+      if (!peak.appliesToVehicleType(vehicleType)) continue;
+
+      // Check day of week
+      if (peak.days_of_week && peak.days_of_week.length > 0) {
+        if (!peak.days_of_week.includes(currentDayOfWeek)) continue;
+      }
+
+      // Check time window
+      if (currentTimeString >= peak.start_time && currentTimeString <= peak.end_time) {
+        // Check location if provided
+        let inRange = true;
+        if (peak.latitude && peak.longitude && peak.radius_km && lat && lng) {
+          const dist = this.calculateDistance(lat, lng, Number(peak.latitude), Number(peak.longitude));
+          if (dist > Number(peak.radius_km)) inRange = false;
+        }
+
+        if (inRange) {
+          const peakMultiplier = parseFloat(peak.multiplier as any);
+          if (peakMultiplier > surgeMultiplier) {
+            surgeMultiplier = peakMultiplier;
+            surgeReason = peak.name;
+          }
+        }
+      }
     }
 
-    // 2. Event Surge
-    const activeEvent = await this.surgeEventRepository.findOne({
+    // 2. Evaluate Surge Events (One-off events like Festivals)
+    const activeEvents = await this.surgeEventRepository.find({
       where: {
         is_active: true,
         start_date: LessThanOrEqual(now),
@@ -121,9 +157,22 @@ export class PricingService {
       },
     });
 
-    if (activeEvent && activeEvent.multiplier > surgeMultiplier) {
-      surgeMultiplier = parseFloat(activeEvent.multiplier as any);
-      surgeReason = activeEvent.name;
+    for (const event of activeEvents) {
+      if (!event.appliesToVehicleType(vehicleType)) continue;
+
+      let inRange = true;
+      if (event.latitude && event.longitude && event.radius_km && lat && lng) {
+        const dist = this.calculateDistance(lat, lng, Number(event.latitude), Number(event.longitude));
+        if (dist > Number(event.radius_km)) inRange = false;
+      }
+
+      if (inRange) {
+        const eventMultiplier = parseFloat(event.multiplier as any);
+        if (eventMultiplier > surgeMultiplier) {
+          surgeMultiplier = eventMultiplier;
+          surgeReason = event.name;
+        }
+      }
     }
 
     // 3. Demand-Supply Surge (Simple Query)

@@ -7,37 +7,29 @@ import {
 } from 'typeorm';
 import { VehicleType } from './ride.entity';
 
-/**
- * SurgeEvent stores admin-configured time windows where a
- * surge multiplier is automatically applied — e.g. festivals,
- * public holidays, major events.
- */
-@Entity('surge_events')
-export class SurgeEvent {
+@Entity('peak_hour_surges')
+export class PeakHourSurge {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'varchar', length: 100 })
-  name: string; // e.g. "Dussehra 2024", "IPL Final Night"
+  name: string; // e.g., "Morning Peak", "Evening Rush Hour"
 
-  @Column({ type: 'timestamptz' })
-  start_date: Date;
+  @Column({ type: 'time' })
+  start_time: string; // e.g., "06:00:00"
 
-  @Column({ type: 'timestamptz' })
-  end_date: Date;
+  @Column({ type: 'time' })
+  end_time: string; // e.g., "09:59:00"
+
+  // Days of the week 0-6 (0 = Sunday). If null, applies every day.
+  @Column({ type: 'jsonb', nullable: true })
+  days_of_week: number[] | null;
 
   @Column('decimal', { precision: 5, scale: 3, default: 1.2 })
   multiplier: number;
 
-  /**
-   * Null/empty = applies to all vehicle types.
-   * Otherwise, comma-separated list: 'auto,cab'
-   */
   @Column({ type: 'text', nullable: true })
   vehicle_types: string | null;
-
-  @Column({ default: true })
-  is_active: boolean;
 
   @Column('decimal', { precision: 10, scale: 6, nullable: true })
   latitude: number | null;
@@ -47,6 +39,9 @@ export class SurgeEvent {
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   radius_km: number | null;
+
+  @Column({ default: true })
+  is_active: boolean;
 
   @CreateDateColumn()
   created_at: Date;

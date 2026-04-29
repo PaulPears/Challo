@@ -97,6 +97,11 @@ const UserNavigator = () => {
     };
 
     const handleNotification = (data: any) => {
+      const isNewRideRequest = (data.title || '').toLowerCase().includes('new ride request') || 
+                               (data.message || '').toLowerCase().includes('new ride request');
+      
+      if (isNewRideRequest) return;
+
       addNotification({
         id: Math.random().toString(36).substr(2, 9),
         title: data.title,

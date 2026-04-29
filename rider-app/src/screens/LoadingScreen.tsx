@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, Dimensions } from 'react-native';
+
+const { width } = Dimensions.get('window');
 
 const LoadingScreen = () => {
   return (
     <View style={styles.container}>
-      <Image source={require('../../assets/adaptive-icon.png')} style={styles.logo} />
-      <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+      <Image source={require('../../assets/splash-icon.png')} style={styles.logo} />
     </View>
   );
 };
@@ -14,13 +15,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
   },
   logo: {
-    width: 250,
-    height: 250,
+    width: width * 0.65,
+    height: width * 0.65,
     resizeMode: 'contain',
+    borderRadius: 20,
   },
 });
 

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { rideAPI } from '../../api/rideAPI';
-import { FontAwesome } from '@expo/vector-icons';
 import { StatusBar } from 'react-native';
 
 const BookingCard = ({ item, navigation }: any) => {
@@ -23,7 +22,7 @@ const BookingCard = ({ item, navigation }: any) => {
   return (
     <TouchableOpacity
       onPress={() => navigation.navigate('BookingDetails', { rideId: item.id })}
-      activeOpacity={0.3}
+      activeOpacity={0.75}
     >
       <View style={styles.bookingCard}>
         <View style={styles.cardHeader}>
@@ -65,21 +64,17 @@ const BookingCard = ({ item, navigation }: any) => {
             <Text style={styles.rideFare}>₹{Number(item.rider_payable || item.riderPayable || item.fare || 0).toFixed(2)}</Text>
             {showOtp && item.otp && (
               <View style={styles.otpListBadge}>
-                 <Text style={styles.otpListLabel}>TRIP PIN:</Text>
-                 <Text style={styles.otpListValue}>{item.otp}</Text>
+                <Text style={styles.otpListLabel}>TRIP PIN:</Text>
+                <Text style={styles.otpListValue}>{item.otp}</Text>
               </View>
             )}
             {Number(item.super_km_applied) > 0 && (
               <View style={styles.listSavingsBadge}>
-                 <Text style={styles.listSavingsText}>Super KM Applied ✨</Text>
+                <Text style={styles.listSavingsText}>Super KM Applied ✨</Text>
               </View>
             )}
           </View>
 
-          <TouchableOpacity style={styles.reportButton}>
-            <FontAwesome name="flag" size={16} color="#ef4444" />
-            <Text style={styles.reportButtonText}>Report</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -160,10 +155,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: 'grey',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowRadius: 6,
     elevation: 3,
   },
   cardHeader: {
@@ -283,15 +278,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     textTransform: 'uppercase',
-  },
-  reportButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  reportButtonText: {
-    marginLeft: 8,
-    color: '#ef4444',
-    fontWeight: '600',
   },
   otpListBadge: {
     flexDirection: 'row',

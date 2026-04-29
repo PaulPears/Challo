@@ -10,7 +10,7 @@ const TermsOfServiceScreen = () => {
   const navigation = useNavigation();
   const { config } = useAppConfig();
 
-  const termsText = config?.terms_and_conditions_driver || 'Loading terms...';
+  const termsText = config?.terms_and_conditions_driver || config?.terms_and_conditions_rider || 'Loading terms...';
 
   return (
     <SafeAreaView style={styles.safeArea}>

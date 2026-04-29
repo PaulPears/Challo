@@ -11,6 +11,7 @@ import { UsersModule } from '../users/users.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { RideRejection } from './ride-rejection.entity';
 import { SurgeEvent } from './surge-event.entity';
+import { PeakHourSurge } from './peak-hour-surge.entity';
 import { PricingService } from './pricing.service';
 import { MatchingService } from './matching.service';
 import { RidePolicyService } from './ride-policy.service';
@@ -22,7 +23,7 @@ import { IncentivesModule } from '../incentives/incentives.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Ride, RideRoute, FareSetting, FareTier, RideRejection, SurgeEvent, DriverProfile]),
+    TypeOrmModule.forFeature([Ride, RideRoute, FareSetting, FareTier, RideRejection, SurgeEvent, PeakHourSurge, DriverProfile]),
     NotificationsModule,
     UsersModule,
     PaymentsModule,
