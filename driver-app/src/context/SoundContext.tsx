@@ -33,7 +33,11 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
         configureAudio();
     }, []);
 
+    const isPlayingRef = useRef(false);
+    const isLoadingRef = useRef(false);
+
     const stopAlert = async () => {
+        isPlayingRef.current = false;
         if (soundRef.current) {
             try {
                 console.log('Stopping sound');
@@ -47,8 +51,15 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const playAlert = async (type: SoundType) => {
+        // If already loading or playing this specific alert, we might want to skip 
+        // but for now, let's just ensure we stop any previous one properly.
+        isPlayingRef.current = true;
+        
         // Stop any currently playing sound first
         await stopAlert();
+        
+        // Re-set playing to true since stopAlert sets it to false
+        isPlayingRef.current = true;
 
         console.log(`Attempting to play sound type: ${type}`);
 
@@ -56,27 +67,37 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
         let shouldLoop = false;
 
         if (type === 'RIDE_REQUEST') {
-            // Loud Alarm / Siren
             source = { uri: 'https://cdn.freesound.org/previews/219/219244_4082826-lq.mp3' };
             shouldLoop = true;
         } else if (type === 'ONLINE_POP') {
-            // Pop sound for going online
             source = { uri: 'https://cdn.freesound.org/previews/242/242501_4414128-lq.mp3' };
             shouldLoop = false;
         } else {
-            // Standard notification ping
             source = { uri: 'https://cdn.freesound.org/previews/536/536108_10860334-lq.mp3' };
             shouldLoop = false;
         }
 
         try {
+            isLoadingRef.current = true;
             const { sound } = await Audio.Sound.createAsync(
                 source,
-                { shouldPlay: true, isLooping: shouldLoop }
+                { shouldPlay: false, isLooping: shouldLoop }
             );
+            
+            isLoadingRef.current = false;
+            
+            // Check if stopAlert was called while we were loading
+            if (!isPlayingRef.current) {
+                console.log('Stop requested during sound load, unloading.');
+                await sound.unloadAsync();
+                return;
+            }
+
             soundRef.current = sound;
+            await sound.playAsync();
             console.log('Sound playing');
         } catch (error) {
+            isLoadingRef.current = false;
             console.error("Failed to play sound", error);
         }
     };

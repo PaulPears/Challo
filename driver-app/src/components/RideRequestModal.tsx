@@ -123,6 +123,10 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
   const handleAccept = async () => {
     if (!rideRequest) return;
 
+    // Stop alert immediately
+    stopAlert();
+    Vibration.cancel();
+
     const expiryString = await AsyncStorage.getItem('subscriptionExpiry');
     const now = new Date();
     const expiry = expiryString ? new Date(expiryString) : null;
@@ -143,8 +147,6 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
     }
 
     setActionLoading('accept');
-    await stopAlert();
-    Vibration.cancel();
     if (countdownRef.current) clearInterval(countdownRef.current);
     try {
       await api.patch(`/rides/${rideRequest.rideId}/accept`);
@@ -164,7 +166,9 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
 
   const handleReject = async () => {
     if (!rideRequest) return;
-    await stopAlert();
+    
+    // Stop alert immediately
+    stopAlert();
     Vibration.cancel();
     setActionLoading('reject');
     try {
