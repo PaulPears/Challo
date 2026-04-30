@@ -108,6 +108,8 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
                   ₹ {Number(ride.rider_payable || ride.final_fare || ride.estimated_fare || 0).toFixed(2)}
                 </Text>
                 {Number(ride.super_km_discount) > 0 && (
+                  <View style={styles.superKmHeaderBadge}>
+                    <Text style={styles.superKmHeaderText}>SUPER KM APPLIED</Text>
                   </View>
                 )}
                 {Number(ride.super_coins_applied) > 0 && (
