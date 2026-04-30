@@ -34,11 +34,13 @@ export const usePushNotifications = (userId: string | null) => {
     const registerForPushNotificationsAsync = async (): Promise<string | undefined> => {
         // ── 1. Create Android notification channels ──────────────────────────
         if (Platform.OS === 'android') {
-            await Notifications.setNotificationChannelAsync('default', {
-                name: 'Default',
+            await Notifications.setNotificationChannelAsync('ride-updates', {
+                name: 'Ride Updates',
                 importance: Notifications.AndroidImportance.MAX,
                 vibrationPattern: [0, 250, 250, 250],
                 lightColor: '#FF231F7C',
+                enableVibrate: true,
+                showBadge: true,
             });
         }
 

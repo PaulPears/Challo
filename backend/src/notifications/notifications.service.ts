@@ -67,7 +67,8 @@ export class NotificationsService {
           [user.rider_push_token], 
           title, 
           body, 
-          { rideId, status, type: 'RIDE_UPDATE', target: 'rider' }
+          { rideId, status, type: 'RIDE_UPDATE', target: 'rider' },
+          'ride-updates'
         );
       }
     } catch (error) {
@@ -208,7 +209,7 @@ export class NotificationsService {
       .getRawMany();
   }
 
-  private async sendPushBatch(tokens: string[], title: string, body: string, data?: any, channelId: string = 'default') {
+  private async sendPushBatch(tokens: string[], title: string, body: string, data?: any, channelId: string = 'ride-updates') {
     // Use custom alert sound for ride requests, default for everything else
     const isRideRequest = channelId === 'ride-alerts';
     const messages: ExpoPushMessage[] = tokens.map(token => ({
