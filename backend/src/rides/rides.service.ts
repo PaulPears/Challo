@@ -135,6 +135,7 @@ export class RidesService {
         company_payable: companyPayable,
         super_km_applied: superKmApplied,
         super_km_discount: superKmDiscount,
+        super_coins_applied: createRideDto.apply_super_coins || 0,
         status: RideStatus.PENDING,
         otp: Math.floor(1000 + Math.random() * 9000).toString(), // Generate 4-digit PIN
       };

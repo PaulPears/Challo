@@ -1,0 +1,18 @@
+Surge event insert statement for Ride andhra backend 
+
+
+-- Clear old data
+DELETE FROM peak_hour_surges;
+DELETE FROM surge_events;
+
+-- 1. Midnight Surge (Applies to ALL vehicles everywhere, 10 PM - 5 AM)
+INSERT INTO peak_hour_surges (name, start_time, end_time, days_of_week, multiplier, vehicle_types, is_active)
+VALUES ('Midnight Rush', '22:00:00', '05:00:00', '[0, 1, 2, 3, 4, 5, 6]', 1.500, NULL, TRUE);
+
+-- 2. Morning Peak (Specific to Anantapur, Bike & Auto only, 7 AM - 11 AM)
+INSERT INTO peak_hour_surges (name, start_time, end_time, days_of_week, multiplier, vehicle_types, latitude, longitude, radius_km, is_active)
+VALUES ('Morning Office Rush', '07:00:00', '11:00:00', '[1, 2, 3, 4, 5]', 1.300, 'bike,auto', 14.680000, 77.600000, 10.00, TRUE);
+
+-- 3. Weekend Special (Applies to all for the next 2 days)
+INSERT INTO surge_events (name, start_date, end_date, multiplier, is_active)
+VALUES ('Weekend Demand Spike', NOW(), NOW() + INTERVAL '2 days', 1.250, TRUE);

@@ -184,6 +184,9 @@ export class Ride {
   @Column('decimal', { name: 'super_km_discount', precision: 8, scale: 2, default: 0 })
   super_km_discount: number;
 
+  @Column('decimal', { name: 'super_coins_applied', precision: 8, scale: 2, default: 0 })
+  super_coins_applied: number;
+
   @Column('decimal', { name: 'rider_payable', precision: 8, scale: 2, nullable: true })
   rider_payable: number;
 

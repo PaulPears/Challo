@@ -68,11 +68,18 @@ const BookingCard = ({ item, navigation }: any) => {
                 <Text style={styles.otpListValue}>{item.otp}</Text>
               </View>
             )}
-            {Number(item.super_km_applied) > 0 && (
-              <View style={styles.listSavingsBadge}>
-                <Text style={styles.listSavingsText}>Super KM Applied ✨</Text>
-              </View>
-            )}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {Number(item.super_km_applied) > 0 && (
+                <View style={[styles.listSavingsBadge, { marginRight: 8 }]}>
+                  <Text style={styles.listSavingsText}>Super KM Applied ✨</Text>
+                </View>
+              )}
+              {Number(item.super_coins_applied) > 0 && (
+                <View style={[styles.listSavingsBadge, { borderColor: '#FCD34D', backgroundColor: '#FFFBEB' }]}>
+                  <Text style={[styles.listSavingsText, { color: '#B45309' }]}>Coins Applied 🪙</Text>
+                </View>
+              )}
+            </View>
           </View>
 
         </View>
