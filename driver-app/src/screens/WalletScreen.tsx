@@ -175,10 +175,10 @@ const WalletScreen = ({ navigation }: any) => {
                 style={styles.balanceCard}
               >
                 <View style={styles.cardHeader}>
-                  <View style={styles.balanceInfo}>
-                      <Text style={styles.balanceLabel}>Company Coverage</Text>
+                    <View style={styles.balanceInfo}>
+                      <Text style={styles.balanceLabel}>Platform Coverage</Text>
                       <Text style={styles.balanceValue}>₹{(Number(walletData.reward_balance || 0)).toFixed(2)}</Text>
-                      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, marginTop: 4 }}>Earned from Super KM trip discounts</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, marginTop: 4 }}>Earned from Super KM & Super Coin discounts</Text>
                   </View>
                   <TouchableOpacity 
                     style={[styles.withdrawBtn, { backgroundColor: '#fff' }]}

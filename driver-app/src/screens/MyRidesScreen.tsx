@@ -32,6 +32,7 @@ interface Ride {
   actual_distance_km?: number;
   actual_duration_min?: number;
   super_km_applied?: number;
+  company_payable?: number;
 }
 
 const RideItem = ({ item }: { item: Ride }) => {
@@ -45,7 +46,7 @@ const RideItem = ({ item }: { item: Ride }) => {
       activeOpacity={0.7}
       onPress={() => navigation.navigate('RideDetails', { ride: item })}
     >
-      {Number(item.super_km_applied) > 0 && (
+      {(Number(item.company_payable) > 0 || Number(item.super_km_applied) > 0) && (
          <View style={styles.platformRewardBadge}>
             <Text style={styles.platformRewardText}>Platform Reward Coverage 🚀</Text>
          </View>

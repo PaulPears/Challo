@@ -95,6 +95,7 @@ export class RidesService {
         await this.usersService.deductSuperCoins(createRideDto.rider_id, createRideDto.apply_super_coins, manager);
         finalEstimatedFare = Math.max(0, finalEstimatedFare - createRideDto.apply_super_coins);
         riderPayable = finalEstimatedFare;
+        companyPayable += createRideDto.apply_super_coins;
       }
 
       if (createRideDto.apply_super_km) {
@@ -114,12 +115,12 @@ export class RidesService {
           if (estimate.superKmApplied && estimate.superKmApplied > 0) {
             superKmApplied = estimate.superKmApplied;
             superKmDiscount = estimate.superKmDiscount || 0;
-            riderPayable = estimate.riderPayable || finalEstimatedFare;
-            companyPayable = estimate.companyPayable || 0;
+            
+            // If coins were already applied, we need to subtract the super_km discount from the already reduced fare
+            riderPayable = Math.max(0, riderPayable - superKmDiscount);
+            companyPayable += superKmDiscount;
 
             await this.usersService.deductSuperKm(createRideDto.rider_id, superKmApplied, manager);
-            // DO NOT override finalEstimatedFare with riderPayable here. 
-            // finalEstimatedFare (Tab) should remain the full amount before discount.
           }
         }
       }

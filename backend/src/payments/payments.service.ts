@@ -134,7 +134,7 @@ export class PaymentsService {
                 transaction_type: TransactionType.SUPER_KM_COMPENSATION,
                 reference_type: 'ride',
                 reference_id: rideId,
-                description: `Super KM Bonus for ride #${rideId.slice(0, 8).toUpperCase()}`,
+                description: `Platform Coverage Reward for ride #${rideId.slice(0, 8).toUpperCase()}`,
                 balance_after: updatedWallet ? updatedWallet.super_km_balance : 0,
             });
             await transactionRepo.save(transaction);

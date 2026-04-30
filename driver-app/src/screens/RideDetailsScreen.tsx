@@ -136,10 +136,10 @@ const RideDetailsScreen = () => {
                 <View style={[styles.breakdownRow, { padding: 15, backgroundColor: '#fff7ed', borderRadius: 15, borderLeftWidth: 5, borderLeftColor: '#fe7009' }]}>
                    <View style={{ flex: 1 }}>
                      <Text style={{ fontSize: 14, color: '#9a3412', fontWeight: '900', textTransform: 'uppercase' }}>
-                       {Number(ride.company_payable) > 0 ? 'Collected from Rider' : 'Cash/Online Received'}
+                       {Number(ride.company_payable) > 0 ? 'Paid by Rider' : 'Cash/Online Received'}
                      </Text>
                      <Text style={{ fontSize: 11, color: '#c2410c', marginTop: 2 }}>
-                       {Number(ride.company_payable) > 0 ? 'Amount rider paid after discount' : 'Full trip value received'}
+                       {Number(ride.company_payable) > 0 ? 'Amount collected from customer' : 'Full trip value received'}
                      </Text>
                    </View>
                    <Text style={{ fontSize: 24, fontWeight: '900', color: '#fe7009' }}>₹{Number(ride.rider_payable || ride.final_fare).toFixed(2)}</Text>
