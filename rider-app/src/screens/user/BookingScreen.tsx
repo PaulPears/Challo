@@ -353,6 +353,7 @@ const BookingScreen = ({ navigation, route }: any) => {
               pickup_address: newRide.pickup_address || pickup.address,
               dropoff_address: newRide.dropoff_address || dropoff.address,
               estimated_fare: newRide.estimated_fare || newRide.fare || rideData.fare,
+              vehicle_type: newRide.vehicle_type || rideData.vehicle_type,
               status: 'SEARCHING',
               otp: newRide.otp,  // ← store OTP so Trip PIN shows in modal
             });

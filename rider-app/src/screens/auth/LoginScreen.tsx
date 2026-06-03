@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, Alert, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions, Alert, Image, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, ScrollView, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthStackParamList';
@@ -27,6 +27,8 @@ const LoginScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState(new Array(6).fill(''));
   const [otpSent, setOtpSent] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const otpInputs = useRef<Array<TextInput | null>>([]);
 
   const handleSendOtp = async () => {
@@ -41,6 +43,7 @@ const LoginScreen = () => {
       return;
     }
     try {
+      setIsSendingOtp(true);
       const data = {
         identifier: '91' + phoneNumber
       }
@@ -56,6 +59,8 @@ const LoginScreen = () => {
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.');
       console.error(error);
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
@@ -91,8 +96,29 @@ const LoginScreen = () => {
     }
 
     try {
+      setIsVerifyingOtp(true);
       if (phoneNumber === '1234567890' && enteredOtp === '123456') {
         console.log('Test credentials matched. Bypassing MSG91 verification.');
+        const response = await loginVerified(phoneNumber, 'TEST_ACCESS_TOKEN');
+        console.log('DEBUG: loginVerified (backend) response:', JSON.stringify(response, null, 2));
+
+        const { accessToken, isNewUser, user } = response;
+        const decodedToken = jwtDecode<JwtPayload>(accessToken);
+        await AsyncStorage.setItem('accessToken', accessToken);
+
+        console.log('DEBUG: decodedToken:', JSON.stringify(decodedToken, null, 2));
+
+        const userName = user?.name || '';
+        console.log(`DEBUG: userName: "${userName}", isNewUser: ${isNewUser}`);
+
+        setUser({
+          id: decodedToken.sub,
+          name: userName,
+          phoneNumber: decodedToken.phoneNumber,
+          role: decodedToken.roles[0] as 'rider' | 'driver' | 'admin',
+          accessToken,
+          isNewUser: isNewUser,
+        });
       } else {
         // Step 1: Verify OTP with MSG91 Widget to get accessToken
         const widgetBody = { reqId, otp: enteredOtp };
@@ -132,6 +158,8 @@ const LoginScreen = () => {
       console.error('Verify OTP Error Details:', error.response?.data || error.message);
       Alert.alert('Error', error.response?.data?.message || error.message || 'Failed to verify OTP. Please check your OTP and try again.');
       console.error(error);
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -156,8 +184,8 @@ const LoginScreen = () => {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
@@ -177,9 +205,18 @@ const LoginScreen = () => {
                 keyboardType="phone-pad"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
+                editable={!isSendingOtp}
               />
-              <TouchableOpacity style={styles.button} onPress={handleSendOtp}>
-                <Text style={styles.buttonText}>Send OTP</Text>
+              <TouchableOpacity 
+                style={[styles.button, isSendingOtp && { opacity: 0.8 }]} 
+                onPress={handleSendOtp}
+                disabled={isSendingOtp}
+              >
+                {isSendingOtp ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.buttonText}>Send OTP</Text>
+                )}
               </TouchableOpacity>
               <Text style={{ fontSize: 12, color: 'gray', marginTop: 30, textAlign: 'center' }}>OTP will be sent to your phone number</Text>
               <Text style={{ fontSize: 10, color: 'gray', marginTop: 10, textAlign: 'center' }}>By clicking on send OTP, you agree to our terms and conditions</Text>
@@ -202,8 +239,16 @@ const LoginScreen = () => {
                   />
                 ))}
               </View>
-              <TouchableOpacity style={styles.button} onPress={handleVerifyOtp}>
-                <Text style={styles.buttonText}>Verify OTP</Text>
+              <TouchableOpacity 
+                style={[styles.button, isVerifyingOtp && { opacity: 0.8 }]} 
+                onPress={handleVerifyOtp}
+                disabled={isVerifyingOtp}
+              >
+                {isVerifyingOtp ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.buttonText}>Verify OTP</Text>
+                )}
               </TouchableOpacity>
               <TouchableOpacity onPress={handleResendOtp} style={{ marginTop: 20 }}>
                 <Text style={{ color: '#FF5722', fontWeight: 'bold' }}>Resend OTP</Text>

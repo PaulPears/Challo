@@ -93,6 +93,7 @@ const DriverDetailsScreen = ({ route, navigation }: any) => {
         <Marker
           coordinate={driverLocation}
           title="Driver Location"
+          tracksViewChanges={false}
         >
           <View style={styles.driverMarker}>
             <Text style={{ fontSize: 24 }}>{getVehicleEmoji(activeRide?.driver?.vehicle_model || 'cab')}</Text>

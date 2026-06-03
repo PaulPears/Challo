@@ -478,14 +478,18 @@ export class RidesService {
 
     let vehicleTypeFilter: VehicleType | undefined;
     let rejectedRideIds: string[] = [];
+    let driverLat: number | undefined;
+    let driverLng: number | undefined;
 
     if (driverId) {
-      // 1. Fetch driver's vehicle type to filter requests
+      // 1. Fetch driver's vehicle type AND current location coordinates
       const driver = await this.driverProfileRepository.findOne({ 
         where: { user_id: driverId },
-        select: ['vehicle_type'] 
+        select: ['vehicle_type', 'current_latitude', 'current_longitude'] 
       });
       vehicleTypeFilter = driver?.vehicle_type;
+      driverLat = driver?.current_latitude ? Number(driver.current_latitude) : undefined;
+      driverLng = driver?.current_longitude ? Number(driver.current_longitude) : undefined;
       
       if (!driver) {
         console.warn(`[Rides] Driver profile not found for ${driverId} while fetching pending rides`);
@@ -499,23 +503,50 @@ export class RidesService {
       rejectedRideIds = rejections.map(r => r.ride_id);
     }
 
-    const whereClause: any = {
-      status: RideStatus.PENDING,
-      created_at: MoreThan(sixHoursAgo),
-    };
+    // If driver has no valid location, return empty list to prevent global exposure
+    if (driverId && (driverLat === undefined || driverLng === undefined || driverLat === 0 || driverLng === 0)) {
+      console.warn(`[Rides] Driver ${driverId} has no valid coordinates — returning empty pending rides`);
+      return [];
+    }
+
+    // Build query using QueryBuilder to support Haversine distance calculations
+    const qb = this.ridesRepository.createQueryBuilder('ride');
+
+    qb.where('ride.status = :status', { status: RideStatus.PENDING })
+      .andWhere('ride.created_at >= :sixHoursAgo', { sixHoursAgo });
 
     if (vehicleTypeFilter) {
-      whereClause.vehicle_type = vehicleTypeFilter;
+      qb.andWhere('ride.vehicle_type = :vehicleType', { vehicleType: vehicleTypeFilter });
     }
 
     if (rejectedRideIds.length > 0) {
-      whereClause.id = Not(In(rejectedRideIds));
+      qb.andWhere('ride.id NOT IN (:...rejectedRideIds)', { rejectedRideIds });
     }
 
-    return this.ridesRepository.find({
-      where: whereClause,
-      order: { created_at: 'DESC' },
-    });
+    // ─── GEOGRAPHIC FILTERING (5km Radius Limit) ────────────────────────
+    // Uses Haversine formula to calculate straight-line distance between
+    // the driver's current GPS coordinates and each ride's pickup location.
+    // LEAST/GREATEST clamps the acos() input to [-1, 1] to prevent
+    // floating-point domain errors when driver is exactly at the pickup.
+    if (driverLat !== undefined && driverLng !== undefined) {
+      qb.andWhere(
+        `(
+          6371 * acos(
+            LEAST(1.0, GREATEST(-1.0,
+              cos(radians(:driverLat)) * cos(radians(ride.pickup_latitude)) *
+              cos(radians(ride.pickup_longitude) - radians(:driverLng)) +
+              sin(radians(:driverLat)) * sin(radians(ride.pickup_latitude))
+            ))
+          )
+        ) <= :radius`,
+        { driverLat, driverLng, radius: 5 } // 5 km maximum distance
+      );
+    }
+    // ────────────────────────────────────────────────────────────────────
+
+    qb.orderBy('ride.created_at', 'DESC');
+
+    return qb.getMany();
   }
 
   async getCurrentRide(driverId: string): Promise<Ride | null> {

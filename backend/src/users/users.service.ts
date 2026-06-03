@@ -234,4 +234,14 @@ export class UsersService {
       this.notificationsService.sendDriverLocation(userId, statusData.location);
     }
   }
+
+  async incrementTokenVersion(userId: string): Promise<number> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    user.token_version = (user.token_version || 0) + 1;
+    await this.usersRepository.save(user);
+    return user.token_version;
+  }
 }

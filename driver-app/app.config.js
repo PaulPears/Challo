@@ -3,7 +3,7 @@ export default {
         name: "RideAndhraDriverApp",
         slug: "RideAndhraDriverApp",
         scheme: "rideandhra",
-        version: "1.0.0",
+        version: "1.0.2",
         orientation: "portrait",
         icon: "./assets/adaptive-icon.png",
         userInterfaceStyle: "light",
@@ -70,11 +70,11 @@ export default {
             },
             config: {
                 googleMaps: {
-                    apiKey: "YOUR_API_KEY_HERE"
+                    apiKey: "AIzaSyAcJpazQWf4j468g9DnxMsJZzjW0Yp0iSM"
                 }
             },
             package: "com.rideandhra.driverapp",
-            versionCode: 1,
+            versionCode: 3,
             permissions: [
                 "android.permission.ACCESS_FINE_LOCATION",
                 "android.permission.ACCESS_COARSE_LOCATION",

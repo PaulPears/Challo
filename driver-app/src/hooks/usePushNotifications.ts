@@ -3,10 +3,14 @@ import { Platform, Alert, Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import api from '../config/api';
-import { navigationRef } from '../utils/NavigationService';
+import { navigationRef, navigate } from '../utils/NavigationService';
 
 import { useRideRequest } from '../context/RideRequestContext';
 import { useSound } from '../context/SoundContext';
+
+let activeNotificationSubscription: any = null;
+let activeResponseSubscription: any = null;
+let registeredUserId: string | null = null; // Guard: prevent duplicate token registration for the same user
 
 export const usePushNotifications = (userId: string | null) => {
     const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
@@ -128,70 +132,117 @@ export const usePushNotifications = (userId: string | null) => {
     useEffect(() => {
         if (!userId) return;
 
-        // 🔑 CRITICAL: Register device and save token to backend
-        registerForPushNotificationsAsync().then((token) => {
-            if (token) {
-                setExpoPushToken(token);
-                saveTokenToBackend(token);
-            }
-        });
+            // 🔑 CRITICAL: Register device and save token to backend (only once per user session)
+        if (registeredUserId !== userId) {
+            registeredUserId = userId;
+            registerForPushNotificationsAsync().then((token) => {
+                if (token) {
+                    setExpoPushToken(token);
+                    saveTokenToBackend(token);
+                }
+            });
+        }
 
         // Fetch initial unread count
         fetchUnreadCount();
 
+        // Clean up any existing global listeners first to prevent duplicates
+        if (activeNotificationSubscription) {
+            activeNotificationSubscription.remove();
+            activeNotificationSubscription = null;
+        }
+        if (activeResponseSubscription) {
+            activeResponseSubscription.remove();
+            activeResponseSubscription = null;
+        }
+
         // Listen for notifications received while app is in foreground
-        notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
+        activeNotificationSubscription = Notifications.addNotificationReceivedListener((notification) => {
             console.log('[PushNotifications] Received in foreground:', notification.request.content.title);
-            const data = notification.request.content.data;
+            const data = notification.request.content.data as any;
             if (data?.type === 'RIDE_REQUEST' || data?.rideId) {
                 playAlert('RIDE_REQUEST');
             }
             fetchUnreadCount();
         });
+        notificationListener.current = activeNotificationSubscription;
 
         // Listen for notification taps (from background / killed state)
-        responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+        activeResponseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
             console.log('[PushNotifications] User tapped notification:', response.notification.request.content.title);
-            const data = response.notification.request.content.data;
+            const data = response.notification.request.content.data as any;
             fetchUnreadCount();
 
             if (data?.type === 'RIDE_REQUEST' || data?.rideId) {
-                // If the app was closed, we need to populate the RideRequestContext
-                // so the modal appears on the Home screen.
-                if (data.rideId) {
-                    // Try to fetch ride details from backend or use data from payload
-                    api.get(`/rides/${data.rideId}`).then(res => {
+                // Determine ride ID
+                const rideId = data.rideId || data.id;
+
+                // Create initial request from push notification payload data
+                const initialRequest = {
+                    rideId: rideId,
+                    pickupLocation: data.pickupLocation || data.pickup_address || 'Unknown pickup',
+                    pickupLatitude: Number(data.pickupLatitude || data.pickup_latitude || 0),
+                    pickupLongitude: Number(data.pickupLongitude || data.pickup_longitude || 0),
+                    dropoffLocation: data.dropoffLocation || data.dropoff_address || 'Unknown dropoff',
+                    dropoffLatitude: Number(data.dropoffLatitude || data.dropoff_latitude || 0),
+                    dropoffLongitude: Number(data.dropoffLongitude || data.dropoff_longitude || 0),
+                    fare: Number(data.fare || data.estimated_fare || 0),
+                    distance: data.distance != null ? Number(data.distance) : (data.estimated_distance_km != null ? Number(data.estimated_distance_km) : undefined),
+                    duration: data.duration != null ? Number(data.duration) : (data.estimated_duration_min != null ? Number(data.estimated_duration_min) : undefined),
+                    riderName: data.riderName || data.rider?.name || data.user?.name || 'Rider',
+                    riderPhone: data.riderPhone || data.rider?.phone_number || data.user?.phone_number || '',
+                };
+
+                // Show the modal immediately using the push payload data
+                setRideRequest(initialRequest);
+
+                // Safe navigation: Navigate to Main -> Home using our helper from NavigationService
+                navigate('Main', { screen: 'Home' });
+
+                // Play the sound (ensure it plays when user opens the app via notification tap)
+                playAlert('RIDE_REQUEST');
+
+                // Now, optionally fetch the freshest data from the server in the background to update the modal
+                if (rideId) {
+                    api.get(`/rides/${rideId}`).then(res => {
                         const ride = res.data;
                         if (ride) {
                             setRideRequest({
                                 rideId: ride.id,
-                                pickupLocation: ride.pickup_address,
-                                pickupLatitude: ride.pickup_latitude,
-                                pickupLongitude: ride.pickup_longitude,
-                                dropoffLocation: ride.dropoff_address,
-                                dropoffLatitude: ride.dropoff_latitude,
-                                dropoffLongitude: ride.dropoff_longitude,
-                                fare: ride.estimated_fare || ride.fare,
-                                distance: ride.estimated_distance_km,
-                                duration: ride.estimated_duration_min,
+                                pickupLocation: ride.pickup_address || 'Unknown pickup',
+                                pickupLatitude: Number(ride.pickup_latitude || 0),
+                                pickupLongitude: Number(ride.pickup_longitude || 0),
+                                dropoffLocation: ride.dropoff_address || 'Unknown dropoff',
+                                dropoffLatitude: Number(ride.dropoff_latitude || 0),
+                                dropoffLongitude: Number(ride.dropoff_longitude || 0),
+                                fare: Number(ride.estimated_fare || ride.fare || 0),
+                                distance: ride.estimated_distance_km != null ? Number(ride.estimated_distance_km) : undefined,
+                                duration: ride.estimated_duration_min != null ? Number(ride.estimated_duration_min) : undefined,
                                 riderName: ride.rider?.name || ride.user?.name || 'Rider',
-                                riderPhone: ride.rider?.phone_number || ride.user?.phone_number,
+                                riderPhone: ride.rider?.phone_number || ride.user?.phone_number || '',
                             });
                         }
                     }).catch(err => {
-                        console.error('[Push] Failed to fetch ride details on tap:', err);
+                        console.error('[Push] Failed to update ride details on tap:', err);
                     });
                 }
-
-                // Navigate to Main/Home
-                // @ts-ignore
-                navigationRef.current?.navigate('Main', { screen: 'Home' });
             }
         });
+        responseListener.current = activeResponseSubscription;
 
         return () => {
-            notificationListener.current?.remove();
-            responseListener.current?.remove();
+            if (notificationListener.current) {
+                notificationListener.current.remove();
+                if (activeNotificationSubscription === notificationListener.current) {
+                    activeNotificationSubscription = null;
+                }
+            }
+            if (responseListener.current) {
+                responseListener.current.remove();
+                if (activeResponseSubscription === responseListener.current) {
+                    activeResponseSubscription = null;
+                }
+            }
         };
     }, [userId]);
 

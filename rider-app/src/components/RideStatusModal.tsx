@@ -16,15 +16,15 @@ const RideStatusModal = () => {
     const slideAnim = useRef(new Animated.Value(height)).current;
     const navigation = useNavigation<any>();
 
-    const getVehicleEmoji = (type: string) => {
-        switch (type?.toLowerCase()) {
-            case 'auto': return '🛺';
-            case 'bike': return '🏍️';
-            case 'cab': return '🚘';
-            case 'bike-lite': return '🛵';
-            case 'parcel': return '📦';
-            default: return '🚗';
-        }
+    const getVehicleImage = (vehicleType: string) => {
+        const type = vehicleType?.toLowerCase();
+        if (type?.includes('cab') || type?.includes('car')) return require('../../assets/cab_icon.png');
+        if (type?.includes('bike-lite') || type?.includes('bike_lite')) return require('../../assets/bike_lite_icon.png');
+        if (type?.includes('luxury_bike') || type?.includes('luxury bike') || type?.includes('premium')) return require('../../assets/premium_bike.png');
+        if (type?.includes('bike')) return require('../../assets/bike_icon.png');
+        if (type?.includes('auto')) return require('../../assets/auto_icon.png');
+        if (type?.includes('parcel')) return require('../../assets/parcel_icon.png');
+        return require('../../assets/cab_icon.png');
     };
 
     useEffect(() => {
@@ -174,9 +174,11 @@ const RideStatusModal = () => {
 
                         <View style={styles.rideInfoSection}>
                             <View style={styles.iconContainer}>
-                                <Text style={{ fontSize: 40 }}>
-                                    {getVehicleEmoji(currentRide?.vehicle_type || 'cab')}
-                                </Text>
+                                <Image
+                                    source={getVehicleImage(currentRide?.vehicle_type || 'cab')}
+                                    style={{ width: 50, height: 50 }}
+                                    resizeMode="contain"
+                                />
                             </View>
 
                             <Text style={styles.message}>{message}</Text>

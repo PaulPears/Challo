@@ -1,10 +1,8 @@
 {
-  "name": "RideAndhra",
-  "displayName": "Ride Andhra",
   "expo": {
     "name": "Ride Andhra",
     "slug": "ride-andhra-rider",
-    "version": "1.0.1",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
@@ -33,7 +31,7 @@
           "apiKey": "AIzaSyAcJpazQWf4j468g9DnxMsJZzjW0Yp0iSM"
         }
       },
-      "versionCode": 2
+      "versionCode": 5
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -47,8 +45,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/adaptive-icon.png",
-          "color": "#ffffff"
+          "icon": "./assets/bell_icon.png",
+          "color": "#FFD700"
         }
       ]
     ]

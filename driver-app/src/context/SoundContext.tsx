@@ -39,11 +39,12 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     const stopAlert = async () => {
         isPlayingRef.current = false;
         if (soundRef.current) {
+            const soundInstance = soundRef.current;
+            soundRef.current = null; // Clear immediately to prevent duplicate stop/unload calls
             try {
                 console.log('Stopping sound');
-                await soundRef.current.stopAsync();
-                await soundRef.current.unloadAsync();
-                soundRef.current = null;
+                await soundInstance.stopAsync();
+                await soundInstance.unloadAsync();
             } catch (e) {
                 console.log('Error stopping sound:', e);
             }
@@ -67,7 +68,7 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
         let shouldLoop = false;
 
         if (type === 'RIDE_REQUEST') {
-            source = { uri: 'https://cdn.freesound.org/previews/219/219244_4082826-lq.mp3' };
+            source = require('../../assets/sounds/ride_alert.mp3');
             shouldLoop = true;
         } else if (type === 'ONLINE_POP') {
             source = { uri: 'https://cdn.freesound.org/previews/242/242501_4414128-lq.mp3' };

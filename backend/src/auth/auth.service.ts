@@ -10,6 +10,7 @@ interface JwtPayload {
   phoneNumber: string;
   roles: UserRole[];
   name: string;
+  tokenVersion?: number;
 }
 
 @Injectable()
@@ -88,11 +89,13 @@ export class AuthService {
         throw bcryptError;
       }
 
+      const tokenVersion = await this.usersService.incrementTokenVersion(user.id);
       const payload: JwtPayload = {
         sub: user.id,
         phoneNumber: user.phone_number,
         roles: user.roles.includes(UserRole.RIDER) ? user.roles : [...user.roles, UserRole.RIDER],
         name: user.name,
+        tokenVersion,
       };
 
       const accessToken = this.jwtService.sign(payload);
@@ -178,11 +181,13 @@ export class AuthService {
       isNewUser = true;
     }
 
+    const tokenVersion = await this.usersService.incrementTokenVersion(user.id);
     const payload: JwtPayload = {
       sub: user.id,
       phoneNumber: user.phone_number,
       roles: user.roles,
       name: user.name,
+      tokenVersion,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -259,11 +264,13 @@ export class AuthService {
       isNewUser = true;
     }
 
+    const tokenVersion = await this.usersService.incrementTokenVersion(user.id);
     const payload: JwtPayload = {
       sub: user.id,
       phoneNumber: user.phone_number,
       roles: user.roles,
       name: user.name,
+      tokenVersion,
     };
 
     const jwtToken = this.jwtService.sign(payload);

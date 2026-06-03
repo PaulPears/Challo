@@ -108,7 +108,7 @@ const DriverRegistrationStack = () => {
   );
 };
 
-import { navigationRef } from '../utils/NavigationService';
+import { navigationRef, runQueuedNavigations } from '../utils/NavigationService';
 
 const AppNavigator = () => {
   const { driverStatus, user } = useAuth();
@@ -121,7 +121,12 @@ const AppNavigator = () => {
   }
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer 
+      ref={navigationRef}
+      onReady={() => {
+        runQueuedNavigations();
+      }}
+    >
       <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'white' } }}>
         {driverStatus === 'UNAUTHENTICATED' ? (
           <>
