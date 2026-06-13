@@ -36,10 +36,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const tokenVersion = payload.tokenVersion !== undefined ? payload.tokenVersion : 1;
     const dbTokenVersion = user.token_version !== undefined && user.token_version !== null ? user.token_version : 1;
 
-    if (tokenVersion !== dbTokenVersion) {
-      console.log(`JWT Validation Error: Token version mismatch for user ${user.id}. DB: ${dbTokenVersion}, Token: ${tokenVersion}`);
-      throw new UnauthorizedException('Session expired. Logged in from another device.');
-    }
+    // TEMPORARILY DISABLED: Token version check disabled to allow logging into both Driver and Rider apps with the same phone number during testing.
+    // if (tokenVersion !== dbTokenVersion) {
+    //   console.log(`JWT Validation Error: Token version mismatch for user ${user.id}. DB: ${dbTokenVersion}, Token: ${tokenVersion}`);
+    //   throw new UnauthorizedException('Session expired. Logged in from another device.');
+    // }
 
     console.log(`JWT Validation Success for user ${user.id} (${phoneNumber})`);
     return {
