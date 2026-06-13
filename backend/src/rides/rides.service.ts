@@ -175,12 +175,12 @@ export class RidesService {
         }
       }
 
-      console.log(`[Matching] Searching for drivers within 5km of (${newRide.pickup_latitude}, ${newRide.pickup_longitude})`);
+      console.log(`[Matching] Searching for drivers within 2km of (${newRide.pickup_latitude}, ${newRide.pickup_longitude})`);
       const nearbyDriverIds = await this.matchingService.getNearbyDriverUserIds(
         newRide.pickup_latitude,
         newRide.pickup_longitude,
         newRide.vehicle_type,
-        5, // 5km radius
+        2, // 2km radius
       );
       console.log(`[Matching] Found ${nearbyDriverIds.length} nearby drivers: ${nearbyDriverIds.join(', ') || 'None'}`);
 
@@ -523,7 +523,7 @@ export class RidesService {
       qb.andWhere('ride.id NOT IN (:...rejectedRideIds)', { rejectedRideIds });
     }
 
-    // ─── GEOGRAPHIC FILTERING (5km Radius Limit) ────────────────────────
+    // ─── GEOGRAPHIC FILTERING (2km Radius Limit) ────────────────────────
     // Uses Haversine formula to calculate straight-line distance between
     // the driver's current GPS coordinates and each ride's pickup location.
     // LEAST/GREATEST clamps the acos() input to [-1, 1] to prevent
@@ -539,7 +539,7 @@ export class RidesService {
             ))
           )
         ) <= :radius`,
-        { driverLat, driverLng, radius: 5 } // 5 km maximum distance
+        { driverLat, driverLng, radius: 2 } // 2 km maximum distance
       );
     }
     // ────────────────────────────────────────────────────────────────────

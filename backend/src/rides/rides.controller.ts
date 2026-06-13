@@ -62,7 +62,7 @@ export class RidesController {
 
   @Get('nearby-drivers')
   getNearbyDrivers(@Query('lat') lat: number, @Query('lng') lng: number, @Query('radius') radius?: number) {
-    return this.matchingService.findNearbyDrivers(Number(lat), Number(lng), undefined, radius ? Number(radius) : 5);
+    return this.matchingService.findNearbyDrivers(Number(lat), Number(lng), undefined, radius ? Number(radius) : 2);
   }
 
   @Get('high-booking-zones')
