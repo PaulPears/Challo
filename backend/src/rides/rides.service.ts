@@ -152,7 +152,18 @@ export class RidesService {
             // Fetch driver profile to check vehicle type
             const driverProfileByUserId = await manager.getRepository(DriverProfile).findOne({ where: { user_id: fav.driver.id } });
             
-            if (driverProfileByUserId && driverProfileByUserId.vehicle_type === newRide.vehicle_type) {
+            let isVehicleMatch = false;
+            if (driverProfileByUserId) {
+              if (newRide.vehicle_type === VehicleType.PARCEL && [VehicleType.BIKE, VehicleType.BIKE_LITE, VehicleType.LUXURY_BIKE, VehicleType.PARCEL].includes(driverProfileByUserId.vehicle_type)) {
+                isVehicleMatch = true;
+              } else if (newRide.vehicle_type === VehicleType.BIKE_LITE && [VehicleType.BIKE, VehicleType.BIKE_LITE].includes(driverProfileByUserId.vehicle_type)) {
+                isVehicleMatch = true;
+              } else if (driverProfileByUserId.vehicle_type === newRide.vehicle_type) {
+                isVehicleMatch = true;
+              }
+            }
+
+            if (isVehicleMatch) {
               // Also check if they are busy
               const activeRideForFav = await manager.getRepository(Ride).findOne({
                 where: [
@@ -166,7 +177,7 @@ export class RidesService {
                 continue;
               }
 
-              console.log(`[Matching] Notifying favorite driver: ${fav.driver.id} (Vehicle Match: ${driverProfileByUserId.vehicle_type})`);
+              console.log(`[Matching] Notifying favorite driver: ${fav.driver.id} (Vehicle Match: ${driverProfileByUserId?.vehicle_type})`);
               this.notificationsService.sendNewRideToDriver(fav.driver.id, newRide);
             } else {
               console.log(`[Matching] Skipping favorite driver: ${fav.driver.id} (Vehicle Mismatch: ${driverProfileByUserId?.vehicle_type} vs Ride: ${newRide.vehicle_type})`);
@@ -516,7 +527,21 @@ export class RidesService {
       .andWhere('ride.created_at >= :sixHoursAgo', { sixHoursAgo });
 
     if (vehicleTypeFilter) {
-      qb.andWhere('ride.vehicle_type = :vehicleType', { vehicleType: vehicleTypeFilter });
+      if (vehicleTypeFilter === VehicleType.BIKE) {
+        qb.andWhere('ride.vehicle_type IN (:...vehicleTypes)', { 
+          vehicleTypes: [VehicleType.BIKE, VehicleType.BIKE_LITE, VehicleType.PARCEL] 
+        });
+      } else if (vehicleTypeFilter === VehicleType.BIKE_LITE) {
+        qb.andWhere('ride.vehicle_type IN (:...vehicleTypes)', { 
+          vehicleTypes: [VehicleType.BIKE_LITE, VehicleType.PARCEL] 
+        });
+      } else if (vehicleTypeFilter === VehicleType.LUXURY_BIKE) {
+        qb.andWhere('ride.vehicle_type IN (:...vehicleTypes)', { 
+          vehicleTypes: [VehicleType.LUXURY_BIKE, VehicleType.BIKE, VehicleType.BIKE_LITE, VehicleType.PARCEL] 
+        });
+      } else {
+        qb.andWhere('ride.vehicle_type = :vehicleType', { vehicleType: vehicleTypeFilter });
+      }
     }
 
     if (rejectedRideIds.length > 0) {

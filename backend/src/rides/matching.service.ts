@@ -101,6 +101,11 @@ export class MatchingService {
                     qb.andWhere('dp.vehicle_type IN (:...parcelTypes)', { 
                         parcelTypes: [VehicleType.BIKE, VehicleType.BIKE_LITE, VehicleType.LUXURY_BIKE, VehicleType.PARCEL] 
                     });
+                } else if (vehicleType === VehicleType.BIKE_LITE) {
+                    // Bike Lite rides can be picked up by Bike and Bike Lite drivers
+                    qb.andWhere('dp.vehicle_type IN (:...bikeLiteTypes)', { 
+                        bikeLiteTypes: [VehicleType.BIKE, VehicleType.BIKE_LITE] 
+                    });
                 } else {
                     qb.andWhere('dp.vehicle_type = :vehicleType', { vehicleType });
                 }
