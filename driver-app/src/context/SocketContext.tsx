@@ -6,6 +6,9 @@ import { useRideRequest } from './RideRequestContext';
 import { useSound } from './SoundContext';
 import { useAuth } from './AuthContext';
 import { API_URL } from '../config/api';
+import { showRideAlertNotification } from '../utils/rideAlertNotification';
+import * as Location from 'expo-location';
+import { calculateDistance } from '../utils/locationUtils';
 
 interface SocketContextType {
   isConnected: boolean;
@@ -79,12 +82,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       });
     };
     
-    const handleNewRide = (ride: any) => {
+    const handleNewRide = async (ride: any) => {
       console.log('[Socket] RECEIVED NEW RIDE EVENT:', ride.id);
-      console.log('[Socket] Ride details:', JSON.stringify(ride, null, 2));
 
       // ─── Stale Ride Guard ─────────────────────────────────────────────────
-      // Discard rides older than 30 minutes to prevent replay of old requests
       const AGE_LIMIT_MS = 30 * 60 * 1000;
       const rideCreatedAt = ride.created_at || ride.requested_at;
       if (rideCreatedAt) {
@@ -95,6 +96,26 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       // ──────────────────────────────────────────────────────────────────────
+
+      // Calculate driver-to-pickup distance using current GPS position
+      let driverToPickupDistance: number | undefined = undefined;
+      try {
+        let loc = await Location.getLastKnownPositionAsync();
+        if (!loc) {
+          loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        }
+        if (loc) {
+          driverToPickupDistance = calculateDistance(
+            loc.coords.latitude,
+            loc.coords.longitude,
+            Number(ride.pickup_latitude || ride.pickupLatitude || 0),
+            Number(ride.pickup_longitude || ride.pickupLongitude || 0)
+          );
+          console.log('[Socket] Driver-to-pickup distance:', driverToPickupDistance?.toFixed(2), 'km');
+        }
+      } catch (e) {
+        console.warn('[Socket] Could not get location for distance calc:', e);
+      }
 
       setRideRequest({
         rideId: ride.id,
@@ -107,13 +128,20 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         fare: Number(ride.estimated_fare || ride.fare || 0),
         distance: ride.estimated_distance_km || ride.distance,
         duration: ride.estimated_duration_min || ride.duration,
+        driverToPickupDistance,
         riderName: ride.rider?.name || ride.user?.name || 'Rider',
         riderPhone: ride.rider?.phone_number || ride.user?.phone_number,
       });
 
       console.log('[Socket] Context updated with rideRequest. Starting alert and vibration.');
       playAlert('RIDE_REQUEST');
-      Vibration.vibrate([0, 800, 400, 800], true); // slightly longer vibration
+      // Fire a local notification on the loud notification channel (uses ring stream, not media)
+      showRideAlertNotification(
+        Number(ride.estimated_fare || ride.fare || 0),
+        ride.pickup_address || ride.pickupLocation || 'Unknown pickup',
+        driverToPickupDistance
+      );
+      Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
     };
 
     connect();

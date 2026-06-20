@@ -45,6 +45,7 @@ const DrivingLicenseScreen = ({ navigation }) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.title}>Driving License</Text>
+        <Text style={styles.label}>Driving License Number</Text>
         <TextInput
           style={styles.input}
           placeholder="Enter your driving license number"
@@ -87,6 +88,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 10,
+    marginBottom: 10,
+    color: '#333',
   },
   input: {
     height: 50,

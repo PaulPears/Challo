@@ -10,6 +10,7 @@ import { useSound } from '../context/SoundContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { cancelRideAlertNotification } from '../utils/rideAlertNotification';
 
 const { width, height } = Dimensions.get('window');
 const COUNTDOWN_SECONDS = 30;
@@ -116,6 +117,7 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
   const handleDismiss = useCallback(() => {
     if (countdownRef.current) clearInterval(countdownRef.current);
     stopAlert();
+    cancelRideAlertNotification();
     Vibration.cancel();
     animateOut(() => clearRideRequest());
   }, [stopAlert, clearRideRequest, animateOut]);
@@ -125,6 +127,7 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
 
     // Stop alert immediately
     stopAlert();
+    cancelRideAlertNotification();
     Vibration.cancel();
 
     const expiryString = await AsyncStorage.getItem('subscriptionExpiry');
@@ -169,6 +172,7 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
     
     // Stop alert immediately
     stopAlert();
+    cancelRideAlertNotification();
     Vibration.cancel();
     setActionLoading('reject');
     try {
@@ -241,11 +245,17 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
             <Text style={styles.fareSmallLabel}>ESTIMATED FARE</Text>
             <Text style={styles.fareValue}>₹{rideRequest.fare.toFixed(2)}</Text>
             <View style={styles.fareMeta}>
+              <View style={[styles.fareMetaChip, { backgroundColor: '#e0f2fe' }]}>
+                <Ionicons name="location-outline" size={13} color="#0284c7" />
+                <Text style={[styles.fareMetaText, { color: '#0284c7' }]}>
+                  Pickup {typeof rideRequest.driverToPickupDistance === 'number' ? rideRequest.driverToPickupDistance.toFixed(1) : '--'} km away
+                </Text>
+              </View>
               {rideRequest.distance != null && (
                 <View style={styles.fareMetaChip}>
                   <Ionicons name="navigate-outline" size={13} color="#fe7009" />
                   <Text style={styles.fareMetaText}>
-                    {rideRequest.distance > 10
+                    Trip: {rideRequest.distance > 10
                       ? `${(rideRequest.distance / 1000).toFixed(1)} km`
                       : `${rideRequest.distance} km`}
                   </Text>
@@ -469,7 +479,7 @@ const styles = StyleSheet.create({
   fareValue: {
     fontSize: 48,
     fontWeight: '900',
-    color: '#1a202c',
+    color: '#22c55e', // Green color
     letterSpacing: -1,
   },
   fareMeta: {

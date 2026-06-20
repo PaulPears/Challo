@@ -3,7 +3,7 @@ export default {
         name: "RideAndhraDriverApp",
         slug: "RideAndhraDriverApp",
         scheme: "rideandhra",
-        version: "1.0.2",
+        version: "1.0.4",
         orientation: "portrait",
         icon: "./assets/adaptive-icon.png",
         userInterfaceStyle: "light",
@@ -74,7 +74,7 @@ export default {
                 }
             },
             package: "com.rideandhra.driverapp",
-            versionCode: 3,
+            versionCode: 5,
             permissions: [
                 "android.permission.ACCESS_FINE_LOCATION",
                 "android.permission.ACCESS_COARSE_LOCATION",

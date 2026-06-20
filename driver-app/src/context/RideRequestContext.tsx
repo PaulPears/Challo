@@ -13,6 +13,7 @@ export interface RideRequest {
   fare: number;
   distance?: number;
   duration?: number;
+  driverToPickupDistance?: number;
   userId?: string;
   riderName?: string;
   riderPhone?: string;

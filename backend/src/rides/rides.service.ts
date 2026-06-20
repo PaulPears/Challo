@@ -369,8 +369,13 @@ export class RidesService {
     });
   }
 
-  async getHighBookingZones(district?: string): Promise<string[]> {
+  async getHighBookingZones(district?: string, lat?: number, lng?: number): Promise<string[]> {
     try {
+      // If no location data is provided at all, return empty to prevent state-wide global queries
+      if (!district && (lat === undefined || lng === undefined)) {
+        return [];
+      }
+
       // Find the most frequent pickup points in the last 7 days
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -381,7 +386,20 @@ export class RidesService {
         .addSelect('COUNT(ride.id)', 'count')
         .where('ride.created_at >= :date', { date: sevenDaysAgo });
 
-      if (district) {
+      if (lat !== undefined && lng !== undefined) {
+        queryBuilder.andWhere(
+          `(
+            6371 * acos(
+              LEAST(1.0, GREATEST(-1.0,
+                cos(radians(:lat)) * cos(radians(ride.pickup_latitude)) *
+                cos(radians(ride.pickup_longitude) - radians(:lng)) +
+                sin(radians(:lat)) * sin(radians(ride.pickup_latitude))
+              ))
+            )
+          ) <= :radius`,
+          { lat, lng, radius: 30 } // 30 km maximum distance for hot zones
+        );
+      } else if (district) {
         // Clean district name (remove "District", "Region" etc if geocoder includes them)
         const cleanDistrict = district.replace(/(District|Region|Subdivision|Mandal|Municipality)/gi, '').trim();
         queryBuilder.andWhere('ride.pickup_address ILIKE :district', { district: `%${cleanDistrict}%` });
@@ -420,23 +438,8 @@ export class RidesService {
           }
         }
 
-        // If a district was provided but we have no specific fallbacks for it, 
-        // return empty instead of showing unrelated districts.
-        if (district) {
-          return [];
-        }
-
-        // Generic fallback for new regions or low activity (only if no district provided)
-        return [
-          'Visakhapatnam - MVP Colony',
-          'Visakhapatnam - Gajuwaka',
-          'Vijayawada - Benz Circle',
-          'Vijayawada - MG Road',
-          'Guntur - Amaravati Road',
-          'Nellore - Magunta Layout',
-          'Kurnool - C-Camp',
-          'Tirupati - Alipiri',
-        ];
+        // Return empty array instead of global generic fallback to prevent cross-district hot zones
+        return [];
       }
 
       // Filter and clean addresses - returning unique localities

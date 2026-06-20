@@ -13,8 +13,6 @@ const SoundContext = createContext<SoundContextType | undefined>(undefined);
 export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     const soundRef = useRef<Audio.Sound | null>(null);
 
-    console.log('SoundProvider initialized');
-
     // Prepare audio mode for background playback
     useEffect(() => {
         async function configureAudio() {
@@ -23,7 +21,8 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
                     allowsRecordingIOS: false,
                     staysActiveInBackground: true,
                     playsInSilentModeIOS: true,
-                    shouldDuckAndroid: true,
+                    // Use RING stream on Android for max volume (bypasses media volume)
+                    shouldDuckAndroid: false,
                     playThroughEarpieceAndroid: false,
                 });
             } catch (e) {
@@ -52,13 +51,11 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const playAlert = async (type: SoundType) => {
-        // If already loading or playing this specific alert, we might want to skip 
-        // but for now, let's just ensure we stop any previous one properly.
         isPlayingRef.current = true;
-        
+
         // Stop any currently playing sound first
         await stopAlert();
-        
+
         // Re-set playing to true since stopAlert sets it to false
         isPlayingRef.current = true;
 
@@ -66,27 +63,36 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
 
         let source;
         let shouldLoop = false;
+        let volume = 1.0;
 
         if (type === 'RIDE_REQUEST') {
+            // Local ride alert - looping at full volume
             source = require('../../assets/sounds/ride_alert.mp3');
             shouldLoop = true;
+            volume = 1.0;
         } else if (type === 'ONLINE_POP') {
             source = { uri: 'https://cdn.freesound.org/previews/242/242501_4414128-lq.mp3' };
             shouldLoop = false;
+            volume = 0.8;
         } else {
             source = { uri: 'https://cdn.freesound.org/previews/536/536108_10860334-lq.mp3' };
             shouldLoop = false;
+            volume = 0.8;
         }
 
         try {
             isLoadingRef.current = true;
             const { sound } = await Audio.Sound.createAsync(
                 source,
-                { shouldPlay: false, isLooping: shouldLoop }
+                {
+                    shouldPlay: false,
+                    isLooping: shouldLoop,
+                    volume: volume,
+                }
             );
-            
+
             isLoadingRef.current = false;
-            
+
             // Check if stopAlert was called while we were loading
             if (!isPlayingRef.current) {
                 console.log('Stop requested during sound load, unloading.');
@@ -95,8 +101,9 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
             }
 
             soundRef.current = sound;
+            await sound.setVolumeAsync(volume);
             await sound.playAsync();
-            console.log('Sound playing');
+            console.log('Sound playing at full volume');
         } catch (error) {
             isLoadingRef.current = false;
             console.error("Failed to play sound", error);

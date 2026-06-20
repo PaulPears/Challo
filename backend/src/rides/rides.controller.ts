@@ -66,8 +66,16 @@ export class RidesController {
   }
 
   @Get('high-booking-zones')
-  getHighBookingZones(@Query('district') district?: string) {
-    return this.ridesService.getHighBookingZones(district);
+  getHighBookingZones(
+    @Query('district') district?: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+  ) {
+    return this.ridesService.getHighBookingZones(
+      district,
+      lat ? Number(lat) : undefined,
+      lng ? Number(lng) : undefined,
+    );
   }
 
   @Get('pending')

@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define the structure of the registration data
 interface RegistrationData {
@@ -41,16 +42,37 @@ export const DriverRegistrationProvider = ({ children }: { children: ReactNode }
   const [registrationData, setRegistrationDataState] = useState<RegistrationData>({});
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
 
+  // Load from AsyncStorage on mount
+  useEffect(() => {
+    const loadState = async () => {
+      try {
+        const savedData = await AsyncStorage.getItem('driverRegistrationData');
+        const savedSteps = await AsyncStorage.getItem('driverCompletedSteps');
+        if (savedData) setRegistrationDataState(JSON.parse(savedData));
+        if (savedSteps) setCompletedSteps(JSON.parse(savedSteps));
+      } catch (error) {
+        console.error('Failed to load registration state', error);
+      }
+    };
+    loadState();
+  }, []);
+
   // Function to update registration data, memoized with useCallback
   const setRegistrationData = useCallback((data: Partial<RegistrationData>) => {
-    setRegistrationDataState(prevData => ({ ...prevData, ...data }));
+    setRegistrationDataState(prevData => {
+      const newData = { ...prevData, ...data };
+      AsyncStorage.setItem('driverRegistrationData', JSON.stringify(newData)).catch(err => console.error(err));
+      return newData;
+    });
   }, []);
 
   // Function to mark a step as completed, memoized with useCallback
   const markStepAsCompleted = useCallback((stepId: string) => {
     setCompletedSteps(prevSteps => {
       if (!prevSteps.includes(stepId)) {
-        return [...prevSteps, stepId];
+        const newSteps = [...prevSteps, stepId];
+        AsyncStorage.setItem('driverCompletedSteps', JSON.stringify(newSteps)).catch(err => console.error(err));
+        return newSteps;
       }
       return prevSteps;
     });

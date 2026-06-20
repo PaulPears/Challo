@@ -27,7 +27,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePermissions } from '../hooks/usePermissions';
 import PermissionRationaleModal from '../components/PermissionRationaleModal';
 import RegionalRestrictionModal from '../components/RegionalRestrictionModal';
-import { isLocationInAndhraPradesh } from '../utils/locationUtils';
+import { isLocationInAndhraPradesh, calculateDistance } from '../utils/locationUtils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../config/api';
 import { useRideRequest, RideRequest } from '../context/RideRequestContext';
@@ -35,6 +35,7 @@ import { useSound } from '../context/SoundContext';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { showRideAlertNotification, cancelRideAlertNotification } from '../utils/rideAlertNotification';
 
 interface Ride {
   id: string;
@@ -138,12 +139,19 @@ const HomeScreen = () => {
     weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
   });
 
-  const fetchZones = async (district?: string | null) => {
+  const fetchZones = async (district?: string | null, lat?: number, lng?: number) => {
     try {
+      if (!district && (!lat || !lng)) {
+        setZones([]);
+        return;
+      }
       setLoadingZones(true);
-      const url = district ? `/rides/high-booking-zones?district=${encodeURIComponent(district)}` : '/rides/high-booking-zones';
+      let url = '/rides/high-booking-zones?';
+      if (district) url += `district=${encodeURIComponent(district)}&`;
+      if (lat && lng) url += `lat=${lat}&lng=${lng}`;
+      
       const response = await api.get(url);
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+      if (response.data && Array.isArray(response.data)) {
         setZones(response.data);
       }
     } catch (error) {
@@ -154,8 +162,10 @@ const HomeScreen = () => {
   };
 
   useEffect(() => {
-    fetchZones(currentDistrict);
-  }, [currentDistrict]);
+    if (currentDistrict || location?.coords) {
+      fetchZones(currentDistrict, location?.coords?.latitude, location?.coords?.longitude);
+    }
+  }, [currentDistrict, location]);
 
   useEffect(() => {
     checkAllPermissions();
@@ -343,6 +353,7 @@ const HomeScreen = () => {
     let locationWatcher: any = null;
 
     const startWatching = async () => {
+      // 1. Start Foreground Watcher for UI Updates
       locationWatcher = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
@@ -360,24 +371,31 @@ const HomeScreen = () => {
             if (place) {
               const parts = [place.district || place.subregion, place.city || place.region].filter(Boolean);
               setLocationLabel(parts.join(', ') || 'Unknown location');
-              // For the header and backend filtering, we want the City/District, not a specific area.
               setCurrentDistrict(place.city || place.district || place.region);
             }
           } catch (_) { /* ignore geocode errors */ }
-          const payload = {
-            online: true,
-            location: {
-              latitude: newLocation.coords.latitude,
-              longitude: newLocation.coords.longitude,
-            },
-          };
-          try {
-            await api.put('/profile/driver/status', payload);
-          } catch (error) {
-            console.error("Failed to update location broadcast:", error);
-          }
         }
       );
+
+      // 2. Start Background Location Task for API updates
+      try {
+        const { status } = await Location.getBackgroundPermissionsAsync();
+        if (status === 'granted') {
+          await Location.startLocationUpdatesAsync('background-location-task', {
+            accuracy: Location.Accuracy.High,
+            distanceInterval: 10,
+            timeInterval: 5000,
+            showsBackgroundLocationIndicator: true,
+            foregroundService: {
+              notificationTitle: 'Ride Andhra Online',
+              notificationBody: 'You are online and looking for rides.',
+              notificationColor: '#fe7009',
+            },
+          });
+        }
+      } catch (e) {
+        console.error('Error starting background location updates:', e);
+      }
     };
 
     if (isOnline) {
@@ -386,12 +404,14 @@ const HomeScreen = () => {
       if (locationWatcher) {
         locationWatcher.remove();
       }
+      Location.stopLocationUpdatesAsync('background-location-task').catch(() => {});
     }
 
     return () => {
       if (locationWatcher) {
         locationWatcher.remove();
       }
+      // We do not stop the background task on unmount if they are online!
     };
   }, [isOnline]);
 
@@ -425,6 +445,15 @@ const HomeScreen = () => {
         // Trigger the modal from polling if not already set (fallback for missed socket events)
         if (!rideRequest && !currentRide) {
           console.log('[Rides] Triggering modal from polling fallback');
+          let d2p: number | undefined = undefined;
+          if (location && location.coords) {
+            d2p = calculateDistance(
+              location.coords.latitude,
+              location.coords.longitude,
+              Number(latestRide.pickup_latitude || 0),
+              Number(latestRide.pickup_longitude || 0)
+            );
+          }
           setRideRequest({
             rideId: latestRide.id,
             pickupLocation: latestRide.pickup_address || 'Unknown pickup',
@@ -436,12 +465,18 @@ const HomeScreen = () => {
             fare: Number(latestRide.estimated_fare || latestRide.fare || 0),
             distance: latestRide.estimated_distance_km,
             duration: latestRide.estimated_duration_min,
+            driverToPickupDistance: d2p,
             riderName: latestRide.rider?.name || latestRide.user?.name || 'Rider',
             riderPhone: latestRide.rider?.phone_number || latestRide.user?.phone_number,
           });
         }
 
         playAlert('RIDE_REQUEST');
+        // Also fire a local notification (uses ring/notification stream — loud regardless of media volume)
+        showRideAlertNotification(
+          Number(latestRide.estimated_fare || latestRide.fare || 0),
+          latestRide.pickup_address || 'Unknown pickup'
+        );
       }
       setRides(newRides);
     } catch (error) {
@@ -516,6 +551,7 @@ const HomeScreen = () => {
 
     try {
       await stopAlert(); // Stop sound immediately
+      await cancelRideAlertNotification(); // Dismiss the notification alert
       setActionLoading(rideId);
       await api.patch(`/rides/${rideId}/accept`);
       Alert.alert('Ride Accepted!', 'Navigate to the passenger pickup.');
@@ -536,6 +572,7 @@ const HomeScreen = () => {
     // Optimistically remove from UI immediately for snappy UX
     setRides(prev => prev.filter(r => r.id !== rideId));
     stopAlert();
+    cancelRideAlertNotification(); // Dismiss the notification alert
     try {
       await api.patch(`/rides/${rideId}/reject`);
     } catch (error: any) {
@@ -1041,10 +1078,11 @@ const HomeScreen = () => {
             <Ionicons name="close" size={28} color="#4a5568" />
           </TouchableOpacity>
 
-          <View style={styles.drawerHeader}>
-            <Avatar.Icon size={80} icon="account" style={{ backgroundColor: '#fe7009' }} />
-            <Text style={styles.drawerName}>Driver Partner</Text>
-            <Text style={styles.drawerRating}>⭐ 4.8 Rating</Text>
+          <View style={[styles.drawerHeader, { paddingTop: 50, paddingBottom: 20 }]}>
+            <Image 
+              source={require('../../assets/splash-icon.png')} 
+              style={{ width: 140, height: 40, resizeMode: 'contain' }} 
+            />
           </View>
           <ScrollView>
             <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('Profile'); }}>

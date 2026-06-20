@@ -11,6 +11,11 @@ import * as Notifications from 'expo-notifications';
 import { Platform, View, StatusBar } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import api from './src/config/api';
+import './src/LocationTask';
+import { setupRideAlertChannel } from './src/utils/rideAlertNotification';
+
+// Set up loud notification channel for ride alerts immediately on boot
+setupRideAlertChannel();
 
 // ─── Push Notification Handler ───────────────────────────────────────────────
 Notifications.setNotificationHandler({

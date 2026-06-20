@@ -7,6 +7,7 @@ import LockIcon from '../components/LockIcon';
 import BriefcaseIcon from '../components/BriefcaseIcon';
 import StarIcon from '../components/StarIcon';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 
 
 import { useNavigation } from '@react-navigation/native';
@@ -56,6 +57,34 @@ const ProfileScreen = () => {
           };
         }
 
+        let locationStr = data.profile.currentAddress;
+        
+        // If backend doesn't have the address string but has coords, or we just want to get real location
+        if (!locationStr) {
+          try {
+            let lat: number | undefined = data.profile.location?.latitude;
+            let lon: number | undefined = data.profile.location?.longitude;
+            
+            if (!lat || !lon) {
+              const currentLoc = await Location.getLastKnownPositionAsync();
+              if (currentLoc) {
+                lat = currentLoc.coords.latitude;
+                lon = currentLoc.coords.longitude;
+              }
+            }
+
+            if (lat && lon) {
+              const geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+              if (geocode && geocode.length > 0) {
+                const g = geocode[0];
+                locationStr = [g.name, g.street, g.city, g.region].filter(Boolean).join(', ');
+              }
+            }
+          } catch (e) {
+            console.warn('Reverse geocode failed in Profile:', e);
+          }
+        }
+
         setUser({
           ...user,
           name: data.profile.name,
@@ -66,7 +95,7 @@ const ProfileScreen = () => {
           vehiclePlateNumber: data.profile.vehiclePlateNumber,
           vehicleColor: data.profile.vehicleColor,
           phoneNumber: data.profile.phoneNumber,
-          location: data.profile.currentAddress || 'Not available',
+          location: locationStr || 'Not available',
           avatar: avatarSource,
         });
       }
@@ -104,15 +133,6 @@ const ProfileScreen = () => {
           <Text style={styles.name}>{user.name}</Text>
           <View style={styles.statsContainer}>
             <View style={styles.stat}>
-              <StarIcon color="#FFD700" size={24} />
-
-              <Text style={styles.statText}>{user.rating}</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{user.trips}</Text>
-              <Text style={styles.statLabel}>Trips</Text>
-            </View>
-            <View style={styles.stat}>
               <Text style={styles.statValue}>{user.memberSince}</Text>
               <Text style={styles.statLabel}>Since</Text>
             </View>
@@ -127,7 +147,6 @@ const ProfileScreen = () => {
             <View style={styles.cardBody}>
               <Text style={styles.cardText}>Name: {user.name}</Text>
               <Text style={styles.cardText}>Phone: {user.phoneNumber}</Text>
-              <Text style={styles.cardText}>Location: {user.location}</Text>
             </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.card}>

@@ -53,7 +53,7 @@ export const usePushNotifications = (userId: string | null) => {
             });
 
             // High-priority Ride Alert channel with custom sound
-            await Notifications.setNotificationChannelAsync('ride-alerts', {
+            await Notifications.setNotificationChannelAsync('ride-alerts-v2', {
                 name: 'Ride Alerts',
                 description: 'Critical alerts for incoming ride requests',
                 importance: Notifications.AndroidImportance.MAX,
@@ -61,7 +61,7 @@ export const usePushNotifications = (userId: string | null) => {
                 lightColor: '#FF7009',
                 enableVibrate: true,
                 showBadge: true,
-                sound: 'ride_alert.mp3',  // Custom sound bundled in res/raw
+                sound: 'ride_alert',  // Custom sound bundled in res/raw (WITHOUT extension)
                 lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
                 bypassDnd: true,  // Override Do Not Disturb for ride alerts
             });

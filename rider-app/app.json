@@ -2,7 +2,7 @@
   "expo": {
     "name": "Ride Andhra",
     "slug": "ride-andhra-rider",
-    "version": "1.0.4",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
@@ -31,7 +31,7 @@
           "apiKey": "AIzaSyAcJpazQWf4j468g9DnxMsJZzjW0Yp0iSM"
         }
       },
-      "versionCode": 5
+      "versionCode": 7
     },
     "web": {
       "favicon": "./assets/favicon.png"
