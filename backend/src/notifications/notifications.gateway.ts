@@ -50,6 +50,8 @@ export class NotificationsGateway
     this.logger.log(`Emitting ride update for ${rideId}: ${status}`);
     // Room-targeted: only the rider who joined ride-{rideId} receives this
     this.server.to(`ride-${rideId}`).emit(`ride-${rideId}`, { status, ride });
+    // Broadcast globally so drivers can clear stale ride request modals
+    this.server.emit('ride-update', { rideId, status });
   }
 
   sendNewRideToDriver(driverUserId: string, ride: any) {

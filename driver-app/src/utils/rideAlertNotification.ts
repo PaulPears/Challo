@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-const RIDE_ALERT_CHANNEL_ID = 'ride-alerts-v2';
+const RIDE_ALERT_CHANNEL_ID = 'ride-alerts-v3';
 const RIDE_ALERT_NOTIFICATION_ID = 'ride-request-alert';
 
 /**
@@ -15,7 +15,7 @@ export const setupRideAlertChannel = async () => {
     name: 'Ride Alerts',
     description: 'Plays a loud alert when a new ride request comes in.',
     importance: Notifications.AndroidImportance.MAX,
-    sound: 'ride_alert',     // Must match filename in assets/sounds/ (WITHOUT extension on Android)
+    sound: 'ride_alert.mp3',     // Must match filename in assets/sounds/
     vibrationPattern: [0, 500, 300, 500, 300, 500],
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     bypassDnd: true,             // Override Do-Not-Disturb for ride alerts
@@ -39,7 +39,7 @@ export const showRideAlertNotification = async (fare: number, pickup: string, di
     content: {
       title: '🚖 New Ride Request!',
       body: bodyText,
-      sound: 'ride_alert',
+      sound: 'ride_alert.mp3',
       priority: Notifications.AndroidNotificationPriority.MAX,
       data: { type: 'ride-request' },
     },

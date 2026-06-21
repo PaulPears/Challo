@@ -159,8 +159,12 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
         onAccepted();
       });
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Ride may already be taken.';
-      Alert.alert('Error', msg);
+      if (err.response?.status === 409) {
+        Alert.alert('Ride Unavailable', 'This ride has already been accepted by another driver or was cancelled.');
+      } else {
+        const msg = err.response?.data?.message || 'Ride may already be taken.';
+        Alert.alert('Error', msg);
+      }
       handleDismiss();
     } finally {
       setActionLoading(null);

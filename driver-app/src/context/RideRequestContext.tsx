@@ -22,7 +22,7 @@ export interface RideRequest {
 // Define the context shape
 interface RideRequestContextType {
   rideRequest: RideRequest | null;
-  setRideRequest: (request: RideRequest | null) => void;
+  setRideRequest: React.Dispatch<React.SetStateAction<RideRequest | null>>;
   clearRideRequest: () => void;
 }
 

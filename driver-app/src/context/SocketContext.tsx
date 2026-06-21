@@ -79,6 +79,20 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       // Generic ride notifications
       socket.on('ride-update', (data: any) => {
         console.log('[Socket] Ride update received:', data.status, 'for ride:', data.rideId);
+        // We use an internal event to notify the RideRequestContext or we can handle it directly here,
+        // but since we need access to the CURRENT rideRequest state, we can't easily access it inside this closure
+        // without a ref. So we emit a custom window/document event or use a state updater.
+        // Actually, we can dispatch an event or call a method on the context.
+        setRideRequest((currentRequest: any) => {
+            if (currentRequest && currentRequest.rideId === data.rideId) {
+                if (data.status !== 'PENDING') {
+                    console.log('[Socket] Ride is no longer PENDING, clearing request modal.');
+                    // clear it
+                    return null;
+                }
+            }
+            return currentRequest;
+        });
       });
     };
     
