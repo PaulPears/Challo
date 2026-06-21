@@ -1,5 +1,6 @@
 const { withAndroidManifest } = require('@expo/config-plugins');
 
+// ── Plugin 1: MainActivity lock-screen & screen-wake attributes ──────────────
 const withMainActivityAttributes = (config) => {
     return withAndroidManifest(config, async (config) => {
         const androidManifest = config.modResults;
@@ -14,7 +15,47 @@ const withMainActivityAttributes = (config) => {
     });
 };
 
-module.exports = withMainActivityAttributes({
+// ── Plugin 2: Android 14+ foreground service type declaration ────────────────
+// Android 14 (API 34) requires every <service> that accesses location in the
+// foreground to explicitly declare android:foregroundServiceType="location".
+// Without this, the OS throws ForegroundServiceStartNotAllowedException and
+// immediately kills the background location tracking task.
+const withLocationForegroundServiceType = (config) => {
+    return withAndroidManifest(config, async (config) => {
+        const app = config.modResults.manifest.application[0];
+        const services = app.service || [];
+
+        services.forEach((service) => {
+            const name = service['$']['android:name'] || '';
+            // Patch expo-location's background task service and any service whose
+            // class name contains "Location" (case-insensitive) or "TaskManager"
+            const needsLocationForeground =
+                name.toLowerCase().includes('location') ||
+                name.includes('TaskManager') ||
+                name.includes('ExpoGoTask') ||
+                name.includes('BackgroundFetch');
+
+            if (needsLocationForeground) {
+                const existing = service['$']['android:foregroundServiceType'] || '';
+                // Merge with any existing type declarations (e.g. "camera|location")
+                if (!existing.includes('location')) {
+                    service['$']['android:foregroundServiceType'] = existing
+                        ? `${existing}|location`
+                        : 'location';
+                    console.log(`[ConfigPlugin] Set foregroundServiceType="location" on ${name}`);
+                }
+            }
+        });
+
+        return config;
+    });
+};
+
+// Apply both plugins in sequence
+const applyAllPlugins = (config) =>
+    withLocationForegroundServiceType(withMainActivityAttributes(config));
+
+module.exports = applyAllPlugins({
     expo: {
         name: "RideAndhraDriverApp",
         slug: "RideAndhraDriverApp",
