@@ -111,6 +111,9 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
 
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
+      stopAlert();
+      cancelRideAlertNotification();
+      Vibration.cancel();
     };
   }, [isVisible]);
 

@@ -21,7 +21,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const socketRef = useRef<any>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { setRideRequest } = useRideRequest();
-  const { playAlert } = useSound();
+  const { playAlert, stopAlert } = useSound();
   const { user } = useAuth(); // Get user from AuthContext
 
   useEffect(() => {
@@ -87,6 +87,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             if (currentRequest && currentRequest.rideId === data.rideId) {
                 if (data.status !== 'PENDING') {
                     console.log('[Socket] Ride is no longer PENDING, clearing request modal.');
+                    stopAlert();
+                    cancelRideAlertNotification();
+                    Vibration.cancel();
                     // clear it
                     return null;
                 }
