@@ -19,7 +19,7 @@ const DrivingLicenseScreen = ({ navigation }) => {
       allowsEditing: true,
       quality: 0.3,
     });
-    if (pickerResult.cancelled === true) {
+    if (pickerResult.canceled === true) {
       return;
     }
 
