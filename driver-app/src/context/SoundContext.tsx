@@ -12,6 +12,7 @@ const SoundContext = createContext<SoundContextType | undefined>(undefined);
 
 export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     const soundRef = useRef<Audio.Sound | null>(null);
+    const activeSoundIdRef = useRef<number>(0);
 
     // Prepare audio mode for background playback
     useEffect(() => {
@@ -32,11 +33,8 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
         configureAudio();
     }, []);
 
-    const isPlayingRef = useRef(false);
-    const isLoadingRef = useRef(false);
-
     const stopAlert = async () => {
-        isPlayingRef.current = false;
+        activeSoundIdRef.current = 0; // Invalidate any loading requests immediately
         if (soundRef.current) {
             const soundInstance = soundRef.current;
             soundRef.current = null; // Clear immediately to prevent duplicate stop/unload calls
@@ -51,15 +49,20 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const playAlert = async (type: SoundType) => {
-        isPlayingRef.current = true;
+        const myId = ++activeSoundIdRef.current; // Increment and capture current request ID
+        console.log(`Attempting to play sound type: ${type}, requestId: ${myId}`);
 
         // Stop any currently playing sound first
-        await stopAlert();
-
-        // Re-set playing to true since stopAlert sets it to false
-        isPlayingRef.current = true;
-
-        console.log(`Attempting to play sound type: ${type}`);
+        if (soundRef.current) {
+            const soundInstance = soundRef.current;
+            soundRef.current = null;
+            try {
+                await soundInstance.stopAsync();
+                await soundInstance.unloadAsync();
+            } catch (e) {
+                console.log('Error cleaning up previous sound:', e);
+            }
+        }
 
         let source;
         let shouldLoop = false;
@@ -81,7 +84,6 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         try {
-            isLoadingRef.current = true;
             const { sound } = await Audio.Sound.createAsync(
                 source,
                 {
@@ -91,11 +93,9 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             );
 
-            isLoadingRef.current = false;
-
-            // Check if stopAlert was called while we were loading
-            if (!isPlayingRef.current) {
-                console.log('Stop requested during sound load, unloading.');
+            // Check if stopAlert or a newer playAlert was requested while we were loading
+            if (activeSoundIdRef.current !== myId) {
+                console.log(`Request ${myId} was cancelled or superseded during load, unloading.`);
                 await sound.unloadAsync();
                 return;
             }
@@ -103,9 +103,8 @@ export const SoundProvider = ({ children }: { children: React.ReactNode }) => {
             soundRef.current = sound;
             await sound.setVolumeAsync(volume);
             await sound.playAsync();
-            console.log('Sound playing at full volume');
+            console.log(`Sound playing for request ${myId}`);
         } catch (error) {
-            isLoadingRef.current = false;
             console.error("Failed to play sound", error);
         }
     };
