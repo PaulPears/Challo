@@ -103,7 +103,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       console.log('[Socket] RECEIVED NEW RIDE EVENT:', ride.id);
 
       // ─── Stale Ride Guard ─────────────────────────────────────────────────
-      const AGE_LIMIT_MS = 30 * 60 * 1000;
+      const AGE_LIMIT_MS = 6 * 60 * 1000;
       const rideCreatedAt = ride.created_at || ride.requested_at;
       if (rideCreatedAt) {
         const rideAgeMs = Date.now() - new Date(rideCreatedAt).getTime();

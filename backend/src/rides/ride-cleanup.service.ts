@@ -5,7 +5,7 @@ import { Repository, LessThan } from 'typeorm';
 import { Ride, RideStatus } from './ride.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 
-const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+const SIX_MINUTES_MS = 6 * 60 * 1000;
 
 @Injectable()
 export class RideCleanupService {
@@ -18,12 +18,12 @@ export class RideCleanupService {
   ) {}
 
   /**
-   * Runs every 5 minutes and auto-cancels any pending ride that has been
-   * waiting for more than 6 hours with no driver acceptance.
+   * Runs every minute and auto-cancels any pending ride that has been
+   * waiting for more than 6 minutes with no driver acceptance.
    */
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_MINUTE)
   async cancelStaleRides(): Promise<void> {
-    const cutoff = new Date(Date.now() - SIX_HOURS_MS);
+    const cutoff = new Date(Date.now() - SIX_MINUTES_MS);
 
     const staleRides = await this.ridesRepository.find({
       where: {
@@ -49,7 +49,7 @@ export class RideCleanupService {
       .update(Ride)
       .set({
         status: RideStatus.CANCELLED,
-        cancellation_reason: 'Auto-cancelled: No driver found within 6 hours',
+        cancellation_reason: 'Auto-cancelled: No driver found within 6 minutes',
       })
       .whereInIds(staleIds)
       .execute();
