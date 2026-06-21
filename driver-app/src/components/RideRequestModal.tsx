@@ -133,7 +133,7 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
       // which would kill the sound the moment a new ride request arrives.
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [isVisible]);
+  }, [isVisible, rideRequest?.rideId]);
 
   const handleDismiss = useCallback(() => {
     if (countdownRef.current) clearInterval(countdownRef.current);

@@ -4,9 +4,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import api from '../config/api';
 import { navigationRef, navigate } from '../utils/NavigationService';
-
 import { useRideRequest } from '../context/RideRequestContext';
-import { useSound } from '../context/SoundContext';
 
 let activeNotificationSubscription: any = null;
 let activeResponseSubscription: any = null;
@@ -18,7 +16,6 @@ export const usePushNotifications = (userId: string | null) => {
     const responseListener = useRef<any>(null);
     const [unreadCount, setUnreadCount] = useState(0);
     const { setRideRequest } = useRideRequest();
-    const { playAlert } = useSound();
 
     const fetchUnreadCount = async () => {
         if (!userId) return;
@@ -53,7 +50,7 @@ export const usePushNotifications = (userId: string | null) => {
             });
 
             // High-priority Ride Alert channel with custom sound
-            await Notifications.setNotificationChannelAsync('ride-alerts-v3', {
+            await Notifications.setNotificationChannelAsync('ride-alerts-v4', {
                 name: 'Ride Alerts',
                 description: 'Critical alerts for incoming ride requests',
                 importance: Notifications.AndroidImportance.MAX,
@@ -61,7 +58,7 @@ export const usePushNotifications = (userId: string | null) => {
                 lightColor: '#FF7009',
                 enableVibrate: true,
                 showBadge: true,
-                sound: 'ride_alert.mp3',  // Custom sound bundled in res/raw
+                sound: 'ride_alert',  // Custom sound bundled in res/raw (no extension on Android)
                 lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
                 bypassDnd: true,  // Override Do Not Disturb for ride alerts
             });

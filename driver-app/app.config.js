@@ -1,4 +1,20 @@
-export default {
+const { withAndroidManifest } = require('@expo/config-plugins');
+
+const withMainActivityAttributes = (config) => {
+    return withAndroidManifest(config, async (config) => {
+        const androidManifest = config.modResults;
+        const mainActivity = androidManifest.manifest.application[0].activity.find(
+            (activity) => activity['$']['android:name'] === '.MainActivity'
+        );
+        if (mainActivity) {
+            mainActivity['$']['android:showWhenLocked'] = 'true';
+            mainActivity['$']['android:turnScreenOn'] = 'true';
+        }
+        return config;
+    });
+};
+
+module.exports = withMainActivityAttributes({
     expo: {
         name: "RideAndhraDriverApp",
         slug: "RideAndhraDriverApp",
@@ -100,4 +116,4 @@ export default {
         runtimeVersion: "1.0.0",
         owner: "praweenx356"
     }
-};
+});
