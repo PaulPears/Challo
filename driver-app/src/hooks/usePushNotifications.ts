@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Platform, Alert, Linking } from 'react-native';
+import { Platform, Alert, Linking, Vibration } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import api from '../config/api';
@@ -162,6 +162,7 @@ export const usePushNotifications = (userId: string | null) => {
             const data = notification.request.content.data as any;
             if (data?.type === 'RIDE_REQUEST' || data?.rideId) {
                 playAlert('RIDE_REQUEST');
+                Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
             }
             fetchUnreadCount();
         });
@@ -177,53 +178,59 @@ export const usePushNotifications = (userId: string | null) => {
                 // Determine ride ID
                 const rideId = data.rideId || data.id;
 
-                // Create initial request from push notification payload data
-                const initialRequest = {
-                    rideId: rideId,
-                    pickupLocation: data.pickupLocation || data.pickup_address || 'Unknown pickup',
-                    pickupLatitude: Number(data.pickupLatitude || data.pickup_latitude || 0),
-                    pickupLongitude: Number(data.pickupLongitude || data.pickup_longitude || 0),
-                    dropoffLocation: data.dropoffLocation || data.dropoff_address || 'Unknown dropoff',
-                    dropoffLatitude: Number(data.dropoffLatitude || data.dropoff_latitude || 0),
-                    dropoffLongitude: Number(data.dropoffLongitude || data.dropoff_longitude || 0),
-                    fare: Number(data.fare || data.estimated_fare || 0),
-                    distance: data.distance != null ? Number(data.distance) : (data.estimated_distance_km != null ? Number(data.estimated_distance_km) : undefined),
-                    duration: data.duration != null ? Number(data.duration) : (data.estimated_duration_min != null ? Number(data.estimated_duration_min) : undefined),
-                    riderName: data.riderName || data.rider?.name || data.user?.name || 'Rider',
-                    riderPhone: data.riderPhone || data.rider?.phone_number || data.user?.phone_number || '',
-                };
-
-                // Show the modal immediately using the push payload data
-                setRideRequest(initialRequest);
-
-                // Safe navigation: Navigate to Main -> Home using our helper from NavigationService
+                // Navigate home immediately so the modal can render once we validate
                 navigate('Main', { screen: 'Home' });
 
-                // Play the sound (ensure it plays when user opens the app via notification tap)
-                playAlert('RIDE_REQUEST');
-
-                // Now, optionally fetch the freshest data from the server in the background to update the modal
+                // ── Verify ride is still PENDING before showing modal + playing sound ──
                 if (rideId) {
                     api.get(`/rides/${rideId}`).then(res => {
                         const ride = res.data;
-                        if (ride) {
-                            setRideRequest({
-                                rideId: ride.id,
-                                pickupLocation: ride.pickup_address || 'Unknown pickup',
-                                pickupLatitude: Number(ride.pickup_latitude || 0),
-                                pickupLongitude: Number(ride.pickup_longitude || 0),
-                                dropoffLocation: ride.dropoff_address || 'Unknown dropoff',
-                                dropoffLatitude: Number(ride.dropoff_latitude || 0),
-                                dropoffLongitude: Number(ride.dropoff_longitude || 0),
-                                fare: Number(ride.estimated_fare || ride.fare || 0),
-                                distance: ride.estimated_distance_km != null ? Number(ride.estimated_distance_km) : undefined,
-                                duration: ride.estimated_duration_min != null ? Number(ride.estimated_duration_min) : undefined,
-                                riderName: ride.rider?.name || ride.user?.name || 'Rider',
-                                riderPhone: ride.rider?.phone_number || ride.user?.phone_number || '',
-                            });
+                        if (!ride) {
+                            console.log('[PushNotifications] Ride not found, ignoring tap.');
+                            return;
                         }
+                        if (ride.status !== 'pending') {
+                            console.log(`[PushNotifications] Ride ${rideId} is no longer pending (status: ${ride.status}). Not showing modal.`);
+                            return;
+                        }
+                        // Ride is still pending — show modal and start looping alert
+                        setRideRequest({
+                            rideId: ride.id,
+                            pickupLocation: ride.pickup_address || 'Unknown pickup',
+                            pickupLatitude: Number(ride.pickup_latitude || 0),
+                            pickupLongitude: Number(ride.pickup_longitude || 0),
+                            dropoffLocation: ride.dropoff_address || 'Unknown dropoff',
+                            dropoffLatitude: Number(ride.dropoff_latitude || 0),
+                            dropoffLongitude: Number(ride.dropoff_longitude || 0),
+                            fare: Number(ride.estimated_fare || ride.fare || 0),
+                            distance: ride.estimated_distance_km != null ? Number(ride.estimated_distance_km) : undefined,
+                            duration: ride.estimated_duration_min != null ? Number(ride.estimated_duration_min) : undefined,
+                            riderName: ride.rider?.name || ride.user?.name || 'Rider',
+                            riderPhone: ride.rider?.phone_number || ride.user?.phone_number || '',
+                        });
+                        // Play looping sound + vibration (stopped in RideRequestModal on accept/decline/timeout)
+                        playAlert('RIDE_REQUEST');
+                        Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
                     }).catch(err => {
-                        console.error('[Push] Failed to update ride details on tap:', err);
+                        console.error('[Push] Failed to fetch ride on notification tap, showing from payload:', err);
+                        // Fallback to push payload so driver isn't left with a blank screen
+                        const rideIdFallback = data.rideId || data.id;
+                        setRideRequest({
+                            rideId: rideIdFallback,
+                            pickupLocation: data.pickupLocation || data.pickup_address || 'Unknown pickup',
+                            pickupLatitude: Number(data.pickupLatitude || data.pickup_latitude || 0),
+                            pickupLongitude: Number(data.pickupLongitude || data.pickup_longitude || 0),
+                            dropoffLocation: data.dropoffLocation || data.dropoff_address || 'Unknown dropoff',
+                            dropoffLatitude: Number(data.dropoffLatitude || data.dropoff_latitude || 0),
+                            dropoffLongitude: Number(data.dropoffLongitude || data.dropoff_longitude || 0),
+                            fare: Number(data.fare || data.estimated_fare || 0),
+                            distance: data.distance != null ? Number(data.distance) : (data.estimated_distance_km != null ? Number(data.estimated_distance_km) : undefined),
+                            duration: data.duration != null ? Number(data.duration) : (data.estimated_duration_min != null ? Number(data.estimated_duration_min) : undefined),
+                            riderName: data.riderName || data.rider?.name || 'Rider',
+                            riderPhone: data.riderPhone || data.rider?.phone_number || '',
+                        });
+                        playAlert('RIDE_REQUEST');
+                        Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
                     });
                 }
             }

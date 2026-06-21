@@ -6,7 +6,7 @@ import { useRideRequest } from './RideRequestContext';
 import { useSound } from './SoundContext';
 import { useAuth } from './AuthContext';
 import { API_URL } from '../config/api';
-import { showRideAlertNotification } from '../utils/rideAlertNotification';
+import { showRideAlertNotification, cancelRideAlertNotification } from '../utils/rideAlertNotification';
 import * as Location from 'expo-location';
 import { calculateDistance } from '../utils/locationUtils';
 
