@@ -132,7 +132,7 @@ export const usePushNotifications = (userId: string | null) => {
     useEffect(() => {
         if (!userId) return;
 
-            // 🔑 CRITICAL: Register device and save token to backend (only once per user session)
+        // 🔑 CRITICAL: Register device and save token to backend (only once per user session)
         if (registeredUserId !== userId) {
             registeredUserId = userId;
             registerForPushNotificationsAsync().then((token) => {
@@ -159,11 +159,8 @@ export const usePushNotifications = (userId: string | null) => {
         // Listen for notifications received while app is in foreground
         activeNotificationSubscription = Notifications.addNotificationReceivedListener((notification) => {
             console.log('[PushNotifications] Received in foreground:', notification.request.content.title);
-            const data = notification.request.content.data as any;
-            if (data?.type === 'RIDE_REQUEST' || data?.rideId) {
-                playAlert('RIDE_REQUEST');
-                Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
-            }
+            // NOTE: Sound is started by RideRequestModal when rideRequest context is set.
+            // Do NOT start sound here — it creates a race with the modal's effect cleanup.
             fetchUnreadCount();
         });
         notificationListener.current = activeNotificationSubscription;
@@ -193,7 +190,8 @@ export const usePushNotifications = (userId: string | null) => {
                             console.log(`[PushNotifications] Ride ${rideId} is no longer pending (status: ${ride.status}). Not showing modal.`);
                             return;
                         }
-                        // Ride is still pending — show modal and start looping alert
+                        // setRideRequest triggers isVisible=true in RideRequestModal,
+                        // which owns the sound — it will call playAlert + Vibration in its useEffect.
                         setRideRequest({
                             rideId: ride.id,
                             pickupLocation: ride.pickup_address || 'Unknown pickup',
@@ -208,12 +206,9 @@ export const usePushNotifications = (userId: string | null) => {
                             riderName: ride.rider?.name || ride.user?.name || 'Rider',
                             riderPhone: ride.rider?.phone_number || ride.user?.phone_number || '',
                         });
-                        // Play looping sound + vibration (stopped in RideRequestModal on accept/decline/timeout)
-                        playAlert('RIDE_REQUEST');
-                        Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
                     }).catch(err => {
                         console.error('[Push] Failed to fetch ride on notification tap, showing from payload:', err);
-                        // Fallback to push payload so driver isn't left with a blank screen
+                        // Fallback: setRideRequest triggers modal, modal starts sound
                         const rideIdFallback = data.rideId || data.id;
                         setRideRequest({
                             rideId: rideIdFallback,
@@ -229,8 +224,6 @@ export const usePushNotifications = (userId: string | null) => {
                             riderName: data.riderName || data.rider?.name || 'Rider',
                             riderPhone: data.riderPhone || data.rider?.phone_number || '',
                         });
-                        playAlert('RIDE_REQUEST');
-                        Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
                     });
                 }
             }

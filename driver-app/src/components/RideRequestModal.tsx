@@ -10,7 +10,7 @@ import { useSound } from '../context/SoundContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { cancelRideAlertNotification } from '../utils/rideAlertNotification';
+import { cancelRideAlertNotification, showRideAlertNotification } from '../utils/rideAlertNotification';
 
 const { width, height } = Dimensions.get('window');
 const COUNTDOWN_SECONDS = 30;
@@ -22,7 +22,7 @@ interface Props {
 
 const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
   const { rideRequest, clearRideRequest } = useRideRequest();
-  const { stopAlert } = useSound();
+  const { stopAlert, playAlert } = useSound();
 
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
   const [actionLoading, setActionLoading] = useState<'accept' | 'reject' | null>(null);
@@ -95,6 +95,20 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
       backdropOpacity.setValue(0);
       startAnimations();
 
+      // ── Modal owns the sound ─────────────────────────────────────────────
+      // Start looping alert sound + vibration here so it begins reliably
+      // regardless of whether the app was in foreground, background, or
+      // launched from a notification tap.
+      playAlert('RIDE_REQUEST');
+      Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
+      // Also fire a system notification so the alert appears on the lock screen
+      showRideAlertNotification(
+        rideRequest?.fare ?? 0,
+        rideRequest?.pickupLocation ?? 'Pickup',
+        rideRequest?.driverToPickupDistance
+      );
+      // ────────────────────────────────────────────────────────────────────
+
       countdownRef.current = setInterval(() => {
         setCountdown(prev => {
           if (prev <= 1) {
@@ -105,15 +119,19 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
         });
       }, 1000);
     } else {
+      // Modal is hidden — stop everything immediately
+      stopAlert();
+      cancelRideAlertNotification();
+      Vibration.cancel();
       pulseAnim.stopAnimation();
       glowAnim.stopAnimation();
     }
 
     return () => {
+      // Only clear the countdown interval — DO NOT call stopAlert here.
+      // Calling stopAlert in the cleanup fires BEFORE the next effect body,
+      // which would kill the sound the moment a new ride request arrives.
       if (countdownRef.current) clearInterval(countdownRef.current);
-      stopAlert();
-      cancelRideAlertNotification();
-      Vibration.cancel();
     };
   }, [isVisible]);
 

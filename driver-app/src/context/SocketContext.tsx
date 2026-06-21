@@ -21,7 +21,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const socketRef = useRef<any>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { setRideRequest } = useRideRequest();
-  const { playAlert, stopAlert } = useSound();
+  const { stopAlert } = useSound();
   const { user } = useAuth(); // Get user from AuthContext
 
   useEffect(() => {
@@ -150,15 +150,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         riderPhone: ride.rider?.phone_number || ride.user?.phone_number,
       });
 
-      console.log('[Socket] Context updated with rideRequest. Starting alert and vibration.');
-      playAlert('RIDE_REQUEST');
-      // Fire a local notification on the loud notification channel (uses ring stream, not media)
-      showRideAlertNotification(
-        Number(ride.estimated_fare || ride.fare || 0),
-        ride.pickup_address || ride.pickupLocation || 'Unknown pickup',
-        driverToPickupDistance
-      );
-      Vibration.vibrate([0, 800, 400, 800, 400, 800], true);
+      console.log('[Socket] Context updated with rideRequest. Modal will handle sound + vibration.');
+      // NOTE: Sound, vibration, and local notification are started by RideRequestModal
+      // in its useEffect when isVisible becomes true. Do NOT start them here — doing so
+      // causes a race where the modal's cleanup kills the sound before the modal restarts it.
     };
 
     connect();

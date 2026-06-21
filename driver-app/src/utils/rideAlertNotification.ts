@@ -41,6 +41,8 @@ export const showRideAlertNotification = async (fare: number, pickup: string, di
       body: bodyText,
       sound: 'ride_alert.mp3',
       priority: Notifications.AndroidNotificationPriority.MAX,
+      sticky: true,       // keeps notification in shade until explicitly dismissed
+      autoDismiss: false, // do not dismiss when user taps — driver must act in app
       data: { type: 'ride-request' },
     },
     trigger: {
