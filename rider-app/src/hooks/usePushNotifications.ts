@@ -36,9 +36,15 @@ export const usePushNotifications = (userId: string | null) => {
         if (Platform.OS === 'android') {
             await Notifications.setNotificationChannelAsync('ride-updates', {
                 name: 'Ride Updates',
-                importance: Notifications.AndroidImportance.MAX,
+                importance: Notifications.AndroidImportance.HIGH,
                 vibrationPattern: [0, 250, 250, 250],
-                lightColor: '#FF231F7C',
+                enableVibrate: true,
+                showBadge: true,
+            });
+            await Notifications.setNotificationChannelAsync('default', {
+                name: 'General Notifications',
+                importance: Notifications.AndroidImportance.HIGH,
+                vibrationPattern: [0, 250, 250, 250],
                 enableVibrate: true,
                 showBadge: true,
             });

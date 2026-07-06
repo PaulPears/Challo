@@ -121,6 +121,8 @@ export const usePermissions = () => {
         requestBackgroundLocation,
         requestNotifications,
         requestCamera,
-        isCriticalGranted: locationStatus === 'granted' && notificationStatus === 'granted'
+        isCriticalGranted: locationStatus === 'granted' && 
+            notificationStatus === 'granted' && 
+            (Platform.OS === 'android' ? backgroundLocationStatus === 'granted' : true)
     };
 };

@@ -60,7 +60,7 @@ module.exports = applyAllPlugins({
         name: "RideAndhraDriverApp",
         slug: "RideAndhraDriverApp",
         scheme: "rideandhra",
-        version: "1.0.5",
+        version: "1.0.9",
         orientation: "portrait",
         icon: "./assets/adaptive-icon.png",
         userInterfaceStyle: "light",
@@ -131,7 +131,7 @@ module.exports = applyAllPlugins({
                 }
             },
             package: "com.rideandhra.driverapp",
-            versionCode: 6,
+            versionCode: 8,
             permissions: [
                 "android.permission.ACCESS_FINE_LOCATION",
                 "android.permission.ACCESS_COARSE_LOCATION",

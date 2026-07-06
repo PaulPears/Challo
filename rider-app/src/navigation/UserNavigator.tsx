@@ -1,6 +1,7 @@
 
 import React, { useEffect } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import * as Notifications from 'expo-notifications';
 import UserTabNavigator from './UserTabNavigator';
 import SearchScreen from '../screens/user/SearchScreen';
 import MapSelectionScreen from '../screens/user/MapSelectionScreen';
@@ -12,16 +13,45 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useSocket } from '../context/SocketContext';
 import useRideStore from '../store/rideStore';
 import useNotificationStore from '../store/notificationStore';
+import useUserStore from '../store/userStore';
 import RideStatusModal from '../components/RideStatusModal';
 import RideStatusBar from '../components/RideStatusBar';
 
 const Stack = createStackNavigator();
+
+// NOTE: setNotificationHandler is defined once in App.tsx — do NOT add it here.
+
+/** Post a real OS notification that appears in the Android status bar / tray */
+const sendLocalNotification = async (title: string, body: string) => {
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data: { target: 'rider' },
+      },
+      // channelId must live in the trigger (not content) in expo-notifications v55.
+      // TIME_INTERVAL with 1 second is effectively immediate on Android.
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 1,
+        repeats: false,
+        channelId: 'ride-updates',
+      },
+    });
+  } catch (e) {
+    console.warn('[Notifications] sendLocalNotification failed:', e);
+  }
+};
 
 const UserNavigator = () => {
   const { socket } = useSocket();
   const { setAlert, updateRideStatus, currentRide } = useRideStore();
   const { addNotification } = useNotificationStore();
   const navigation = useNavigation<any>();
+
+
+
 
   useEffect(() => {
     if (!socket) {
@@ -50,57 +80,52 @@ const UserNavigator = () => {
       };
 
       if (status === 'ACCEPTED' || status === 'RIDE_ACCEPTED') {
-        setAlert({
-          type: 'RIDE_ACCEPTED',
-          title: 'Ride Confirmed! 🚕',
-          message: `Your ride has been accepted by ${driverData?.name || 'a driver'}.`,
-          data: data
-        });
+        const title = 'Ride Confirmed! 🚕';
+        const message = `Your ride has been accepted by ${driverData?.name || 'a driver'}.`;
+        sendLocalNotification(title, message);
+        setAlert({ type: 'RIDE_ACCEPTED', title, message, data });
         updateRideStatus('ACCEPTED', driverData);
         navigation.navigate('DriverDetails', { ride: { ...currentRide, status: 'ACCEPTED', driver: driverData } });
       } else if (status === 'ARRIVED' || status === 'DRIVER_ARRIVED') {
-        setAlert({
-          type: 'DRIVER_ARRIVED',
-          title: 'Driver Arrived! 📍',
-          message: 'Your driver is at the pickup location.',
-          data: data
-        });
+        const title = 'Driver Arrived! 📍';
+        const message = 'Your driver is at the pickup location.';
+        sendLocalNotification(title, message);
+        setAlert({ type: 'DRIVER_ARRIVED', title, message, data });
         updateRideStatus('ARRIVED');
       } else if (status === 'IN_PROGRESS' || status === 'STARTED' || status === 'RIDE_STARTED') {
+        const title = 'Trip Started! 🚗';
+        const message = 'Your ride is in progress. Have a safe journey.';
+        sendLocalNotification(title, message);
         updateRideStatus('STARTED');
-        setAlert({
-          type: 'RIDE_STARTED',
-          title: 'Trip Started! 🚗',
-          message: 'Your ride is in progress. Have a safe journey.',
-          data: data
-        });
+        setAlert({ type: 'RIDE_STARTED', title, message, data });
       } else if (status === 'COMPLETED' || status === 'RIDE_COMPLETED') {
+        const title = 'Ride Completed! 🏁';
+        const message = 'Thank you for riding with RideAndhra. We hope you had a great trip!';
+        sendLocalNotification(title, message);
         updateRideStatus('COMPLETED');
-        setAlert({
-          type: 'RIDE_COMPLETED',
-          title: 'Ride Completed! 🏁',
-          message: 'Thank you for riding with RideAndhra. We hope you had a great trip!',
-          data: data
-        });
+        setAlert({ type: 'RIDE_COMPLETED', title, message, data });
         // Reset the stack so pressing back does NOT go back to WaitingForDriver
         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
       } else if (status === 'CANCELLED' || status === 'RIDE_CANCELLED') {
+        const title = 'Ride Cancelled';
+        const message = 'This ride has been cancelled.';
+        sendLocalNotification(title, message);
         updateRideStatus('CANCELLED');
-        setAlert({
-          type: 'RIDE_CANCELLED',
-          title: 'Ride Cancelled',
-          message: 'This ride has been cancelled.',
-          data: data
-        });
+        setAlert({ type: 'RIDE_CANCELLED', title, message, data });
         navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
       }
     };
 
     const handleNotification = (data: any) => {
-      const isNewRideRequest = (data.title || '').toLowerCase().includes('new ride request') || 
-                               (data.message || '').toLowerCase().includes('new ride request');
-      
+      const isNewRideRequest = (data.title || '').toLowerCase().includes('new ride request') ||
+        (data.message || '').toLowerCase().includes('new ride request');
+
       if (isNewRideRequest) return;
+
+      // Fire a real OS notification so it appears in the status bar
+      if (data.title || data.message) {
+        sendLocalNotification(data.title || 'Ride Andhra', data.message || '');
+      }
 
       addNotification({
         id: Math.random().toString(36).substr(2, 9),
@@ -117,6 +142,13 @@ const UserNavigator = () => {
 
     // ─── Subscribe ──────────────────────────────────────────────────────────
     socket.on('notification', handleNotification);
+    socket.on('system_notification', handleNotification); // <--- Add listener for admin panel broadcasts (global)
+    
+    // Listen for targeted system notifications for this specific user
+    const userId = useUserStore.getState().user?.id;
+    if (userId) {
+      socket.on(`system_notification_${userId}`, handleNotification);
+    }
 
     if (rideChannel) {
       socket.on(rideChannel, handleRideUpdate);
@@ -132,6 +164,10 @@ const UserNavigator = () => {
     return () => {
       // ─── Cleanup ──────────────────────────────────────────────────────────
       socket.off('notification', handleNotification);
+      socket.off('system_notification', handleNotification);
+      if (userId) {
+        socket.off(`system_notification_${userId}`, handleNotification);
+      }
       if (rideChannel) {
         console.log(`[Socket] Unsubscribing from ${rideChannel}`);
         socket.off(rideChannel, handleRideUpdate);
@@ -145,7 +181,7 @@ const UserNavigator = () => {
   // ─── Background State Synchronizer (Polling Fallback) ───────────────────
   useEffect(() => {
     if (!currentRide?.id) return;
-    
+
     // Only poll for "active" statuses that might change without user action
     const activeStatuses = ['SEARCHING', 'ACCEPTED', 'ARRIVED', 'STARTED', 'IN_PROGRESS'];
     if (!activeStatuses.includes(currentRide.status)) return;
@@ -154,13 +190,13 @@ const UserNavigator = () => {
       try {
         const { rideAPI } = await import('../api/rideAPI');
         const latestRide = await rideAPI.getRideById(currentRide.id);
-        
+
         if (latestRide) {
           const newStatus = (latestRide.status || '').toUpperCase();
-          
+
           if (newStatus !== currentRide.status && newStatus !== 'IN_PROGRESS' || (newStatus === 'IN_PROGRESS' && currentRide.status !== 'STARTED')) {
             console.log(`[Sync] Detected state mismatch! Remote: ${newStatus}, Local: ${currentRide.status}`);
-            
+
             const driverData = latestRide.driver ? {
               name: latestRide.driver.name,
               vehicle_model: latestRide.driver.vehicle_model,
@@ -175,37 +211,37 @@ const UserNavigator = () => {
 
             // Handle specific navigation/alert transitions if missed
             if (mappedStatus === 'ACCEPTED') {
-               setAlert({
-                  type: 'RIDE_ACCEPTED',
-                  title: 'Ride Confirmed! 🚕',
-                  message: `Your ride has been accepted by ${driverData?.name || 'a driver'}.`,
-               });
+              setAlert({
+                type: 'RIDE_ACCEPTED',
+                title: 'Ride Confirmed! 🚕',
+                message: `Your ride has been accepted by ${driverData?.name || 'a driver'}.`,
+              });
             } else if (mappedStatus === 'STARTED') {
-               setAlert({
-                  type: 'RIDE_STARTED',
-                  title: 'Trip Started! 🚗',
-                  message: 'Your ride is in progress. Have a safe journey.',
-               });
+              setAlert({
+                type: 'RIDE_STARTED',
+                title: 'Trip Started! 🚗',
+                message: 'Your ride is in progress. Have a safe journey.',
+              });
             } else if (mappedStatus === 'ARRIVED') {
-               setAlert({
-                  type: 'DRIVER_ARRIVED',
-                  title: 'Driver Arrived! 📍',
-                  message: 'Your driver is at the pickup location.',
-               });
+              setAlert({
+                type: 'DRIVER_ARRIVED',
+                title: 'Driver Arrived! 📍',
+                message: 'Your driver is at the pickup location.',
+              });
             } else if (mappedStatus === 'COMPLETED') {
-               setAlert({
-                  type: 'RIDE_COMPLETED',
-                  title: 'Ride Completed! 🏁',
-                  message: 'Thank you for riding with RideAndhra.',
-               });
-               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
+              setAlert({
+                type: 'RIDE_COMPLETED',
+                title: 'Ride Completed! 🏁',
+                message: 'Thank you for riding with RideAndhra.',
+              });
+              navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
             } else if (mappedStatus === 'CANCELLED') {
-               setAlert({
-                  type: 'RIDE_CANCELLED',
-                  title: 'Ride Cancelled',
-                  message: 'This ride has been cancelled.',
-               });
-               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
+              setAlert({
+                type: 'RIDE_CANCELLED',
+                title: 'Ride Cancelled',
+                message: 'This ride has been cancelled.',
+              });
+              navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
             }
           }
         }

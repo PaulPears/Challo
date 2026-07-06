@@ -183,8 +183,11 @@ export class NotificationsService {
       }
 
       // 4. Send via Socket as well (Broadcast)
-      if (target === 'all') {
-        this.notificationsGateway.broadcastToAll('system_notification', { title, message: body, data });
+      if (target === 'all' || target === 'riders' || target === 'drivers') {
+        this.notificationsGateway.broadcastToAll('system_notification', { title, message: body, data, target });
+      } else {
+        // Targeted to a specific user ID
+        this.notificationsGateway.broadcastToAll(`system_notification_${target}`, { title, message: body, data, target });
       }
 
       return { success: true, count: users.length };

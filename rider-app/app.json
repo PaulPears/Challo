@@ -46,7 +46,8 @@
         "expo-notifications",
         {
           "icon": "./assets/bell_icon.png",
-          "color": "#FFD700"
+          "color": "#FFD700",
+          "defaultChannel": "default"
         }
       ]
     ]

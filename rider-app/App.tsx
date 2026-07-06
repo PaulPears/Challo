@@ -12,9 +12,13 @@ import { usePushNotifications } from './src/hooks/usePushNotifications';
 import api from './src/api/axiosClient';
 
 // ─── Push Notification Handler ───────────────────────────────────────────────
+// shouldShowBanner + shouldShowList are required for the notification to appear
+// in the Android status bar / notification tray (expo-notifications v55+)
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -39,6 +43,46 @@ function AppContent() {
     console.log('MSG91 Widget Initialized');
 
     (async () => {
+      // ── 1. Notification permission (asked on first launch) ─────────────────
+      // Must be requested before any notification is ever sent.
+      // Android 13+ (API 33+) requires POST_NOTIFICATIONS at runtime.
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          if (status !== 'granted') {
+            console.warn('[Notifications] User denied notification permission');
+          } else {
+            console.log('[Notifications] Permission granted');
+          }
+        }
+
+        // Create the Android high-importance channel up-front so it exists
+        // before any local notification is posted (otherwise the OS drops it).
+        if (Platform.OS === 'android') {
+          // Channel for local ride status alerts
+          await Notifications.setNotificationChannelAsync('ride-updates', {
+            name: 'Ride Updates',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            enableVibrate: true,
+            showBadge: true,
+          });
+          // Channel for general remote push notifications (e.g. from admin panel)
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'General Notifications',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            enableVibrate: true,
+            showBadge: true,
+          });
+          console.log('[Notifications] Android channels "ride-updates" and "default" ready');
+        }
+      } catch (e) {
+        console.warn('[Notifications] Setup error:', e);
+      }
+
+      // ── 2. Location permission ─────────────────────────────────────────────
       try {
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {

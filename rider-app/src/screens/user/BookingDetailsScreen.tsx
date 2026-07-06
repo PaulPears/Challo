@@ -204,35 +204,6 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
           <View style={[styles.fareBreakdownCard, { marginBottom: 16 }]}>
             <Text style={styles.summaryTitle}>Fare Summary</Text>
 
-            <View style={styles.fareRow}>
-              <Text style={styles.fareLabelSmall}>Trip Total</Text>
-              <Text style={styles.fareValueSmall}>₹ {Number(ride.final_fare || ride.estimated_fare || 0).toFixed(2)}</Text>
-            </View>
-
-            {Number(ride.super_km_discount) > 0 && (
-              <View style={[styles.fareRow, { marginTop: 8 }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={[styles.fareLabelSmall, { color: '#10b981', fontWeight: 'bold' }]}>Super KM Savings</Text>
-                  <View style={styles.savingsBadge}>
-                    <Text style={styles.savingsText}>PROMO</Text>
-                  </View>
-                </View>
-                <Text style={[styles.fareValueSmall, { color: '#10b981', fontWeight: 'bold' }]}>- ₹ {Number(ride.super_km_discount).toFixed(2)}</Text>
-              </View>
-            )}
-
-            {Number(ride.super_coins_applied) > 0 && (
-              <View style={[styles.fareRow, { marginTop: 8 }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={[styles.fareLabelSmall, { color: '#F59E0B', fontWeight: 'bold' }]}>Super Coin Savings</Text>
-                  <View style={[styles.savingsBadge, { backgroundColor: '#FEF3C7' }]}>
-                    <Text style={[styles.savingsText, { color: '#B45309' }]}>COINS</Text>
-                  </View>
-                </View>
-                <Text style={[styles.fareValueSmall, { color: '#F59E0B', fontWeight: 'bold' }]}>- ₹ {Number(ride.super_coins_applied).toFixed(2)}</Text>
-              </View>
-            )}
-
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Amount Paid</Text>
               <Text style={styles.totalValueText}>₹ {Number(ride.rider_payable || ride.final_fare || 0).toFixed(2)}</Text>

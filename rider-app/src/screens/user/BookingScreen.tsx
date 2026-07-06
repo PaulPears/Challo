@@ -310,9 +310,7 @@ const BookingScreen = ({ navigation, route }: any) => {
                   </View>
               </TouchableOpacity>
               
-              {selectedVehicle === option.vehicle && option.breakdown && (
-                <FareBreakdownCard {...option.breakdown} distance={distance} />
-              )}
+              {/* Fare breakdown hidden – fare is shown inline above */}
             </View>
           ))}
         </ScrollView>

@@ -15,6 +15,9 @@ import {
   Modal,
   TextInput,
   ToastAndroid,
+  NativeModules,
+  AppState,
+  DeviceEventEmitter
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -72,6 +75,8 @@ const HomeScreen = () => {
   const [isOnline, setIsOnline] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [lastLocationUpdate, setLastLocationUpdate] = useState<number | null>(null);
+  const [overlayPermGranted, setOverlayPermGranted] = useState<boolean>(true); // optimistic, checked on mount
   const [subStatus, setSubStatus] = useState<{
     label: string,
     timer: string,
@@ -117,9 +122,11 @@ const HomeScreen = () => {
   // Permission States
   const {
     locationStatus,
+    backgroundLocationStatus,
     notificationStatus,
     isCriticalGranted,
     requestLocation,
+    requestBackgroundLocation,
     requestNotifications,
     checkAllPermissions
   } = usePermissions();
@@ -167,8 +174,46 @@ const HomeScreen = () => {
     }
   }, [currentDistrict, location]);
 
+  // Check overlay permission on mount and whenever the app becomes active
+  const checkOverlayPermission = async () => {
+    if (Platform.OS === 'android' && NativeModules.FloatingWindowModule) {
+      try {
+        const granted: boolean = await NativeModules.FloatingWindowModule.hasOverlayPermission();
+        setOverlayPermGranted(granted);
+      } catch (_) {
+        setOverlayPermGranted(true); // fail silently if module isn't ready yet
+      }
+    }
+  };
+
   useEffect(() => {
-    checkAllPermissions();
+    checkOverlayPermission();
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        checkOverlayPermission();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    const initPermissions = async () => {
+      await checkAllPermissions();
+      // Pre-emptively request foreground location so the user gets it out of the way on startup
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          await Location.requestForegroundPermissionsAsync();
+          await checkAllPermissions();
+        }
+      } catch (e) {
+        console.error('Error pre-requesting foreground location:', e);
+      }
+    };
+    initPermissions();
 
     // Fetch initial status
     const fetchStatus = async () => {
@@ -405,6 +450,9 @@ const HomeScreen = () => {
         locationWatcher.remove();
       }
       Location.stopLocationUpdatesAsync('background-location-task').catch(() => {});
+      if (Platform.OS === 'android' && NativeModules.FloatingWindowModule) {
+        NativeModules.FloatingWindowModule.hideFloatingWindow();
+      }
     }
 
     return () => {
@@ -412,6 +460,31 @@ const HomeScreen = () => {
         locationWatcher.remove();
       }
       // We do not stop the background task on unmount if they are online!
+    };
+  }, [isOnline]);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('onBackgroundLocationUpdated', (time) => {
+      setLastLocationUpdate(time);
+    });
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (Platform.OS === 'android' && NativeModules.FloatingWindowModule) {
+        if (nextAppState.match(/inactive|background/) && isOnline && overlayPermGranted) {
+          // Only show the bubble if permission is already granted.
+          // Without this guard, going to Settings to grant the permission
+          // would trigger showFloatingWindow() before SYSTEM_ALERT_WINDOW is granted.
+          NativeModules.FloatingWindowModule.showFloatingWindow();
+        } else if (nextAppState === 'active') {
+          NativeModules.FloatingWindowModule.hideFloatingWindow();
+        }
+      }
+    });
+    return () => {
+      subscription.remove();
     };
   }, [isOnline]);
 
@@ -814,9 +887,17 @@ const HomeScreen = () => {
       if (locationStatus !== 'granted') {
         setRationaleConfig({
           title: 'Location Access Required',
-          description: 'Ride Andhra needs your location to find rides nearby and track your progress during a trip. Please allow "Always" for the best experience.',
+          description: 'Ride Andhra needs your location to find rides nearby and track your progress during a trip. Please allow location permissions.',
           icon: 'map-marker-radius',
           type: 'location'
+        });
+        setRationaleVisible(true);
+      } else if (Platform.OS === 'android' && backgroundLocationStatus !== 'granted') {
+        setRationaleConfig({
+          title: 'Background Location Required',
+          description: 'To receive rides when the app is in the background or closed, please allow background location access. In the settings screen that opens next, select "Allow all the time".',
+          icon: 'map-marker-distance',
+          type: 'bgLocation'
         });
         setRationaleVisible(true);
       } else if (notificationStatus !== 'granted') {
@@ -882,6 +963,8 @@ const HomeScreen = () => {
     setRationaleVisible(false);
     if (rationaleConfig.type === 'location') {
       await requestLocation();
+    } else if (rationaleConfig.type === 'bgLocation') {
+      await requestBackgroundLocation();
     } else if (rationaleConfig.type === 'notification') {
       await requestNotifications();
     }
@@ -975,6 +1058,16 @@ const HomeScreen = () => {
                 {isOnline ? 'You are Online' : 'You are Offline'}
               </Text>
             </View>
+            {isOnline && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                <MaterialCommunityIcons name={lastLocationUpdate ? 'sync' : 'sync-alert'} size={14} color={lastLocationUpdate ? '#3b82f6' : '#94a3b8'} style={{ marginRight: 4 }} />
+                <Text style={{ fontSize: 11, color: '#64748b', fontWeight: '500' }}>
+                  {lastLocationUpdate 
+                    ? `Bg Sync: ${Math.floor((Date.now() - lastLocationUpdate) / 1000)}s ago`
+                    : 'Bg Sync: Waiting...'}
+                </Text>
+              </View>
+            )}
           </View>
           <TouchableOpacity
             style={[styles.goToggleBtn, { backgroundColor: isOnline ? '#dc3545' : '#22c55e' }]}
@@ -1228,6 +1321,51 @@ const HomeScreen = () => {
           </View>
         </ScrollView>
 
+        {/* Overlay Permission Blocking Modal */}
+        <Modal
+          visible={!overlayPermGranted}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {}} // prevent back button dismissal
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { alignItems: 'center', paddingVertical: 36 }]}>
+              <View style={{
+                width: 90, height: 90, borderRadius: 45,
+                backgroundColor: 'rgba(254,112,9,0.12)',
+                justifyContent: 'center', alignItems: 'center', marginBottom: 20,
+              }}>
+                <MaterialCommunityIcons name="cellphone-arrow-down" size={48} color="#fe7009" />
+              </View>
+              <Text style={[styles.modalTitle, { fontSize: 20, marginBottom: 10 }]}>
+                Permission Required
+              </Text>
+              <Text style={{ fontSize: 15, color: '#555', textAlign: 'center', lineHeight: 23, marginBottom: 28, paddingHorizontal: 8 }}>
+                {'Ride Andhra needs the '}
+                <Text style={{ fontWeight: '700', color: '#fe7009' }}>"Display over other apps"</Text>
+                {' permission to show you incoming ride alerts even when you are using another app. Without this, you will miss rides.'}
+              </Text>
+              <TouchableOpacity
+                style={{
+                  width: '100%', backgroundColor: '#fe7009',
+                  paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginBottom: 12,
+                }}
+                onPress={() => {
+                  if (NativeModules.FloatingWindowModule) {
+                    NativeModules.FloatingWindowModule.requestOverlayPermission();
+                  }
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16, letterSpacing: 0.5 }}>
+                  GRANT PERMISSION
+                </Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 12, color: '#aaa', textAlign: 'center' }}>
+                You will be taken to Settings. Tap "Allow" and then come back.
+              </Text>
+            </View>
+          </View>
+        </Modal>
 
         {/* Rating Modal */}
         <Modal transparent visible={ratingModalVisible} animationType="fade">

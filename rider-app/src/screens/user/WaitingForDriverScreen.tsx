@@ -129,23 +129,9 @@ const WaitingForDriverScreen = ({ route }: any) => {
 
           <View style={styles.divider} />
 
-          {/* Fare Breakdown */}
+          {/* Fare */}
           <View style={styles.fareContainer}>
             <View style={styles.fareRow}>
-              <Text style={styles.fareLabel}>Estimated Total</Text>
-              <Text style={styles.fareValue}>₹{Number(ride.estimated_fare || 0).toFixed(2)}</Text>
-            </View>
-
-            {ride.super_km_discount > 0 && (
-              <View style={styles.fareRow}>
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>SUPER KM APPLIED</Text>
-                </View>
-                <Text style={[styles.fareValue, { color: '#4CAF50' }]}>-₹{Number(ride.super_km_discount).toFixed(2)}</Text>
-              </View>
-            )}
-
-            <View style={[styles.fareRow, { marginTop: 10 }]}>
               <Text style={styles.payableLabel}>Payable Amount</Text>
               <Text style={styles.payableValue}>₹{Number(ride.rider_payable || ride.estimated_fare || 0).toFixed(2)}</Text>
             </View>
