@@ -17,6 +17,7 @@ import useNotificationStore from '../store/notificationStore';
 import useUserStore from '../store/userStore';
 import RideStatusModal from '../components/RideStatusModal';
 import RideStatusBar from '../components/RideStatusBar';
+import axiosClient from '../api/axiosClient';
 
 const Stack = createStackNavigator();
 
@@ -184,7 +185,7 @@ const UserNavigator = () => {
 
     const syncInterval = setInterval(async () => {
       try {
-        const res = await api.get(`/rides/${currentRide.id}`);
+        const res = await axiosClient.get(`/rides/${currentRide.id}`);
         if (res.data) {
           const backendStatus = (res.data.status || '').toUpperCase();
           const mappedStatus = backendStatus === 'IN_PROGRESS' ? 'STARTED' : backendStatus;

@@ -15,7 +15,7 @@ const BookARideScreen = () => {
   const { locationStatus, requestLocation, checkAllPermissions } = usePermissions();
   const [rationaleVisible, setRationaleVisible] = useState(false);
 
-  const handleSearch = async (text) => {
+  const handleSearch = async (text: string) => {
     setSearchQuery(text);
     if (text.length > 2) {
       const results = await rideAPI.searchLocations(text);
@@ -25,7 +25,7 @@ const BookARideScreen = () => {
     }
   };
 
-  const handleSelectLocation = (location) => {
+  const handleSelectLocation = (location: any) => {
     if (focusedInput === 'pickup') {
       setPickupLocation(location.name);
     } else if (focusedInput === 'dropoff') {

@@ -28,17 +28,21 @@ const RideStatusBar = () => {
             <View style={styles.content}>
                 <View style={styles.leftSection}>
                     <View style={styles.iconContainer}>
-                        <Image 
-                            source={
-                                (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('luxury_bike') || (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('premium') ? require('../../assets/premium_bike.png') :
-                                (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('bike_lite') || (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('bike-lite') ? require('../../assets/bike_lite_icon.png') :
-                                (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('bike') ? require('../../assets/bike_icon.png') :
-                                (currentRide.vehicle_type || currentRide.vehicleType || '').toLowerCase().includes('auto') ? require('../../assets/auto_icon.png') :
-                                require('../../assets/cab_icon.png')
-                            }
-                            style={{ width: 24, height: 24 }}
-                            resizeMode="contain"
-                        />
+                        {(() => {
+                            const vType = ((currentRide.vehicle_type || (currentRide as any).vehicleType || '') as string).toLowerCase();
+                            const iconSource = vType.includes('luxury_bike') || vType.includes('premium') ? require('../../assets/premium_bike.png') :
+                                vType.includes('bike_lite') || vType.includes('bike-lite') ? require('../../assets/bike_lite_icon.png') :
+                                vType.includes('bike') ? require('../../assets/bike_icon.png') :
+                                vType.includes('auto') ? require('../../assets/auto_icon.png') :
+                                require('../../assets/cab_icon.png');
+                            return (
+                                <Image 
+                                    source={iconSource}
+                                    style={{ width: 24, height: 24 }}
+                                    resizeMode="contain"
+                                />
+                            );
+                        })()}
                     </View>
                     <View style={styles.textContainer}>
                         <Text style={styles.driverName}>{currentRide.driver?.name || 'Your Driver'}</Text>

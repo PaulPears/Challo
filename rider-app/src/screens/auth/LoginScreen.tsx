@@ -196,7 +196,6 @@ const LoginScreen = () => {
           accessToken,
           isNewUser: isNewUser,
         });
-      }
     } catch (error: any) {
       console.error('Verify OTP Error Details:', error.response?.data || error.message);
       Alert.alert('Error', error.response?.data?.message || error.message || 'Failed to verify OTP. Please check your OTP and try again.');
