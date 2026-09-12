@@ -38,7 +38,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "858b598e-9511-45c7-beb7-ae4c3e7b56c0"
+        "projectId": "3b73beac-3fa3-46c1-bf9e-62bbde367c80"
       }
     },
     "plugins": [
@@ -50,6 +50,7 @@
           "defaultChannel": "default"
         }
       ]
-    ]
+    ],
+    "owner": "mpaulpears"
   }
 }
