@@ -1,5 +1,5 @@
 # ====================================
-# Ride Andhra - Assets Cleanup Script
+# Challo App - Assets Cleanup Script
 # ====================================
 # This script removes unnecessary files from the assets folder
 # Run this to reduce app size by ~90 MB

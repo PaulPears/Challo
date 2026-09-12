@@ -5,8 +5,8 @@ import { FontAwesome } from '@expo/vector-icons';
 
 const HelpAndSupportScreen = ({ navigation }: any) => {
   const handleContactUs = async () => {
-    const email = 'help.rideandhra@gmail.com';
-    const subject = 'Support Request from RideAndhra App';
+    const email = 'support@challo.app';
+    const subject = 'Support Request from Challo App';
     const url = `mailto:${email}?subject=${encodeURIComponent(subject)}`;
 
     const canOpen = await Linking.canOpenURL(url);
@@ -18,7 +18,7 @@ const HelpAndSupportScreen = ({ navigation }: any) => {
   };
 
   const handleCallUs = async () => {
-    const phoneNumber = 'tel:8374277617';
+    const phoneNumber = 'tel:18004255000';
 
     const canOpen = await Linking.canOpenURL(phoneNumber);
     if (canOpen) {
@@ -30,22 +30,32 @@ const HelpAndSupportScreen = ({ navigation }: any) => {
 
   const supportOptions = [
     {
+      title: 'Emergency & Safety (SOS)',
+      icon: 'shield',
+      content: '24x7 Ambulance, Police, Fire, and Women Emergency Helplines.',
+      onPress: () => navigation.navigate('Sos'),
+      color: '#DC2626',
+    },
+    {
       title: 'Contact Us',
       icon: 'envelope',
-      content: 'For any support, email us at help.rideandhra@gmail.com',
+      content: 'For any support, email us at support@challo.app',
       onPress: handleContactUs,
+      color: '#E5A915',
     },
     {
-      title: 'Call Us',
+      title: 'Call Us (Toll-Free)',
       icon: 'phone',
-      content: 'Call us at +91 8374277617 for immediate assistance.',
+      content: 'Call our 24x7 Challo support team at 1800-425-5000.',
       onPress: handleCallUs,
+      color: '#E5A915',
     },
     {
-      title: 'FAQs',
+      title: 'FAQs & Policies',
       icon: 'question-circle',
       content: 'Check out our frequently asked questions for quick answers.',
-      onPress: () => { },
+      onPress: () => navigation.navigate('TermsAndService'),
+      color: '#E5A915',
     },
   ];
 
@@ -62,7 +72,7 @@ const HelpAndSupportScreen = ({ navigation }: any) => {
         <View style={styles.content}>
           {supportOptions.map((option, index) => (
             <TouchableOpacity key={index} style={styles.optionCard} onPress={option.onPress}>
-              <FontAwesome name={option.icon as any} size={24} color="#FF5722" />
+              <FontAwesome name={option.icon as any} size={24} color={option.color || '#E5A915'} />
               <View style={styles.optionTextContainer}>
                 <Text style={styles.optionTitle}>{option.title}</Text>
                 <Text style={styles.optionContent}>{option.content}</Text>

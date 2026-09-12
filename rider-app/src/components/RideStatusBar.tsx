@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     },
     statusText: {
         fontSize: 12,
-        color: '#FF5722',
+        color: '#B45309',
         fontWeight: '600',
     },
     rightSection: {

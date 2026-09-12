@@ -91,7 +91,7 @@ const MyWalletScreen = ({ navigation }: { navigation: MyWalletScreenNavigationPr
             >
                 {/* Wallet Balance Card */}
                 <LinearGradient
-                    colors={['#fe7009', '#fe7009', '#fd3a69']}
+                    colors={['#F5B014', '#E5A915', '#D97706']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.balanceCard}

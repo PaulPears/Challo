@@ -322,6 +322,15 @@ const HomeScreen = ({ navigation }: any) => {
           </View>
           <Text style={styles.searchInput}>Where are you going ?</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.sosHeaderButton}
+          onPress={() => navigation.navigate('Sos')}
+          activeOpacity={0.85}
+        >
+          <Feather name="shield" size={15} color="#FFFFFF" />
+          <Text style={styles.sosHeaderText}>SOS</Text>
+        </TouchableOpacity>
       </View>
 
       {errorMsg && (
@@ -337,7 +346,7 @@ const HomeScreen = ({ navigation }: any) => {
           onPress={() => navigation.navigate('Search')}
           activeOpacity={0.8}
         >
-          <Feather name="navigation" size={20} color="white" style={styles.bookRideIcon} />
+          <Feather name="navigation" size={20} color="#111827" style={styles.bookRideIcon} />
           <Text style={styles.bookRideButtonText}>Book a Ride Now</Text>
         </TouchableOpacity>
       </View>
@@ -355,7 +364,7 @@ const HomeScreen = ({ navigation }: any) => {
                   <Feather
                     name="star"
                     size={40}
-                    color={star <= ratingValue ? "#FF5722" : "#E2E8F0"}
+                    color={star <= ratingValue ? "#E5A915" : "#E2E8F0"}
                     style={star <= ratingValue ? styles.starFilled : null}
                   />
                 </TouchableOpacity>
@@ -394,7 +403,7 @@ const HomeScreen = ({ navigation }: any) => {
       <PermissionRationaleModal
         isVisible={rationaleVisible}
         title="Location Access Required"
-        description="Ride Andhra uses your location to show available rides and help drivers find you easily."
+        description="Challo uses your location to show available rides and help drivers find you easily."
         icon="map-marker-radius"
         onAllow={handleRationaleAllow}
         onCancel={() => setRationaleVisible(false)}
@@ -464,13 +473,34 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#FF5722',
+    backgroundColor: '#E5A915',
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
   },
+  sosHeaderButton: {
+    marginLeft: 8,
+    backgroundColor: '#DC2626',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 22,
+    gap: 4,
+    elevation: 5,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  sosHeaderText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
   searchContainer: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: 12,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
@@ -490,7 +520,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingVertical: 12,
-    fontSize: 16,
+    fontSize: 15,
     color: '#6B7280',
   },
   drawerContainer: {
@@ -521,14 +551,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bookRideButton: {
-    backgroundColor: '#FF5722',
+    backgroundColor: '#E5A915',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
     paddingVertical: 18,
     borderRadius: 30,
-    shadowColor: '#FF5722',
+    shadowColor: '#E5A915',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -538,7 +568,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   bookRideButtonText: {
-    color: 'white',
+    color: '#111827',
     fontSize: 18,
     fontWeight: 'bold',
     letterSpacing: 0.5,

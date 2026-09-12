@@ -27,7 +27,7 @@ const PrivacyPolicyScreen = ({ navigation }: any) => {
         </Text>
 
         <Text style={{ marginTop: 32, textAlign: 'center', fontSize: 14, color: '#9ca3af' }}>
-          © {new Date().getFullYear()} Ride Andhra. All rights reserved.
+          © {new Date().getFullYear()} Challo. All rights reserved.
         </Text>
       </ScrollView>
     </SafeAreaView>

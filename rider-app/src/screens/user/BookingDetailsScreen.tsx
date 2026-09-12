@@ -64,7 +64,7 @@ const BookingDetailsScreen = ({ navigation, route }: any) => {
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" color="#FF5722" style={{ flex: 1, justifyContent: 'center' }} />;
+    return <ActivityIndicator size="large" color="#E5A915" style={{ flex: 1, justifyContent: 'center' }} />;
   }
 
   if (!ride) {

@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Ride Andhra",
-    "slug": "ride-andhra-rider",
+    "name": "Challo",
+    "slug": "challo-rider",
     "version": "1.0.8",
     "orientation": "portrait",
-    "icon": "./assets/adaptive-icon.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#E5A915"
     },
     "ios": {
       "supportsTablet": true,
@@ -24,7 +24,7 @@
       "googleServicesFile": "./src/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#E5A915"
       },
       "config": {
         "googleMaps": {
@@ -46,7 +46,7 @@
         "expo-notifications",
         {
           "icon": "./assets/bell_icon.png",
-          "color": "#FFD700",
+          "color": "#E5A915",
           "defaultChannel": "default"
         }
       ]

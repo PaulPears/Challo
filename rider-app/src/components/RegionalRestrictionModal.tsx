@@ -14,18 +14,18 @@ const RegionalRestrictionModal: React.FC<RegionalRestrictionModalProps> = ({ isV
             <View style={styles.overlay}>
                 <View style={styles.container}>
                     <View style={styles.iconCircle}>
-                        <MaterialCommunityIcons name="map-marker-off" size={64} color="#fe7009" />
+                        <MaterialCommunityIcons name="map-marker-off" size={64} color="#E5A915" />
                     </View>
                     <Text style={styles.title}>Service Unavailable</Text>
                     <Text style={styles.description}>
-                        We're sorry! <Text style={styles.brand}>Ride Andhra</Text> currently operates exclusively within the state of <Text style={styles.highlight}>Andhra Pradesh</Text>.
+                        We're sorry! <Text style={styles.brand}>Challo</Text> currently operates exclusively within the state of <Text style={styles.highlight}>Andhra Pradesh</Text>.
                     </Text>
                     <Text style={styles.footerNote}>
                         We are expanding to other regions soon. Thank you for your patience!
                     </Text>
 
                     <View style={styles.locationBadge}>
-                        <MaterialCommunityIcons name="state-machine" size={18} color="#fe7009" />
+                        <MaterialCommunityIcons name="state-machine" size={18} color="#E5A915" />
                         <Text style={styles.locationBadgeText}>AP Region Only</Text>
                     </View>
                 </View>
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     brand: {
-        color: '#fe7009',
+        color: '#E5A915',
         fontWeight: '700',
     },
     highlight: {
@@ -94,16 +94,16 @@ const styles = StyleSheet.create({
     },
     locationBadge: {
         flexDirection: 'row',
-        backgroundColor: '#fff5f0',
+        backgroundColor: '#FFFBEB',
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 20,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#ffd7ba',
+        borderColor: '#FDE68A',
     },
     locationBadgeText: {
-        color: '#fe7009',
+        color: '#B45309',
         fontSize: 13,
         fontWeight: '700',
         marginLeft: 8,

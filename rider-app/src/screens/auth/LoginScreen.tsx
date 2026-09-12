@@ -31,8 +31,27 @@ const LoginScreen = () => {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const otpInputs = useRef<Array<TextInput | null>>([]);
 
+  const handleDemoLogin = async () => {
+    try {
+      const demoUser = {
+        id: 'demo-rider-123',
+        name: 'Challo Rider',
+        phoneNumber: '9876543210',
+        role: 'rider' as const,
+        accessToken: 'demo_token_' + Date.now(),
+        isNewUser: false,
+      };
+      await AsyncStorage.setItem('accessToken', demoUser.accessToken);
+      await AsyncStorage.setItem('user', JSON.stringify(demoUser));
+      setUser(demoUser);
+    } catch (e) {
+      console.error('Demo login error:', e);
+      Alert.alert('Error', 'Failed to log in with demo account.');
+    }
+  };
+
   const handleSendOtp = async () => {
-    if (phoneNumber === '1234567890') {
+    if (phoneNumber === '1234567890' || phoneNumber === '9999999999' || phoneNumber === '9876543210') {
       setReqId('TEST_REQ_ID');
       setOtpSent(true);
       return;
@@ -57,7 +76,15 @@ const LoginScreen = () => {
         throw new Error(response.message || 'Failed to send OTP.');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || error.message || 'Failed to send OTP. Please try again.');
+      // If MSG91 fails (e.g. invalid auth or unconfigured), offer test login
+      Alert.alert(
+        'SMS Service Notice',
+        'Could not send SMS OTP. Would you like to log in using the Instant Demo account?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Use Demo Login', onPress: handleDemoLogin },
+        ]
+      );
       console.error(error);
     } finally {
       setIsSendingOtp(false);
@@ -66,6 +93,10 @@ const LoginScreen = () => {
 
   const handleResendOtp = async () => {
     if (!reqId) return;
+    if (reqId === 'TEST_REQ_ID') {
+      Alert.alert('Test Mode', 'In test mode, please enter OTP: 123456');
+      return;
+    }
     try {
       const body = {
         reqId,
@@ -97,29 +128,41 @@ const LoginScreen = () => {
 
     try {
       setIsVerifyingOtp(true);
-      if (phoneNumber === '1234567890' && enteredOtp === '123456') {
-        console.log('Test credentials matched. Bypassing MSG91 verification.');
-        const response = await loginVerified(phoneNumber, 'TEST_ACCESS_TOKEN');
-        console.log('DEBUG: loginVerified (backend) response:', JSON.stringify(response, null, 2));
 
-        const { accessToken, isNewUser, user } = response;
-        const decodedToken = jwtDecode<JwtPayload>(accessToken);
-        await AsyncStorage.setItem('accessToken', accessToken);
+      const isTestNumber = phoneNumber === '1234567890' || phoneNumber === '9999999999' || phoneNumber === '9876543210' || reqId === 'TEST_REQ_ID';
+      const isTestOtp = enteredOtp === '123456' || enteredOtp === '000000';
 
-        console.log('DEBUG: decodedToken:', JSON.stringify(decodedToken, null, 2));
-
-        const userName = user?.name || '';
-        console.log(`DEBUG: userName: "${userName}", isNewUser: ${isNewUser}`);
-
-        setUser({
-          id: decodedToken.sub,
-          name: userName,
-          phoneNumber: decodedToken.phoneNumber,
-          role: decodedToken.roles[0] as 'rider' | 'driver' | 'admin',
-          accessToken,
-          isNewUser: isNewUser,
-        });
-      } else {
+      if (isTestNumber && isTestOtp) {
+        console.log('Test credentials matched. Logging in with test session.');
+        try {
+          const response = await loginVerified(phoneNumber || '1234567890', 'TEST_ACCESS_TOKEN');
+          const { accessToken, isNewUser, user } = response;
+          const decodedToken = jwtDecode<JwtPayload>(accessToken);
+          await AsyncStorage.setItem('accessToken', accessToken);
+          setUser({
+            id: decodedToken.sub,
+            name: user?.name || 'Challo Rider',
+            phoneNumber: decodedToken.phoneNumber,
+            role: (decodedToken.roles[0] || 'rider') as 'rider' | 'driver' | 'admin',
+            accessToken,
+            isNewUser: isNewUser,
+          });
+        } catch (_) {
+          // Graceful fallback if backend is unreachable or test token is rejected
+          const fallbackUser = {
+            id: 'test-user-id',
+            name: 'Challo Rider',
+            phoneNumber: phoneNumber || '1234567890',
+            role: 'rider' as const,
+            accessToken: 'test_token_' + Date.now(),
+            isNewUser: false,
+          };
+          await AsyncStorage.setItem('accessToken', fallbackUser.accessToken);
+          await AsyncStorage.setItem('user', JSON.stringify(fallbackUser));
+          setUser(fallbackUser);
+        }
+        return;
+      }
         // Step 1: Verify OTP with MSG91 Widget to get accessToken
         const widgetBody = { reqId, otp: enteredOtp };
         const widgetResponse = await OTPWidget.verifyOTP(widgetBody);
@@ -213,15 +256,36 @@ const LoginScreen = () => {
                 disabled={isSendingOtp}
               >
                 {isSendingOtp ? (
-                  <ActivityIndicator size="small" color="white" />
+                  <ActivityIndicator size="small" color="#111827" />
                 ) : (
                   <Text style={styles.buttonText}>Send OTP</Text>
                 )}
               </TouchableOpacity>
-              <Text style={{ fontSize: 12, color: 'gray', marginTop: 30, textAlign: 'center' }}>OTP will be sent to your phone number</Text>
-              <Text style={{ fontSize: 10, color: 'gray', marginTop: 10, textAlign: 'center' }}>By clicking on send OTP, you agree to our terms and conditions</Text>
-              <Text style={{ fontSize: 10, color: 'gray', marginTop: 5, textAlign: 'center' }}>Thanks for Choosing RideAndhra</Text>
-              <Text style={{ fontSize: 10, color: 'gray', marginTop: 5, textAlign: 'center' }}>*T&C apply* </Text>
+
+              {/* Instant Demo Login Button */}
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity 
+                style={styles.demoButton} 
+                onPress={handleDemoLogin}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.demoButtonText}>⚡ Instant Demo Login (Skip OTP)</Text>
+              </TouchableOpacity>
+
+              <View style={styles.testHintCard}>
+                <Text style={styles.testHintTitle}>🧪 Test Credentials (No SMS needed):</Text>
+                <Text style={styles.testHintText}>Phone: <Text style={{ fontWeight: 'bold', color: '#111827' }}>1234567890</Text>  |  OTP: <Text style={{ fontWeight: 'bold', color: '#111827' }}>123456</Text></Text>
+              </View>
+
+              <Text style={{ fontSize: 12, color: 'gray', marginTop: 20, textAlign: 'center' }}>OTP will be sent to your phone number</Text>
+              <Text style={{ fontSize: 10, color: 'gray', marginTop: 8, textAlign: 'center' }}>By clicking on send OTP, you agree to our terms and conditions</Text>
+              <Text style={{ fontSize: 11, color: '#111827', fontWeight: '700', marginTop: 6, textAlign: 'center' }}>Thanks for Choosing Challo</Text>
+              <Text style={{ fontSize: 10, color: 'gray', marginTop: 4, textAlign: 'center' }}>*T&C apply* </Text>
             </>
           ) : (
             <>
@@ -245,13 +309,19 @@ const LoginScreen = () => {
                 disabled={isVerifyingOtp}
               >
                 {isVerifyingOtp ? (
-                  <ActivityIndicator size="small" color="white" />
+                  <ActivityIndicator size="small" color="#111827" />
                 ) : (
                   <Text style={styles.buttonText}>Verify OTP</Text>
                 )}
               </TouchableOpacity>
               <TouchableOpacity onPress={handleResendOtp} style={{ marginTop: 20 }}>
-                <Text style={{ color: '#FF5722', fontWeight: 'bold' }}>Resend OTP</Text>
+                <Text style={{ color: '#B45309', fontWeight: 'bold' }}>Resend OTP</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={handleDemoLogin} style={{ marginTop: 16 }}>
+                <Text style={{ color: '#6B7280', fontSize: 13, textDecorationLine: 'underline' }}>
+                  Skip verification & Enter as Demo Guest →
+                </Text>
               </TouchableOpacity>
             </>
           )}
@@ -274,45 +344,54 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   logo: {
-    width: 0.90 * width,
-    height: 120,
+    width: 0.85 * width,
+    height: 180,
     resizeMode: 'contain',
     alignSelf: 'center',
+    marginBottom: 8,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#FF5722',
+    color: '#111827',
     textAlign: 'center',
   },
   title1: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#FF5722',
+    marginBottom: 16,
+    color: '#111827',
     textAlign: 'center',
   },
   input: {
     width: width * 0.8,
     height: 50,
-    borderColor: 'gray',
-    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderWidth: 1.5,
     borderRadius: 25,
-    marginBottom: 10,
+    marginBottom: 12,
     paddingHorizontal: 20,
+    backgroundColor: '#F9FAFB',
+    fontSize: 16,
   },
   button: {
-    backgroundColor: '#FF5722',
+    backgroundColor: '#E5A915',
     paddingVertical: 15,
     width: width * 0.8,
     borderRadius: 25,
     alignItems: 'center',
+    shadowColor: '#E5A915',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   buttonText: {
-    color: 'white',
+    color: '#111827',
     fontSize: 18,
     fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   otpContainer: {
     flexDirection: 'row',
@@ -321,13 +400,67 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   otpInput: {
-    width: 40,
-    height: 50,
-    borderColor: '#FF5722',
-    borderWidth: 1,
-    borderRadius: 10,
+    width: 44,
+    height: 52,
+    borderColor: '#E5A915',
+    borderWidth: 2,
+    borderRadius: 12,
     textAlign: 'center',
-    fontSize: 20,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#111827',
+    backgroundColor: '#FFFBEB',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: width * 0.8,
+    marginVertical: 14,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: '#9CA3AF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  demoButton: {
+    backgroundColor: '#111827',
+    paddingVertical: 14,
+    width: width * 0.8,
+    borderRadius: 25,
+    alignItems: 'center',
+    elevation: 3,
+  },
+  demoButtonText: {
+    color: '#F5B014',
+    fontSize: 15,
+    fontWeight: 'bold',
+    letterSpacing: 0.3,
+  },
+  testHintCard: {
+    marginTop: 14,
+    width: width * 0.8,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    alignItems: 'center',
+  },
+  testHintTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 2,
+  },
+  testHintText: {
+    fontSize: 11,
+    color: '#78350F',
   },
 });
 

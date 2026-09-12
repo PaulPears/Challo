@@ -55,7 +55,7 @@ const RewardsScreen = ({ navigation }: { navigation: RewardsScreenNavigationProp
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#FF5722" />
+        <ActivityIndicator size="large" color="#E5A915" />
       </SafeAreaView>
     );
   }

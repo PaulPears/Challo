@@ -21,7 +21,7 @@ const useNotificationStore = create<NotificationState>((set) => ({
     notifications: [
         {
             id: 'welcome-1',
-            title: 'Welcome to RideAndhra! 🎉',
+            title: 'Welcome to Challo! 🎉',
             message: 'We are excited to have you on board. Enjoy your rides!',
             timestamp: new Date().toISOString(),
             read: false,

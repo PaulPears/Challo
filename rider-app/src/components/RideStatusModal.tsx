@@ -236,7 +236,7 @@ const RideStatusModal = () => {
                 {isCancelled ? (
                     <>
                         <TouchableOpacity
-                            style={[styles.actionButton, { backgroundColor: '#FF5722' }]}
+                            style={[styles.actionButton, { backgroundColor: '#E5A915' }]}
                             onPress={handleBookAgain}
                         >
                             <Text style={styles.actionButtonText}>Book Again</Text>
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         flexDirection: 'row',
-        backgroundColor: '#FF5722',
+        backgroundColor: '#E5A915',
         paddingVertical: 16,
         borderRadius: 12,
         alignItems: 'center',
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     actionButtonText: {
-        color: 'white',
+        color: '#111827',
         fontSize: 16,
         fontWeight: 'bold',
     },

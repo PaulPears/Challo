@@ -99,7 +99,7 @@ const ProfileDrawer = ({ onClose, onReadCountChange }: { onClose: () => void; on
         )}
 
         {loading ? (
-          <ActivityIndicator size="large" color="#FF5722" style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color="#E5A915" style={{ marginTop: 40 }} />
         ) : notifications.length > 0 ? (
           notifications.map(notification => (
             <TouchableOpacity
@@ -111,7 +111,7 @@ const ProfileDrawer = ({ onClose, onReadCountChange }: { onClose: () => void; on
               <FontAwesome
                 name="bell"
                 size={22}
-                color={notification.is_read ? '#9ca3af' : '#FF5722'}
+                color={notification.is_read ? '#9ca3af' : '#E5A915'}
                 style={styles.notificationIcon}
               />
               <View style={styles.notificationTextContainer}>
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   headerBadge: {
-    backgroundColor: '#FF5722',
+    backgroundColor: '#E5A915',
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerBadgeText: {
-    color: '#fff',
+    color: '#111827',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   markAllButtonText: {
-    color: '#1e40af',
+    color: '#B45309',
     fontWeight: 'bold',
   },
   notificationCard: {
@@ -191,9 +191,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unreadCard: {
-    backgroundColor: '#fff7ed',
+    backgroundColor: '#FFFBEB',
     borderLeftWidth: 4,
-    borderLeftColor: '#FF5722',
+    borderLeftColor: '#E5A915',
   },
   notificationIcon: {
     marginRight: 14,
@@ -223,13 +223,13 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   unreadText: {
-    color: '#FF5722',
+    color: '#B45309',
   },
   unreadDot: {
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: '#FF5722',
+    backgroundColor: '#E5A915',
     marginLeft: 8,
   },
 });

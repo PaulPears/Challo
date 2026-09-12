@@ -26,7 +26,7 @@ const PermissionRationaleModal: React.FC<PermissionRationaleModalProps> = ({
             <View style={styles.overlay}>
                 <View style={styles.container}>
                     <View style={styles.iconCircle}>
-                        <MaterialCommunityIcons name={icon as any} size={48} color="#fe7009" />
+                        <MaterialCommunityIcons name={icon as any} size={48} color="#E5A915" />
                     </View>
                     <Text style={styles.title}>{title}</Text>
                     <Text style={styles.description}>{description}</Text>
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
         width: 90,
         height: 90,
         borderRadius: 45,
-        backgroundColor: 'rgba(254, 112, 9, 0.1)',
+        backgroundColor: 'rgba(229, 169, 21, 0.15)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 20,
@@ -89,14 +89,14 @@ const styles = StyleSheet.create({
     },
     allowButton: {
         width: '100%',
-        backgroundColor: '#fe7009',
+        backgroundColor: '#E5A915',
         paddingVertical: 16,
         borderRadius: 14,
         alignItems: 'center',
         marginBottom: 12,
     },
     allowButtonText: {
-        color: '#fff',
+        color: '#111827',
         fontSize: 16,
         fontWeight: '700',
         letterSpacing: 1,

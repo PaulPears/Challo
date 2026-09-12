@@ -135,10 +135,16 @@ const DriverDetailsScreen = ({ route, navigation }: any) => {
 
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.iconButton} onPress={handleCall}>
-              <FontAwesome name="phone" size={20} color="#FF5722" />
+              <FontAwesome name="phone" size={20} color="#111827" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={handleMessage}>
-              <FontAwesome name="comment" size={20} color="#FF5722" />
+              <FontAwesome name="comment" size={20} color="#111827" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.iconButton, { backgroundColor: '#FEE2E2', borderColor: '#FCA5A5' }]} 
+              onPress={() => navigation.navigate('Sos')}
+            >
+              <FontAwesome name="shield" size={20} color="#DC2626" />
             </TouchableOpacity>
           </View>
         </View>
@@ -251,14 +257,14 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#FF5722',
+    backgroundColor: '#E5A915',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#111827',
   },
   driverDetails: {
     flex: 1,

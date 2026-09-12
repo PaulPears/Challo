@@ -9,6 +9,7 @@ import BookingScreen from '../screens/user/BookingScreen';
 import BookingDetailsScreen from '../screens/user/BookingDetailsScreen';
 import WaitingForDriverScreen from '../screens/user/WaitingForDriverScreen';
 import DriverDetailsScreen from '../screens/user/DriverDetailsScreen';
+import SosScreen from '../screens/user/SosScreen';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useSocket } from '../context/SocketContext';
 import useRideStore from '../store/rideStore';
@@ -100,7 +101,7 @@ const UserNavigator = () => {
         setAlert({ type: 'RIDE_STARTED', title, message, data });
       } else if (status === 'COMPLETED' || status === 'RIDE_COMPLETED') {
         const title = 'Ride Completed! 🏁';
-        const message = 'Thank you for riding with RideAndhra. We hope you had a great trip!';
+        const message = 'Thank you for riding with Challo. We hope you had a great trip!';
         sendLocalNotification(title, message);
         updateRideStatus('COMPLETED');
         setAlert({ type: 'RIDE_COMPLETED', title, message, data });
@@ -124,7 +125,7 @@ const UserNavigator = () => {
 
       // Fire a real OS notification so it appears in the status bar
       if (data.title || data.message) {
-        sendLocalNotification(data.title || 'Ride Andhra', data.message || '');
+        sendLocalNotification(data.title || 'Challo', data.message || '');
       }
 
       addNotification({
@@ -140,81 +141,81 @@ const UserNavigator = () => {
       useRideStore.getState().setDriverLocation(location);
     };
 
-    // ─── Subscribe ──────────────────────────────────────────────────────────
-    socket.on('notification', handleNotification);
-    socket.on('system_notification', handleNotification); // <--- Add listener for admin panel broadcasts (global)
-    
-    // Listen for targeted system notifications for this specific user
-    const userId = useUserStore.getState().user?.id;
-    if (userId) {
-      socket.on(`system_notification_${userId}`, handleNotification);
-    }
+    const handleRideSync = (data: any) => {
+      console.log('[Socket] Initial ride sync received:', data);
+      if (data.ride) {
+        const status = (data.ride.status || '').toUpperCase();
+        const driverObj = data.ride.driver || {};
+        const driverData = {
+          name: driverObj.name || data.ride.driverName,
+          vehicle_model: driverObj.vehicle_model || data.ride.vehicleModel,
+          vehicle_number: driverObj.vehicle_number || data.ride.vehiclePlateNumber,
+          rating: driverObj.rating || data.ride.driverRating,
+          phone: driverObj.phone_number || data.ride.phone || data.ride.driverPhone,
+          photo: driverObj.profile_image || data.ride.avatar || data.ride.driverPhoto,
+        };
+        updateRideStatus(status, driverData);
+      }
+    };
 
     if (rideChannel) {
       socket.on(rideChannel, handleRideUpdate);
-
-      // Join the room so backend's room-targeted emit reaches us
-      console.log(`[Socket] Joining room: ${rideChannel}`);
-      socket.emit('join-ride', currentRide!.id);
-
-      const locationChannel = `ride-location-${currentRide!.id}`;
-      socket.on(locationChannel, handleLocationUpdate);
     }
+    socket.on('notification', handleNotification);
+    socket.on('driver-location-update', handleLocationUpdate);
+    socket.on('ride-sync', handleRideSync);
 
     return () => {
-      // ─── Cleanup ──────────────────────────────────────────────────────────
-      socket.off('notification', handleNotification);
-      socket.off('system_notification', handleNotification);
-      if (userId) {
-        socket.off(`system_notification_${userId}`, handleNotification);
-      }
       if (rideChannel) {
-        console.log(`[Socket] Unsubscribing from ${rideChannel}`);
         socket.off(rideChannel, handleRideUpdate);
-        socket.emit('leave-ride', currentRide!.id);
-        const locationChannel = `ride-location-${currentRide!.id}`;
-        socket.off(locationChannel, handleLocationUpdate);
       }
+      socket.off('notification', handleNotification);
+      socket.off('driver-location-update', handleLocationUpdate);
+      socket.off('ride-sync', handleRideSync);
     };
-  }, [socket, currentRide?.id, navigation]);
+  }, [socket, currentRide?.id]);
 
-  // ─── Background State Synchronizer (Polling Fallback) ───────────────────
+  // ─── Polling Fallback ──────────────────────────────────────────────────────
+  // Poll every 10 seconds if a ride is active to recover from dropped sockets
   useEffect(() => {
     if (!currentRide?.id) return;
-
-    // Only poll for "active" statuses that might change without user action
-    const activeStatuses = ['SEARCHING', 'ACCEPTED', 'ARRIVED', 'STARTED', 'IN_PROGRESS'];
-    if (!activeStatuses.includes(currentRide.status)) return;
+    const terminalStatuses = ['COMPLETED', 'CANCELLED'];
+    if (terminalStatuses.includes(currentRide.status)) return;
 
     const syncInterval = setInterval(async () => {
       try {
-        const { rideAPI } = await import('../api/rideAPI');
-        const latestRide = await rideAPI.getRideById(currentRide.id);
+        const res = await api.get(`/rides/${currentRide.id}`);
+        if (res.data) {
+          const backendStatus = (res.data.status || '').toUpperCase();
+          const mappedStatus = backendStatus === 'IN_PROGRESS' ? 'STARTED' : backendStatus;
+          
+          if (mappedStatus && mappedStatus !== currentRide.status) {
+            console.log(`[Sync] Status mismatch detected. Store: ${currentRide.status}, Backend: ${mappedStatus}. Updating...`);
+            
+            const driverObj = res.data.driver || {};
+            const driverData = {
+              name: driverObj.name || res.data.driverName,
+              vehicle_model: driverObj.vehicle_model || res.data.vehicleModel,
+              vehicle_number: driverObj.vehicle_number || res.data.vehiclePlateNumber,
+              rating: driverObj.rating || res.data.driverRating,
+              phone: driverObj.phone_number || res.data.phone || res.data.driverPhone,
+              photo: driverObj.profile_image || res.data.avatar || res.data.driverPhoto,
+            };
 
-        if (latestRide) {
-          const newStatus = (latestRide.status || '').toUpperCase();
-
-          if (newStatus !== currentRide.status && newStatus !== 'IN_PROGRESS' || (newStatus === 'IN_PROGRESS' && currentRide.status !== 'STARTED')) {
-            console.log(`[Sync] Detected state mismatch! Remote: ${newStatus}, Local: ${currentRide.status}`);
-
-            const driverData = latestRide.driver ? {
-              name: latestRide.driver.name,
-              vehicle_model: latestRide.driver.vehicle_model,
-              vehicle_number: latestRide.driver.vehicle_number,
-              rating: latestRide.driver.rating,
-              phone: latestRide.driver.phone_number || latestRide.driver.phone,
-              photo: latestRide.driver.profile_image || latestRide.driver.avatar,
-            } : undefined;
-
-            const mappedStatus = newStatus === 'IN_PROGRESS' ? 'STARTED' : newStatus;
             updateRideStatus(mappedStatus, driverData);
 
-            // Handle specific navigation/alert transitions if missed
             if (mappedStatus === 'ACCEPTED') {
               setAlert({
                 type: 'RIDE_ACCEPTED',
                 title: 'Ride Confirmed! 🚕',
-                message: `Your ride has been accepted by ${driverData?.name || 'a driver'}.`,
+                message: `Your ride has been accepted by ${driverData.name || 'a driver'}.`,
+              });
+              navigation.navigate('DriverDetails', { ride: { ...currentRide, status: 'ACCEPTED', driver: driverData } });
+            } else if (mappedStatus === 'ARRIVED') {
+              setAlert({
+                type: 'DRIVER_ARRIVED',
+                title: 'Driver Arrived! 📍',
+                message: 'Your driver is at the pickup location.',
               });
             } else if (mappedStatus === 'STARTED') {
               setAlert({
@@ -222,17 +223,11 @@ const UserNavigator = () => {
                 title: 'Trip Started! 🚗',
                 message: 'Your ride is in progress. Have a safe journey.',
               });
-            } else if (mappedStatus === 'ARRIVED') {
-              setAlert({
-                type: 'DRIVER_ARRIVED',
-                title: 'Driver Arrived! 📍',
-                message: 'Your driver is at the pickup location.',
-              });
             } else if (mappedStatus === 'COMPLETED') {
               setAlert({
                 type: 'RIDE_COMPLETED',
                 title: 'Ride Completed! 🏁',
-                message: 'Thank you for riding with RideAndhra.',
+                message: 'Thank you for riding with Challo.',
               });
               navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'UserNavigator' }] }));
             } else if (mappedStatus === 'CANCELLED') {
@@ -248,7 +243,7 @@ const UserNavigator = () => {
       } catch (error) {
         console.log('[Sync] Background sync failed:', error);
       }
-    }, 10000); // 10 seconds fallback
+    }, 10000);
 
     return () => clearInterval(syncInterval);
   }, [currentRide?.id, currentRide?.status]);
@@ -263,6 +258,7 @@ const UserNavigator = () => {
         <Stack.Screen name="BookingDetails" component={BookingDetailsScreen} options={{ headerShown: false }} />
         <Stack.Screen name="WaitingForDriver" component={WaitingForDriverScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DriverDetails" component={DriverDetailsScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Sos" component={SosScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
       <RideStatusModal />
       <RideStatusBar />

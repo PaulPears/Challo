@@ -246,7 +246,7 @@ const BookingScreen = ({ navigation, route }: any) => {
 
           {isLoading && (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#FF5722" />
+              <ActivityIndicator size="large" color="#E5A915" />
               <Text style={styles.loadingText}>Fetching best prices for you...</Text>
             </View>
           )}
@@ -300,7 +300,7 @@ const BookingScreen = ({ navigation, route }: any) => {
                     ) : (useCoins && user?.super_coins_balance && user.super_coins_balance > 0) ? (
                       <>
                         <Text style={[styles.costText, { textDecorationLine: 'line-through', color: '#999', fontSize: 13 }]}>₹{option.cost.toFixed(2)}</Text>
-                        <Text style={[styles.costText, { color: '#FF5722' }]}>
+                        <Text style={[styles.costText, { color: '#111827' }]}>
                           ₹{Math.max(0, option.cost - user.super_coins_balance).toFixed(2)}
                         </Text>
                       </>
@@ -402,12 +402,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   selectedVehicleContainer: {
-    backgroundColor: '#FFE5E0', // Very light orange/active color
-    borderColor: '#FF5722',
-    borderWidth: 1,
+    backgroundColor: '#FEF3C7',
+    borderColor: '#E5A915',
+    borderWidth: 2,
   },
   cheapestVehicleContainer: {
-    backgroundColor: '#FFF3E0', // Light orange background
+    backgroundColor: '#FFFBEB',
   },
   vehicleInfo: {
     flexDirection: 'row',
@@ -430,14 +430,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   button: {
-    backgroundColor: '#FF5722',
+    backgroundColor: '#E5A915',
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 16,
   },
   buttonText: {
-    color: 'white',
+    color: '#111827',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -471,17 +471,17 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
   miniSurgeBadge: {
-    backgroundColor: '#FFEBE6',
+    backgroundColor: '#FEF3C7',
     borderRadius: 4,
     paddingHorizontal: 4,
     paddingVertical: 1,
     marginLeft: 6,
     borderWidth: 0.5,
-    borderColor: '#FF5722'
+    borderColor: '#E5A915'
   },
   miniSurgeText: {
     fontSize: 10,
-    color: '#FF5722',
+    color: '#B45309',
     fontWeight: 'bold'
   },
   loadingContainer: {

@@ -45,7 +45,7 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
   };
 
   const handleBecomeDriver = () => {
-    Linking.openURL('https://rideandhra.com');
+    Linking.openURL('https://challo.app');
   };
 
   return (
@@ -63,7 +63,7 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
           <View style={styles.avatarContainer}>
             <Image source={require('../../../assets/iconUser.png')} style={styles.avatar} />
             <View style={styles.editBadge}>
-              <FontAwesome name="camera" size={12} color="white" />
+              <FontAwesome name="camera" size={12} color="#111827" />
             </View>
           </View>
           <Text style={styles.userName}>{user?.name ?? 'User'}</Text>
@@ -75,7 +75,7 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
                   key={star}
                   name={star <= (user?.rating || 0) ? 'star' : 'star-o'}
                   size={16}
-                  color="#fbbf24"
+                  color="#E5A915"
                   style={styles.starIcon}
                 />
               ))}
@@ -85,8 +85,9 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
         </View>
 
         <View style={styles.optionsCard}>
+          <ProfileRow icon="shield" label="Emergency & Safety (SOS)" onPress={() => (navigation as any).navigate('Sos')} />
           <ProfileRow icon="gift" label="Super Rewards" onPress={() => (navigation as any).navigate('Rewards')} />
-          <ProfileRow icon="shield" label="Privacy Policy" onPress={() => (navigation as any).navigate('PrivacyPolicy')} />
+          <ProfileRow icon="lock" label="Privacy Policy" onPress={() => (navigation as any).navigate('PrivacyPolicy')} />
           <ProfileRow icon="question-circle" label="Help & Support" onPress={() => (navigation as any).navigate('HelpAndSupport')} />
           <ProfileRow icon="file-text" label="Terms & Service" onPress={() => (navigation as any).navigate('TermsAndService')} isLast />
         </View>
@@ -97,20 +98,20 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
         </TouchableOpacity>
 
         <View style={styles.becomeDriverContainer}>
-          <Text style={styles.becomeDriverTitle}>Earn with Ride Andhra</Text>
+          <Text style={styles.becomeDriverTitle}>Earn with Challo</Text>
           <Text style={styles.becomeDriverSubtitle}>Join our community of professional drivers and start earning today.</Text>
           <TouchableOpacity style={styles.RiderButton} onPress={handleBecomeDriver}>
             <View style={styles.buttonGradient}>
-              <FontAwesome name="car" size={20} color="white" />
+              <FontAwesome name="car" size={20} color="#111827" />
               <View style={styles.buttonTextContainer}>
-                <Text style={styles.riderTextHighlight}>Become a Rider and earn with 0% commission Rides</Text>
-                <Text style={styles.riderSubText}>Register at rideandhra.com</Text>
+                <Text style={styles.riderTextHighlight}>Drive with Challo and earn with 0% commission</Text>
+                <Text style={styles.riderSubText}>Register at challo.app</Text>
               </View>
-              <FontAwesome name="external-link" size={16} color="white" />
+              <FontAwesome name="external-link" size={16} color="#111827" />
             </View>
           </TouchableOpacity>
           <Image
-            source={require('../../../assets/BecomeRider.png')}
+            source={require('../../../assets/challo_logo.png')}
             style={styles.promoImage}
             resizeMode="contain"
           />
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#FF5722',
+    backgroundColor: '#E5A915',
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fe7009', // Fallback color
+    backgroundColor: '#E5A915',
     paddingVertical: 14,
     paddingHorizontal: 20,
   },
@@ -305,12 +306,12 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   riderTextHighlight: {
-    color: 'white',
+    color: '#111827',
     fontWeight: 'bold',
     fontSize: 16,
   },
   riderSubText: {
-    color: 'rgba(255,255,255,0.8)',
+    color: '#374151',
     fontSize: 12,
   },
   promoImage: {

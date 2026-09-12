@@ -60,7 +60,7 @@ const EnterNameScreen = () => {
           >
             <Text style={styles.buttonText}>Continue</Text>
           </TouchableOpacity>
-          <Text style={styles.footerText}>Welcome to RideAndhra!</Text>
+          <Text style={styles.footerText}>Welcome to Challo!</Text>
         </ScrollView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#FF5722',
+    color: '#111827',
     textAlign: 'center',
   },
   subtitle: {
@@ -95,26 +95,32 @@ const styles = StyleSheet.create({
   input: {
     width: width * 0.8,
     height: 50,
-    borderColor: 'gray',
-    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderWidth: 1.5,
     borderRadius: 25,
     marginBottom: 20,
     paddingHorizontal: 20,
     fontSize: 16,
+    backgroundColor: '#F9FAFB',
   },
   button: {
-    backgroundColor: '#FF5722',
+    backgroundColor: '#E5A915',
     paddingVertical: 15,
     width: width * 0.8,
     borderRadius: 25,
     alignItems: 'center',
     marginBottom: 20,
+    shadowColor: '#E5A915',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: '#FFB399',
+    backgroundColor: '#FDE68A',
   },
   buttonText: {
-    color: 'white',
+    color: '#111827',
     fontSize: 18,
     fontWeight: 'bold',
   },

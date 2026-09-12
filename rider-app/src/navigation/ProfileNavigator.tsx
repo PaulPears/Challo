@@ -7,6 +7,7 @@ import TermsAndServiceScreen from '../screens/user/TermsAndServiceScreen';
 import PrivacyPolicyScreen from '../screens/user/PrivacyPolicyScreen';
 import HelpAndSupportScreen from '../screens/user/HelpAndSupportScreen';
 import RewardsScreen from '../screens/user/RewardsScreen';
+import SosScreen from '../screens/user/SosScreen';
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -16,6 +17,7 @@ export type ProfileStackParamList = {
   PrivacyPolicy: undefined;
   HelpAndSupport: undefined;
   Rewards: undefined;
+  Sos: undefined;
 };
 
 const Stack = createStackNavigator<ProfileStackParamList>();
@@ -30,6 +32,7 @@ const ProfileNavigator = () => {
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
       <Stack.Screen name="Rewards" component={RewardsScreen} />
+      <Stack.Screen name="Sos" component={SosScreen} />
     </Stack.Navigator>
   );
 };

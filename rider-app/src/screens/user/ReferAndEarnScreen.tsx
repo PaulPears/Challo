@@ -4,14 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 
-const REFERRAL_CODE = 'RIDEANDHRA25';
+const REFERRAL_CODE = 'CHALLO25';
 
 const ReferAndEarnScreen = ({ navigation }: any) => {
 
   const onShare = async () => {
     try {
       await Share.share({
-        message: `Join me on RideAndhra! Use my referral code ${REFERRAL_CODE} to get a free ride. Download the app here: [App_Link]`,
+        message: `Join me on Challo! Use my referral code ${REFERRAL_CODE} to get a discount on your first ride. Download the app here: https://challo.app`,
       });
     } catch (error: any) {
       Alert.alert(error.message);
@@ -34,23 +34,23 @@ const ReferAndEarnScreen = ({ navigation }: any) => {
       </View>
 
       <View style={styles.content}>
-        <FontAwesome name="gift" size={80} color="#FF5722" style={styles.icon} />
+        <FontAwesome name="gift" size={80} color="#E5A915" style={styles.icon} />
         <Text style={styles.title}>Invite a Friend</Text>
         <Text style={styles.subtitle}>
-          Share your referral code with friends. When they sign up and take their first ride, you both get a discount!
+          Share your referral code with friends. When they sign up and take their first ride on Challo, you both get exciting discounts!
         </Text>
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>YOUR REFERRAL CODE</Text>
           <TouchableOpacity style={styles.codeContainer} onPress={onCopyToClipboard}>
             <Text style={styles.code}>{REFERRAL_CODE}</Text>
-            <FontAwesome name="copy" size={20} color="#FF5722" />
+            <FontAwesome name="copy" size={20} color="#111827" />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.shareButton} onPress={onShare}>
           <Text style={styles.shareButtonText}>Share Now</Text>
-          <FontAwesome name="share-square-o" size={20} color="white" />
+          <FontAwesome name="share-square-o" size={20} color="#111827" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -114,34 +114,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#FF5722',
+    borderColor: '#E5A915',
     borderStyle: 'dashed',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 24,
+    backgroundColor: '#FFFBEB',
   },
   code: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FF5722',
+    color: '#111827',
     marginRight: 16,
   },
   shareButton: {
     flexDirection: 'row',
-    backgroundColor: '#FF5722',
+    backgroundColor: '#E5A915',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    elevation: 3,
+    shadowColor: '#E5A915',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   shareButtonText: {
-    color: 'white',
+    color: '#111827',
     fontSize: 18,
     fontWeight: 'bold',
     marginRight: 12,

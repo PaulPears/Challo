@@ -15,13 +15,13 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ visible, currentVersion, requ
     // Replace with your actual Store URLs
     const url = Platform.OS === 'ios' 
       ? 'itms-apps://itunes.apple.com/app/idYOUR_RIDER_APP_ID' 
-      : 'market://details?id=com.rideandhra.rider';
+      : 'market://details?id=com.challo.rider';
     
     Linking.canOpenURL(url).then(supported => {
       if (supported) {
         Linking.openURL(url);
       } else {
-        Linking.openURL('https://rideandhra.in/download');
+        Linking.openURL('https://challo.app/download');
       }
     });
   };
@@ -44,7 +44,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ visible, currentVersion, requ
           <View style={styles.content}>
             <Text style={styles.title}>New Version Available</Text>
             <Text style={styles.description}>
-              We've improved Ride Andhra! Please update to the latest version ({requiredVersion}) to continue using all features.
+              We've improved Challo! Please update to the latest version ({requiredVersion}) to continue using all features.
             </Text>
 
             <View style={styles.versionRow}>

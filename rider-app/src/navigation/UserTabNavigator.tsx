@@ -30,10 +30,10 @@ const UserTabNavigator = () => {
             iconName = 'th-large';
           }
 
-          return <FontAwesome name={iconName} size={size} color={focused ? '#FF5722' : color} />;
+          return <FontAwesome name={iconName} size={size} color={focused ? '#E5A915' : color} />;
         },
         tabBarLabel: ({ focused, color }) => (
-          <Text style={{ color: focused ? '#FF5722' : color, fontSize: 12 }}>
+          <Text style={{ color: focused ? '#E5A915' : color, fontSize: 12, fontWeight: focused ? '700' : '500' }}>
             {route.name}
           </Text>
         ),
@@ -50,7 +50,7 @@ const UserTabNavigator = () => {
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#FF5722',
+        tabBarActiveTintColor: '#E5A915',
         tabBarInactiveTintColor: '#9CA3AF',
       })}
     >

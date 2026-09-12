@@ -59,10 +59,10 @@ const FareBreakdownCard: React.FC<FareBreakdownProps> = ({
       {surgeMultiplier > 1 && (
         <View style={styles.row}>
           <View>
-            <Text style={[styles.label, { color: '#FF5722', fontWeight: 'bold' }]}>Surge Pricing</Text>
+            <Text style={[styles.label, { color: '#D97706', fontWeight: 'bold' }]}>Surge Pricing</Text>
             {surgeReason && <Text style={styles.subLabel}>{surgeReason}</Text>}
           </View>
-          <Text style={[styles.value, { color: '#FF5722', fontWeight: 'bold' }]}>
+          <Text style={[styles.value, { color: '#D97706', fontWeight: 'bold' }]}>
             x{surgeMultiplier.toFixed(2)}
           </Text>
         </View>
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   surgeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF5722',
+    backgroundColor: '#D97706',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FF5722',
+    color: '#111827',
   },
   rewardContainer: {
     marginTop: 16,

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView, Image, Alert, Dimensions, Modal } from 'react-native';
 import LottieView from 'lottie-react-native';
-import { Ionicons, MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, FontAwesome5, Feather } from '@expo/vector-icons';
 import { rideAPI } from '../../api/rideAPI';
 import useRideStore from '../../store/rideStore';
 import { useNavigation, CommonActions } from '@react-navigation/native';
@@ -92,6 +92,15 @@ const WaitingForDriverScreen = ({ route }: any) => {
     <View style={styles.container}>
       {/* Upper Section: Animation */}
       <View style={[styles.headerSection, { paddingTop: Math.max(insets.top, 20) }]}>
+        <TouchableOpacity
+          style={styles.sosTopButton}
+          onPress={() => navigation.navigate('Sos')}
+          activeOpacity={0.8}
+        >
+          <Feather name="shield" size={14} color="#FFFFFF" />
+          <Text style={styles.sosTopButtonText}>SOS</Text>
+        </TouchableOpacity>
+
         <View style={styles.animationWrapper}>
           <LottieView
             source={{ uri: 'https://lottie.host/ab5ba586-78ca-44ea-b2e7-9a3e64781017/AByInMd7Tg.lottie' }}
@@ -113,7 +122,7 @@ const WaitingForDriverScreen = ({ route }: any) => {
             <View style={styles.pathLine}>
               <View style={styles.dot} />
               <View style={styles.line} />
-              <View style={[styles.dot, { backgroundColor: '#FF5722' }]} />
+              <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
             </View>
             <View style={styles.addressInfo}>
               <View style={styles.addressItem}>
@@ -316,6 +325,25 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontWeight: 'bold',
   },
+  sosTopButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    backgroundColor: '#DC2626',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 4,
+    elevation: 4,
+    zIndex: 10,
+  },
+  sosTopButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontSize: 12,
+  },
   payableLabel: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -324,7 +352,7 @@ const styles = StyleSheet.create({
   payableValue: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FF5722',
+    color: '#111827',
   },
   vehicleInfoCard: {
     flexDirection: 'row',

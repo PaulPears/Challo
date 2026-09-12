@@ -21,7 +21,23 @@ const ServicesScreen = ({ navigation }: any) => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Our Services</Text>
+      <Text style={styles.title}>Challo Services</Text>
+
+      <TouchableOpacity
+        style={styles.sosCard}
+        onPress={() => navigation.navigate('Sos')}
+        activeOpacity={0.8}
+      >
+        <View style={styles.sosIconContainer}>
+          <Text style={{ fontSize: 24 }}>🚨</Text>
+        </View>
+        <View style={{ flex: 1, marginLeft: 14 }}>
+          <Text style={styles.sosCardTitle}>Emergency & Safety (SOS)</Text>
+          <Text style={styles.sosCardSubtitle}>24x7 Ambulance, Police, Fire & Helpline</Text>
+        </View>
+        <Text style={styles.sosBadge}>One-Tap</Text>
+      </TouchableOpacity>
+
       <View style={styles.servicesContainer}>
         {services.map((service, index) => (
           <TouchableOpacity key={index} style={styles.serviceButton} onPress={() => handleServicePress(service.name)}>
@@ -41,11 +57,51 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginVertical: 20,
+    marginVertical: 18,
     color: '#111827',
+  },
+  sosCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FCA5A5',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 14,
+    elevation: 2,
+  },
+  sosIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sosCardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#991B1B',
+  },
+  sosCardSubtitle: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  sosBadge: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   servicesContainer: {
     paddingHorizontal: 20,
