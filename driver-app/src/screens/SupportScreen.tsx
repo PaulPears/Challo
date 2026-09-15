@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Card } from 'react-native-paper';
+import { COLORS, BRAND } from '../config/theme';
 
 const SupportScreen = () => {
   const navigation = useNavigation();
@@ -15,7 +16,7 @@ const SupportScreen = () => {
   };
 
   const handleEmailSupport = () => {
-    Linking.openURL('mailto:help.rideandhra@gmail.com'); // Replace with actual email
+    Linking.openURL(`mailto:${BRAND.supportEmail}`);
   };
 
   const handleSubmitTicket = () => {
@@ -40,7 +41,7 @@ const SupportScreen = () => {
         <View style={styles.contactContainer}>
           <TouchableOpacity style={styles.contactCard} onPress={handleCallSupport}>
             <View style={styles.iconContainer}>
-              <Ionicons name="call" size={24} color="#fe7009" />
+              <Ionicons name="call" size={24} color={COLORS.primary} />
             </View>
             <Text style={styles.contactLabel}>Call Support</Text>
             <Text style={styles.contactValue}>+91 83742 77617</Text>
@@ -48,10 +49,10 @@ const SupportScreen = () => {
 
           <TouchableOpacity style={styles.contactCard} onPress={handleEmailSupport}>
             <View style={styles.iconContainer}>
-              <MaterialIcons name="email" size={24} color="#fe7009" />
+              <MaterialIcons name="email" size={24} color={COLORS.primary} />
             </View>
             <Text style={styles.contactLabel}>Email Support</Text>
-            <Text style={styles.contactValue}>help.rideandhra@gmail.com</Text>
+            <Text style={styles.contactValue}>{BRAND.supportEmail}</Text>
           </TouchableOpacity>
         </View>
 
@@ -174,14 +175,14 @@ const styles = StyleSheet.create({
     height: 100,
   },
   submitButton: {
-    backgroundColor: '#fe7009',
+    backgroundColor: COLORS.primary,
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: 'center',
     marginTop: 10,
   },
   submitButtonText: {
-    color: '#fff',
+    color: COLORS.dark,
     fontSize: 16,
     fontWeight: 'bold',
   },

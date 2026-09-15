@@ -19,6 +19,8 @@ import { OTPWidget } from '@msg91comm/sendotp-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import PremiumInput from '../components/PremiumInput';
 import Constants from 'expo-constants';
+import { COLORS } from '../config/theme';
+import { useAuth } from '../context/AuthContext';
 
 const widgetId = Constants.expoConfig?.extra?.widgetId;
 const tokenAuth = Constants.expoConfig?.extra?.tokenAuth;
@@ -26,6 +28,7 @@ const tokenAuth = Constants.expoConfig?.extra?.tokenAuth;
 const { height, width } = Dimensions.get('window');
 
 const LoginScreen = ({ navigation }: { navigation: any }) => {
+  const { loginAsDemo } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -35,11 +38,10 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
   useEffect(() => {
     OTPWidget.initializeWidget(widgetId, tokenAuth);
 
-    // Smooth entry animation for premium feel
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 900,
+        duration: 800,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
@@ -50,17 +52,27 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
     ]).start();
   }, []);
 
+  const handleDemoLogin = async () => {
+    try {
+      setLoading(true);
+      await loginAsDemo(phoneNumber || '9876543210');
+    } catch (e) {
+      console.error('Demo login error:', e);
+      Alert.alert('Error', 'Failed to log in as demo captain.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSendOtp = async () => {
     if (phoneNumber.length !== 10) {
       Alert.alert('Error', 'Please enter a valid 10-digit phone number.');
       return;
     }
 
-    if (phoneNumber === '1234567890') {
-      navigation.navigate('OtpVerification', {
-        phoneNumber: `91${phoneNumber}`,
-        reqId: 'TEST_REQ_ID_GOOGLE_VERIFY'
-      });
+    // Instant login for test/demo numbers
+    if (['1234567890', '9876543210', '9999999999'].includes(phoneNumber)) {
+      await handleDemoLogin();
       return;
     }
 
@@ -144,13 +156,29 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
                 disabled={loading || phoneNumber.length !== 10}
               >
                 {loading ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={COLORS.dark} />
                 ) : (
                   <>
                     <Text style={styles.buttonText}>Send One-Time Password</Text>
-                    <MaterialCommunityIcons name="arrow-right" size={24} color="#fff" style={{ marginLeft: 12 }} />
+                    <MaterialCommunityIcons name="arrow-right" size={24} color={COLORS.dark} style={{ marginLeft: 12 }} />
                   </>
                 )}
+              </TouchableOpacity>
+
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR QUICK ACCESS</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.demoButton}
+                onPress={handleDemoLogin}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                <MaterialCommunityIcons name="shield-account" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
+                <Text style={styles.demoButtonText}>Explore as Demo Captain</Text>
               </TouchableOpacity>
 
               <View style={styles.footer}>
@@ -232,7 +260,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   button: {
-    backgroundColor: '#fe7009',
+    backgroundColor: COLORS.primary,
     height: 60, // Premium tall button
     borderRadius: 18,
     flexDirection: 'row',
@@ -240,7 +268,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 12,
     // Intense premium shadow
-    shadowColor: '#fe7009',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -252,7 +280,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.dark,
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -270,8 +298,46 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   link: {
-    color: '#fe7009',
+    color: COLORS.primaryDark,
     fontWeight: '800',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: '#9CA3AF',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  demoButton: {
+    backgroundColor: COLORS.dark,
+    height: 56,
+    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+  demoButtonText: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
 });
 

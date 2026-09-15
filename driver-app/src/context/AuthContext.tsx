@@ -4,10 +4,27 @@ import api from '../config/api';
 
 type DriverStatus = 'LOADING' | 'UNAUTHENTICATED' | 'UNREGISTERED' | 'PENDING' | 'APPROVED';
 
+export const DEMO_CAPTAIN = {
+  id: 'demo-captain-001',
+  name: 'Challo Captain Demo',
+  phoneNumber: '9876543210',
+  roles: ['driver'],
+  driver_id: 'demo-driver-001',
+  is_verified: true,
+  vehicle_type: 'bike',
+  rating: 4.9,
+  wallet_balance: 1850,
+  is_active: true,
+  email: 'captain.demo@challo.in',
+  todayEarnings: 840,
+  todayRides: 6,
+};
+
 interface AuthContextType {
   driverStatus: DriverStatus;
   user: any;
   checkAuth: () => Promise<void>;
+  loginAsDemo: (customPhone?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -22,6 +39,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = await AsyncStorage.getItem('token');
       if (!token) {
         setDriverStatus('UNAUTHENTICATED');
+        return;
+      }
+
+      // Instant bypass for Demo Mode
+      if (token.startsWith('demo_')) {
+        const storedUser = await AsyncStorage.getItem('user');
+        setUser(storedUser ? JSON.parse(storedUser) : DEMO_CAPTAIN);
+        setDriverStatus('APPROVED');
         return;
       }
 
@@ -42,12 +67,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Auth Check Failed:', error);
-      setDriverStatus('UNAUTHENTICATED');
+      // If demo token, stay approved even on network fail
+      const token = await AsyncStorage.getItem('token');
+      if (token && token.startsWith('demo_')) {
+        setUser(DEMO_CAPTAIN);
+        setDriverStatus('APPROVED');
+      } else {
+        setDriverStatus('UNAUTHENTICATED');
+      }
     }
+  };
+
+  const loginAsDemo = async (customPhone?: string) => {
+    const demoToken = 'demo_token_' + Date.now();
+    const demoUser = {
+      ...DEMO_CAPTAIN,
+      phoneNumber: customPhone || DEMO_CAPTAIN.phoneNumber,
+    };
+    await AsyncStorage.setItem('token', demoToken);
+    await AsyncStorage.setItem('user', JSON.stringify(demoUser));
+    await AsyncStorage.setItem('isDemo', 'true');
+    setUser(demoUser);
+    setDriverStatus('APPROVED');
   };
 
   const logout = async () => {
     await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('user');
+    await AsyncStorage.removeItem('isDemo');
     setUser(null);
     setDriverStatus('UNAUTHENTICATED');
   };
@@ -57,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ driverStatus, user, checkAuth, logout }}>
+    <AuthContext.Provider value={{ driverStatus, user, checkAuth, loginAsDemo, logout }}>
       {children}
     </AuthContext.Provider>
   );

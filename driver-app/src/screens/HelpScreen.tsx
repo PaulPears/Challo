@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Title } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { Linking } from 'react-native';
+import { COLORS } from '../config/theme';
 
 const HelpScreen = () => {
   const navigation = useNavigation();
@@ -25,7 +26,7 @@ const HelpScreen = () => {
         <View style={styles.section}>
           <Text style={styles.title}>Help & Support</Text>
           <Text style={styles.description}>
-            Find answers to common questions and get assistance with your RideAndhra Driver App.
+            Find answers to common questions and get assistance with your Challo Captain App.
           </Text>
         </View>
 
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   contactButton: {
-    backgroundColor: '#fe7009',
+    backgroundColor: COLORS.primary,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   contactButtonText: {
-    color: '#fff',
+    color: COLORS.dark,
     fontSize: 16,
     fontWeight: 'bold',
   },

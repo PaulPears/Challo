@@ -62,6 +62,11 @@ api.interceptors.response.use(
     const url = error.config?.url || 'unknown endpoint';
 
     if (status === 401) {
+      const token = await AsyncStorage.getItem('token');
+      if (token && token.startsWith('demo_')) {
+        console.warn(`[API] Demo token active — ignoring 401 on ${url}`);
+        return Promise.resolve({ data: {} });
+      }
       // Silently clear auth on 401 — AuthContext will redirect to login
       console.warn(`[API] 401 Unauthorized on ${url} — clearing token`);
       await AsyncStorage.removeItem('token');

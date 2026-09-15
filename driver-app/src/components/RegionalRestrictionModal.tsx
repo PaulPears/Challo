@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { COLORS, BRAND } from '../config/theme';
 
 interface RegionalRestrictionModalProps {
     isVisible: boolean;
@@ -14,18 +15,18 @@ const RegionalRestrictionModal: React.FC<RegionalRestrictionModalProps> = ({ isV
             <View style={styles.overlay}>
                 <View style={styles.container}>
                     <View style={styles.iconCircle}>
-                        <MaterialCommunityIcons name="map-marker-off" size={64} color="#fe7009" />
+                        <MaterialCommunityIcons name="map-marker-off" size={64} color={COLORS.primary} />
                     </View>
                     <Text style={styles.title}>Service Unavailable</Text>
                     <Text style={styles.description}>
-                        We're sorry! <Text style={styles.brand}>Ride Andhra</Text> currently operates exclusively within the state of <Text style={styles.highlight}>Andhra Pradesh</Text>.
+                        We're sorry! <Text style={styles.brand}>{BRAND.shortName}</Text> currently operates exclusively within the state of <Text style={styles.highlight}>Andhra Pradesh</Text>.
                     </Text>
                     <Text style={styles.footerNote}>
                         We are expanding to other regions soon. Thank you for your patience!
                     </Text>
 
                     <View style={styles.locationBadge}>
-                        <MaterialCommunityIcons name="state-machine" size={18} color="#fe7009" />
+                        <MaterialCommunityIcons name="state-machine" size={18} color={COLORS.primaryDark} />
                         <Text style={styles.locationBadgeText}>AP Region Only</Text>
                     </View>
                 </View>
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
         width: 120,
         height: 120,
         borderRadius: 60,
-        backgroundColor: 'rgba(254, 112, 9, 0.08)',
+        backgroundColor: COLORS.primarySoft,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 32,
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     brand: {
-        color: '#fe7009',
+        color: COLORS.primaryDark,
         fontWeight: '700',
     },
     highlight: {
@@ -94,16 +95,16 @@ const styles = StyleSheet.create({
     },
     locationBadge: {
         flexDirection: 'row',
-        backgroundColor: '#fff5f0',
+        backgroundColor: COLORS.primarySoft,
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 20,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: '#ffd7ba',
+        borderColor: COLORS.primaryMuted,
     },
     locationBadgeText: {
-        color: '#fe7009',
+        color: COLORS.primaryDark,
         fontSize: 13,
         fontWeight: '700',
         marginLeft: 8,

@@ -103,14 +103,14 @@ const SettleDuesScreen = ({ navigation }: any) => {
         currency: 'INR',
         key: razorpayKey,
         amount: orderData.amount,
-        name: 'Ride Andhra',
+        name: 'Challo Captain',
         order_id: orderData.id,
         prefill: {
           contact: mobileNumber || '9999999999',
-          name: 'Driver',
-          email: 'driver@rideandhra.in',
+          name: 'Captain',
+          email: 'captain@challo.in',
         },
-        theme: { color: '#fe7009' },
+        theme: { color: '#E5A915' },
       };
 
 

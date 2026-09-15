@@ -103,11 +103,11 @@ const PaymentResultModal: React.FC<PaymentResultModalProps> = ({
   };
 
   const handleContactSupport = () => {
-    const subject = encodeURIComponent('Payment Verification Issue - Ride Andhra');
+    const subject = encodeURIComponent('Payment Verification Issue - Challo Captain');
     const body = encodeURIComponent(
       `Hi Support,\n\nI made a payment but verification failed.\n\nPayment ID: ${paymentId || 'N/A'}\nOrder ID: ${orderId || 'N/A'}\nAmount: ₹${amount?.toFixed(2) || 'N/A'}\n\nPlease verify and update my account.\n\nThank you.`
     );
-    Linking.openURL(`mailto:support@rideandhra.in?subject=${subject}&body=${body}`);
+    Linking.openURL(`mailto:support@challo.in?subject=${subject}&body=${body}`);
   };
 
   return (

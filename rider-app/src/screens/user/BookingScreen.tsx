@@ -38,6 +38,7 @@ const BookingScreen = ({ navigation, route }: any) => {
 
   const getVehicleImage = (vehicle: string) => {
     const type = vehicle.toLowerCase();
+    if (type.includes('ambulance') || type.includes('hospital') || type.includes('medical')) return require('../../../assets/ambulance_icon.png');
     if (type.includes('cab') || type.includes('car')) return require('../../../assets/cab_icon.png');
     if (type.includes('bike-lite') || type.includes('bike_lite')) return require('../../../assets/bike_lite_icon.png');
     if (type.includes('luxury_bike') || type.includes('luxury bike') || type.includes('premium')) return require('../../../assets/premium_bike.png');
@@ -97,7 +98,7 @@ const BookingScreen = ({ navigation, route }: any) => {
           );
 
           // Define the desired order
-          const vehicleOrder = ['auto', 'bike', 'luxury_bike', 'bike_lite', 'cab', 'parcel'];
+          const vehicleOrder = ['ambulance', 'auto', 'bike', 'luxury_bike', 'bike_lite', 'cab', 'parcel'];
 
           // Map and Filter the response
           const options: VehicleOption[] = fareEstimates
@@ -114,6 +115,7 @@ const BookingScreen = ({ navigation, route }: any) => {
               // Normalize vehicle type for display
               // 'bike_lite' -> 'Bike-lite', 'luxury_bike' -> 'Luxury Bike', etc.
               const displayVehicle = 
+                vehicleType === 'ambulance' ? 'Ambulance (Emergency)' :
                 vehicleType === 'bike_lite' ? 'Bike-lite' :
                 vehicleType === 'luxury_bike' ? 'Premium Bike' :
                 vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1);
@@ -125,12 +127,30 @@ const BookingScreen = ({ navigation, route }: any) => {
                 estimatedTime: estimatedTime,
                 breakdown: estimate
               };
-            })
-            .sort((a: VehicleOption, b: VehicleOption) => {
-              const orderA = vehicleOrder.indexOf(a.vehicle.toLowerCase().replace('-', '_'));
-              const orderB = vehicleOrder.indexOf(b.vehicle.toLowerCase().replace('-', '_'));
-              return orderA - orderB;
             });
+
+          // Ensure Ambulance Emergency option is available even if backend hasn't seeded it
+          if (!options.some(opt => opt.type === 'ambulance')) {
+            const ambFare = Math.round(150 + distance * 22);
+            options.push({
+              vehicle: 'Ambulance (Emergency)',
+              type: 'ambulance',
+              cost: ambFare,
+              estimatedTime: Math.max(3, Math.round((riderDistance / averageRiderSpeed) * 35)),
+              breakdown: {
+                totalFare: ambFare,
+                baseFare: 150,
+                vehicleType: 'ambulance',
+                isEmergency: true
+              }
+            });
+          }
+
+          options.sort((a: VehicleOption, b: VehicleOption) => {
+            const orderA = vehicleOrder.indexOf(a.vehicle.toLowerCase().replace('-', '_'));
+            const orderB = vehicleOrder.indexOf(b.vehicle.toLowerCase().replace('-', '_'));
+            return orderA - orderB;
+          });
 
           setVehicleOptions(options);
 

@@ -23,6 +23,7 @@ import api from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import OnboardingHeader from '../components/OnboardingHeader';
 import PremiumInput from '../components/PremiumInput';
+import { COLORS } from '../config/theme';
 
 const { height } = Dimensions.get('window');
 
@@ -167,7 +168,7 @@ const OtpVerificationScreen = ({ route, navigation }: Props) => {
                 ) : (
                   <>
                     <Text style={styles.buttonText}>Verify & Proceed</Text>
-                    <MaterialCommunityIcons name="check-decagram" size={24} color="#fff" style={{ marginLeft: 12 }} />
+                    <MaterialCommunityIcons name="check-decagram" size={24} color={COLORS.dark} style={{ marginLeft: 12 }} />
                   </>
                 )}
               </TouchableOpacity>
@@ -243,14 +244,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   button: {
-    backgroundColor: '#fe7009',
+    backgroundColor: COLORS.primary,
     height: 60,
     borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,
-    shadowColor: '#fe7009',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -262,7 +263,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.dark,
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -278,14 +279,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   timer: {
-    color: '#fe7009',
+    color: COLORS.primaryDark,
     fontWeight: '800',
   },
   resendLink: {
     fontSize: 16,
-    color: '#fe7009',
+    color: COLORS.primaryDark,
     fontWeight: '800',
-    textDecorationLine: 'underline',
   },
 });
 

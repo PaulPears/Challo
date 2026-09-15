@@ -39,6 +39,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { showRideAlertNotification, cancelRideAlertNotification } from '../utils/rideAlertNotification';
+import { COLORS, BRAND } from '../config/theme';
 
 interface Ride {
   id: string;
@@ -432,9 +433,9 @@ const HomeScreen = () => {
             timeInterval: 5000,
             showsBackgroundLocationIndicator: true,
             foregroundService: {
-              notificationTitle: 'Ride Andhra Online',
+              notificationTitle: `${BRAND.name} Online`,
               notificationBody: 'You are online and looking for rides.',
-              notificationColor: '#fe7009',
+              notificationColor: COLORS.primary,
             },
           });
         }
@@ -887,7 +888,7 @@ const HomeScreen = () => {
       if (locationStatus !== 'granted') {
         setRationaleConfig({
           title: 'Location Access Required',
-          description: 'Ride Andhra needs your location to find rides nearby and track your progress during a trip. Please allow location permissions.',
+          description: `${BRAND.name} needs your location to find rides nearby and track your progress during a trip. Please allow location permissions.`,
           icon: 'map-marker-radius',
           type: 'location'
         });
@@ -1174,28 +1175,28 @@ const HomeScreen = () => {
           <View style={[styles.drawerHeader, { paddingTop: 50, paddingBottom: 20 }]}>
             <Image 
               source={require('../../assets/splash-icon.png')} 
-              style={{ width: 140, height: 40, resizeMode: 'contain' }} 
+              style={{ width: 170, height: 48, resizeMode: 'contain' }} 
             />
           </View>
           <ScrollView>
             <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('Profile'); }}>
-              <Ionicons name="person-outline" size={24} color="#fe7009" />
+              <Ionicons name="person-outline" size={24} color={COLORS.primary} />
               <Text style={styles.drawerItemText}>My Profile</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('MyRides'); }}>
-              <Ionicons name="time-outline" size={24} color="#fe7009" />
+              <Ionicons name="time-outline" size={24} color={COLORS.primary} />
               <Text style={styles.drawerItemText}>Ride History</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('Subscriptions'); }}>
-              <Ionicons name="card-outline" size={24} color="#fe7009" />
+              <Ionicons name="card-outline" size={24} color={COLORS.primary} />
               <Text style={styles.drawerItemText}>Subscriptions</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('Wallet'); }}>
-              <Ionicons name="wallet-outline" size={24} color="#fe7009" />
+              <Ionicons name="wallet-outline" size={24} color={COLORS.primary} />
               <Text style={styles.drawerItemText}>My Wallet</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('Help'); }}>
-              <Ionicons name="help-circle-outline" size={24} color="#fe7009" />
+              <Ionicons name="help-circle-outline" size={24} color={COLORS.primary} />
               <Text style={styles.drawerItemText}>Help & Support</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.drawerItem} onPress={async () => {
@@ -1341,13 +1342,13 @@ const HomeScreen = () => {
                 Permission Required
               </Text>
               <Text style={{ fontSize: 15, color: '#555', textAlign: 'center', lineHeight: 23, marginBottom: 28, paddingHorizontal: 8 }}>
-                {'Ride Andhra needs the '}
-                <Text style={{ fontWeight: '700', color: '#fe7009' }}>"Display over other apps"</Text>
+                {`${BRAND.name} needs the `}
+                <Text style={{ fontWeight: '700', color: COLORS.primaryDark }}>"Display over other apps"</Text>
                 {' permission to show you incoming ride alerts even when you are using another app. Without this, you will miss rides.'}
               </Text>
               <TouchableOpacity
                 style={{
-                  width: '100%', backgroundColor: '#fe7009',
+                  width: '100%', backgroundColor: COLORS.primary,
                   paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginBottom: 12,
                 }}
                 onPress={() => {
@@ -1356,7 +1357,7 @@ const HomeScreen = () => {
                   }
                 }}
               >
-                <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16, letterSpacing: 0.5 }}>
+                <Text style={{ color: COLORS.dark, fontWeight: '800', fontSize: 16, letterSpacing: 0.5 }}>
                   GRANT PERMISSION
                 </Text>
               </TouchableOpacity>

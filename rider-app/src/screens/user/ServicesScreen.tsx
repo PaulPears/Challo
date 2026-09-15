@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 
 const services = [
+  { image: require('../../../assets/ambulance_icon.png'), name: 'Ambulance', isEmergency: true, badge: '24x7 Emergency' },
   { image: require('../../../assets/auto_icon.png'), name: 'Auto' },
   { image: require('../../../assets/bike_icon.png'), name: 'Bike' },
   { image: require('../../../assets/premium_bike.png'), name: 'Premium Bike' },
@@ -15,7 +16,6 @@ const services = [
 const ServicesScreen = ({ navigation }: any) => {
   const handleServicePress = (serviceName: string) => {
     console.log(`Selected ${serviceName} service`);
-    // Navigate to SearchScreen where user can enter pickup/dropoff locations
     navigation.navigate('Search');
   };
 
@@ -40,9 +40,26 @@ const ServicesScreen = ({ navigation }: any) => {
 
       <View style={styles.servicesContainer}>
         {services.map((service, index) => (
-          <TouchableOpacity key={index} style={styles.serviceButton} onPress={() => handleServicePress(service.name)}>
+          <TouchableOpacity 
+            key={index} 
+            style={[
+              styles.serviceButton,
+              service.isEmergency && styles.emergencyServiceButton
+            ]} 
+            onPress={() => handleServicePress(service.name)}
+          >
             <Image source={service.image} style={styles.vehicleImage} resizeMode="contain" />
-            <Text style={styles.serviceText}>{service.name}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.serviceText, service.isEmergency && { color: '#DC2626', fontWeight: '800' }]}>
+                {service.name}
+              </Text>
+              {service.badge && (
+                <Text style={{ fontSize: 11, color: '#DC2626', fontWeight: '700', marginTop: 2 }}>
+                  {service.badge}
+                </Text>
+              )}
+            </View>
+            <Text style={{ fontSize: 18, color: service.isEmergency ? '#DC2626' : '#9CA3AF' }}>›</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -131,6 +148,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
+  },
+  emergencyServiceButton: {
+    borderWidth: 1.5,
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FFF5F5',
   },
 });
 

@@ -57,9 +57,9 @@ const applyAllPlugins = (config) =>
 
 module.exports = applyAllPlugins({
     expo: {
-        name: "RideAndhraDriverApp",
-        slug: "RideAndhraDriverApp",
-        scheme: "rideandhra",
+        name: "Challo Captain",
+        slug: "challo-captain",
+        scheme: "challocaptain",
         version: "1.0.9",
         orientation: "portrait",
         icon: "./assets/adaptive-icon.png",
@@ -67,7 +67,7 @@ module.exports = applyAllPlugins({
         splash: {
             image: "./assets/splash.png",
             resizeMode: "contain",
-            backgroundColor: "#ffffff"
+            backgroundColor: "#E5A915"
         },
         extra: {
             widgetId: process.env.EXPO_PUBLIC_WIDGET_ID || "356b7a674c4f303137353939",
@@ -98,7 +98,7 @@ module.exports = applyAllPlugins({
                 "expo-notifications",
                 {
                     icon: "./assets/adaptive-icon.png",
-                    color: "#FF7009",
+                    color: "#E5A915",
                     sounds: ["./assets/sounds/ride_alert.mp3"],
                     mode: "production"
                 }
@@ -123,7 +123,7 @@ module.exports = applyAllPlugins({
             googleServicesFile: "./android/app/google-services.json",
             adaptiveIcon: {
                 foregroundImage: "./assets/adaptive-icon.png",
-                backgroundColor: "#ffffff"
+                backgroundColor: "#E5A915"
             },
             config: {
                 googleMaps: {

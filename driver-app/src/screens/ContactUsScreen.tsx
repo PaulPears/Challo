@@ -5,15 +5,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Title } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useAppConfig } from '../context/ConfigContext';
+import { COLORS, BRAND } from '../config/theme';
 
 const ContactUsScreen = () => {
   const navigation = useNavigation();
   const { config, isLoading } = useAppConfig();
 
   // Fallback values
-  const supportEmail = config?.support_email || 'help.rideandhra@gmail.com';
+  const supportEmail = config?.support_email || BRAND.supportEmail;
   const supportPhone = config?.support_phone || '+91 8374277617';
-  const officeAddress = config?.support_office_address || 'RideAndhra HQ, Kadapa, Andhra Pradesh, India';
+  const officeAddress = config?.support_office_address || `${BRAND.name} HQ, Andhra Pradesh, India`;
 
   const handleEmailPress = () => {
     Linking.openURL(`mailto:${supportEmail}`);
@@ -28,7 +29,7 @@ const ContactUsScreen = () => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fe7009" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -44,7 +45,7 @@ const ContactUsScreen = () => {
 
       <ScrollView style={styles.outerContainer} contentContainerStyle={styles.contentContainer}>
         <View style={styles.card}>
-          <Ionicons name="mail-outline" size={50} color="#fe7009" style={styles.icon} />
+          <Ionicons name="mail-outline" size={50} color={COLORS.primary} style={styles.icon} />
           <Text style={styles.title}>Contact Us</Text>
           <Text style={styles.description}>
             We're here to help! Choose how you'd like to reach us.

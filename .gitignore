@@ -36,8 +36,15 @@ logs/
 Thumbs.db
 
 # React Native / Android / iOS specific
-android/app/build/
-android/.gradle/
-ios/Pods/
-ios/build/
+**/android/app/build/
+**/android/.gradle/
+**/.gradle/
+**/ios/Pods/
+**/ios/build/
 *.xcresult
+
+# APKs and mobile binaries
+APKs/
+*.apk
+*.aab
+

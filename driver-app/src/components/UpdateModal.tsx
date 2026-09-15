@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, Linking, Platform } fr
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, BRAND } from '../config/theme';
 
 interface UpdateModalProps {
   visible: boolean;
@@ -23,7 +24,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ visible, currentVersion, requ
         Linking.openURL(url);
       } else {
         // Fallback for browser
-        Linking.openURL('https://rideandhra.in/download');
+        Linking.openURL(BRAND.downloadUrl);
       }
     });
   };
@@ -35,18 +36,18 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ visible, currentVersion, requ
         
         <View style={styles.container}>
           <LinearGradient
-            colors={['#fe7009', '#ff8c42']}
+            colors={COLORS.gradientGold}
             style={styles.header}
           >
             <View style={styles.iconCircle}>
-              <Ionicons name="cloud-download" size={40} color="#fe7009" />
+              <Ionicons name="cloud-download" size={40} color={COLORS.primaryDark} />
             </View>
           </LinearGradient>
 
           <View style={styles.content}>
             <Text style={styles.title}>Update Required</Text>
             <Text style={styles.description}>
-              A critical update is available for Ride Andhra. Please update to version {requiredVersion} to continue using the service.
+              A critical update is available for {BRAND.name}. Please update to version {requiredVersion} to continue using the service.
             </Text>
 
             <View style={styles.versionRow}>
@@ -56,8 +57,8 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ visible, currentVersion, requ
               </View>
               <Ionicons name="arrow-forward" size={16} color="#cbd5e1" />
               <View style={[styles.versionTag, styles.requiredTag]}>
-                <Text style={[styles.versionLabel, {color: '#fff'}]}>Required</Text>
-                <Text style={[styles.versionValue, {color: '#fff'}]}>v{requiredVersion}</Text>
+                <Text style={[styles.versionLabel, {color: COLORS.dark}]}>Required</Text>
+                <Text style={[styles.versionValue, {color: COLORS.dark}]}>v{requiredVersion}</Text>
               </View>
             </View>
 
@@ -67,13 +68,13 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ visible, currentVersion, requ
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={['#fe7009', '#ff8c42']}
+                colors={COLORS.gradientGold}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.gradient}
               >
                 <Text style={styles.buttonText}>Update Now</Text>
-                <Ionicons name="arrow-forward" size={20} color="#fff" />
+                <Ionicons name="arrow-forward" size={20} color={COLORS.dark} />
               </LinearGradient>
             </TouchableOpacity>
 
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   requiredTag: {
-    backgroundColor: '#fe7009',
+    backgroundColor: COLORS.primary,
   },
   versionLabel: {
     fontSize: 10,

@@ -125,7 +125,7 @@ async function seed() {
       },
       {
         key: 'terms_and_conditions_rider',
-        value: 'By using Ride Andhra Rider App, you agree that fares are estimates and you will pay drivers directly...',
+        value: 'By using Challo Rider App, you agree that fares are estimates and you will pay drivers directly...',
         type: 'text'
       },
       {
@@ -135,7 +135,7 @@ async function seed() {
       },
       {
         key: 'support_email',
-        value: 'help.rideandhra@gmail.com',
+        value: 'help.challo@gmail.com',
         description: 'Primary support email'
       },
       {
@@ -145,7 +145,7 @@ async function seed() {
       },
       {
         key: 'support_office_address',
-        value: 'RideAndhra HQ, Kadapa, Andhra Pradesh, India',
+        value: 'Challo HQ, Kadapa, Andhra Pradesh, India',
         description: 'Main office address'
       }
     ];

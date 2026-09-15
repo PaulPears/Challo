@@ -43,8 +43,8 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="rideandhra"/>
-        <data android:scheme="exp+rideandhradriverapp"/>
+        <data android:scheme="challocaptain"/>
+        <data android:scheme="exp+challocaptain"/>
       </intent-filter>
     </activity>
     <uses-library android:name="org.apache.http.legacy" android:required="false"/>

@@ -25,6 +25,7 @@ const { height } = Dimensions.get('window');
 // Resolve vehicle image from vehicle_type string
 const getVehicleImage = (vehicleType?: string) => {
   const type = vehicleType?.toLowerCase() || '';
+  if (type.includes('ambulance') || type.includes('hospital') || type.includes('medical')) return require('../../../assets/ambulance_icon.png');
   if (type.includes('cab') || type.includes('car')) return require('../../../assets/cab_icon.png');
   if (type.includes('bike-lite') || type.includes('bike_lite')) return require('../../../assets/bike_lite_icon.png');
   if (type.includes('luxury_bike') || type.includes('luxury bike') || type.includes('premium')) return require('../../../assets/premium_bike.png');
