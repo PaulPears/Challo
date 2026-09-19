@@ -4,7 +4,6 @@ export type RootStackParamList = {
     OtpVerification: { phoneNumber: string; verificationId?: string };
     DriverRegistrationStack: undefined;
     VerificationPending: undefined;
-    Subscriptions: undefined;
     PrivacyPolicy: undefined;
     TermsOfService: undefined;
     MyRides: undefined;

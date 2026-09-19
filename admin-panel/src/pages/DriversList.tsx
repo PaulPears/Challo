@@ -13,9 +13,7 @@ const DriversList = () => {
   const [selectedDriver, setSelectedDriver] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
-  const [viewMode, setViewMode] = useState<'all' | 'grace' | 'special'>('all');
-  const [grantDays, setGrantDays] = useState(30);
-  const [isGranting, setIsGranting] = useState(false);
+  const [viewMode, setViewMode] = useState<'all' | 'special'>('all');
 
   const fetchDrivers = useCallback(async (query = '', page = 1, mode = 'all') => {
     setLoading(true);
@@ -87,23 +85,6 @@ const DriversList = () => {
     }
   };
 
-  const handleGrantSubscription = async () => {
-    if (!selectedDriver) return;
-    if (!confirm(`Grant ${grantDays} days of free subscription to ${selectedDriver.user?.name}?`)) return;
-
-    setIsGranting(true);
-    try {
-      await api.post(`/admin/drivers/${selectedDriver.user_id}/grant-access`, { days: grantDays });
-      alert('Subscription granted successfully!');
-      fetchDrivers(searchQuery, meta.page, viewMode);
-      setSelectedDriver(null);
-    } catch (err) {
-      alert('Failed to grant subscription');
-    } finally {
-      setIsGranting(false);
-    }
-  };
-
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > meta.totalPages) return;
     fetchDrivers(searchQuery, newPage);
@@ -122,26 +103,12 @@ const DriversList = () => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
         <button 
           className={`btn ${viewMode === 'all' ? 'btn-primary' : 'btn-outline'}`}
           onClick={() => setViewMode('all')}
         >
           All Pilots
-        </button>
-        <button 
-          className={`btn ${viewMode === 'grace' ? 'btn-primary' : 'btn-outline'}`}
-          onClick={() => setViewMode('grace')}
-          style={viewMode === 'grace' ? { backgroundColor: 'var(--warning)', color: 'black' } : {}}
-        >
-          Grace Period
-        </button>
-        <button 
-          className={`btn ${viewMode === 'special' ? 'btn-primary' : 'btn-outline'}`}
-          onClick={() => setViewMode('special')}
-          style={viewMode === 'special' ? { borderColor: 'var(--primary)', color: 'var(--primary)' } : {}}
-        >
-          Special Access
         </button>
       </div>
 
@@ -294,31 +261,6 @@ const DriversList = () => {
                       <ShieldAlert size={20} /> Suspend Account
                     </button>
                   )}
-                </div>
-
-                <div className="glass-card" style={{ marginTop: '30px', padding: '20px', border: '1px solid var(--primary)' }}>
-                  <h4 style={{ marginBottom: '15px', color: 'var(--primary)' }}>Manual Subscription Grant</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
-                    Extend this pilot's access manually. This will be logged as 'Complimentary Access'.
-                  </p>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <input 
-                      type="number" 
-                      className="glass-card" 
-                      style={{ flex: 1, padding: '10px', background: 'rgba(255,255,255,0.05)' }} 
-                      value={grantDays}
-                      onChange={(e) => setGrantDays(parseInt(e.target.value))}
-                      min="1"
-                    />
-                    <button 
-                      className="btn btn-primary" 
-                      style={{ flex: 2 }}
-                      disabled={isGranting}
-                      onClick={handleGrantSubscription}
-                    >
-                      {isGranting ? 'Processing...' : `Grant ${grantDays} Days`}
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>

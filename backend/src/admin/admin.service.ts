@@ -4,9 +4,7 @@ import { Repository, Not, IsNull, Like } from 'typeorm';
 import { User, UserRole } from '../users/user.entity';
 import { DriverProfile, DriverStatus } from '../drivers/driver-profile.entity';
 import { Ride, RideStatus } from '../rides/ride.entity';
-import { SubscriptionSale } from '../subscriptions/subscription-sale.entity';
 import { NotificationsService } from '../notifications/notifications.service';
-import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { RidePolicyService } from '../rides/ride-policy.service';
 
 @Injectable()
@@ -18,11 +16,8 @@ export class AdminService {
     private driverProfileRepository: Repository<DriverProfile>,
     @InjectRepository(Ride)
     private ridesRepository: Repository<Ride>,
-    @InjectRepository(SubscriptionSale)
-    private subscriptionSaleRepository: Repository<SubscriptionSale>,
     @Inject(forwardRef(() => NotificationsService))
     private notificationsService: NotificationsService,
-    private subscriptionsService: SubscriptionsService,
     private ridePolicyService: RidePolicyService,
   ) {}
 
@@ -63,6 +58,36 @@ export class AdminService {
         limit,
         totalPages: Math.ceil(total / limit),
       }
+    };
+  }
+
+  async searchRiders(query: string, page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const qb = this.usersRepository.createQueryBuilder('user')
+      .where(':role = ANY(user.roles)', { role: UserRole.RIDER })
+      .orderBy('user.created_at', 'DESC')
+      .take(limit)
+      .skip(skip);
+
+    if (query) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(query)) {
+        qb.andWhere('user.id = :id', { id: query });
+      } else {
+        qb.andWhere('(user.name ILIKE :q OR user.phone_number LIKE :q)', { q: `%${query}%` });
+      }
+    }
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -213,18 +238,9 @@ export class AdminService {
       .where('ride.status = :status', { status: RideStatus.COMPLETED })
       .getRawOne();
       
-    // 2. Subscriptions Aggregation
-    const { totalSubRevenue, totalSubCount } = await this.subscriptionSaleRepository
-      .createQueryBuilder('sub')
-      .select('SUM(sub.amount_paid)', 'totalSubRevenue')
-      .addSelect('COUNT(sub.id)', 'totalSubCount')
-      .getRawOne();
-      
+    // 2. Subscriptions Aggregation (Subscriptions removed platform-wide)
     const parsedRideRevenue = parseFloat(totalRideRevenue) || 0;
-    const parsedSubRevenue = parseFloat(totalSubRevenue) || 0;
     const rideTaxAmount = parsedRideRevenue * 0.05; // 5% ride tax
-    const subTaxAmount = parsedSubRevenue * 0.18; // 18% sub tax
-    const parsedSubCount = parseInt(totalSubCount, 10) || 0;
 
     // 3. Paginated Rides List
     const skip = (page - 1) * limit;
@@ -250,9 +266,9 @@ export class AdminService {
       overview: {
         totalRideRevenue: parsedRideRevenue,
         rideTaxTotal: rideTaxAmount,
-        totalSubscriptionRevenue: parsedSubRevenue,
-        subscriptionTaxTotal: subTaxAmount,
-        totalSubscriptionsSold: parsedSubCount
+        totalSubscriptionRevenue: 0,
+        subscriptionTaxTotal: 0,
+        totalSubscriptionsSold: 0
       },
       recentRides: {
         items: formattedRides,
@@ -267,7 +283,7 @@ export class AdminService {
   }
 
   async grantManualSubscription(driverId: string, days: number) {
-    return this.subscriptionsService.grantComplimentaryAccess(driverId, days);
+    return { success: true, message: 'Subscriptions are disabled; driver already has full access.' };
   }
 
   async getSpecialAccessDrivers() {

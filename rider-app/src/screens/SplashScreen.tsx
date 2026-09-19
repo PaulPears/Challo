@@ -14,12 +14,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#E5A915',
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 220,
+    height: 220,
     resizeMode: 'contain',
+    borderRadius: 32,
   },
 });
 

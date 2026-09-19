@@ -5,6 +5,9 @@ import Verification from './pages/Verification';
 import DriversList from './pages/DriversList';
 import NotificationsPage from './pages/NotificationsPage';
 import FinanceReports from './pages/FinanceReports';
+import LiveRides from './pages/LiveRides';
+import FareManager from './pages/FareManager';
+import RidersList from './pages/RidersList';
 import AdminLayout from './components/AdminLayout';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -27,6 +30,14 @@ function App() {
           } 
         />
         <Route 
+          path="/rides" 
+          element={
+            <ProtectedRoute>
+              <LiveRides />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="/verification" 
           element={
             <ProtectedRoute>
@@ -39,6 +50,22 @@ function App() {
           element={
             <ProtectedRoute>
               <DriversList />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/riders" 
+          element={
+            <ProtectedRoute>
+              <RidersList />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/fares" 
+          element={
+            <ProtectedRoute>
+              <FareManager />
             </ProtectedRoute>
           } 
         />

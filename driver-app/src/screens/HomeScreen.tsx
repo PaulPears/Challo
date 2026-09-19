@@ -78,17 +78,6 @@ const HomeScreen = () => {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [lastLocationUpdate, setLastLocationUpdate] = useState<number | null>(null);
   const [overlayPermGranted, setOverlayPermGranted] = useState<boolean>(true); // optimistic, checked on mount
-  const [subStatus, setSubStatus] = useState<{
-    label: string,
-    timer: string,
-    color: string,
-    isGrace: boolean,
-    isExpired: boolean,
-    isWarning: boolean,
-    remainingMs: number
-  } | null>(null);
-  const [subModalVisible, setSubModalVisible] = useState(false);
-  const [lastModalTime, setLastModalTime] = useState(0);
   const [isDrawerVisible, setDrawerVisible] = useState(false);
   const [drawerAnimation] = useState(new Animated.Value(-width * 0.75));
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -231,35 +220,12 @@ const HomeScreen = () => {
         const response = await api.get('/profile');
         if (response.data?.profile) {
           setIsOnline(response.data.profile.isOnline);
-          if (response.data.profile.subscriptionExpiry) {
-            await AsyncStorage.setItem('subscriptionExpiry', response.data.profile.subscriptionExpiry);
-            updateSubscriptionStatus(response.data.profile.subscriptionExpiry);
-          } else {
-            await AsyncStorage.removeItem('subscriptionExpiry');
-            setSubStatus(null);
-          }
         }
       } catch (error) {
         console.error('Error fetching driver status:', error);
       }
     };
     fetchStatus();
-
-    const interval = setInterval(async () => {
-      const expiry = await AsyncStorage.getItem('subscriptionExpiry');
-      if (expiry) {
-        const status = updateSubscriptionStatus(expiry);
-
-        // Recurring Modal Logic: Every 60s if expired
-        if (status.isExpired) {
-          const now = Date.now();
-          if (now - lastModalTime > 60000) {
-            setSubModalVisible(true);
-            setLastModalTime(now);
-          }
-        }
-      }
-    }, 1000);
 
     // Fetch location once on mount so header shows it even when offline
     const fetchInitialLocation = async () => {
@@ -297,53 +263,6 @@ const HomeScreen = () => {
       fetchWallet();
     }, [])
   );
-
-  const updateSubscriptionStatus = (expiryDate: string) => {
-    const now = new Date();
-    const expiry = new Date(expiryDate);
-    const graceExpiry = new Date(expiry.getTime() + 12 * 60 * 60 * 1000);
-    const FIVE_HOURS = 5 * 60 * 60 * 1000;
-
-    let target = expiry;
-    let isGrace = false;
-    let isExpired = false;
-
-    if (now >= expiry && now < graceExpiry) {
-      target = graceExpiry;
-      isGrace = true;
-    } else if (now >= graceExpiry) {
-      isExpired = true;
-    }
-
-    const diff = isExpired ? 0 : target.getTime() - now.getTime();
-    const isWarning = diff < FIVE_HOURS && !isExpired;
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const secs = Math.floor((diff % (1000 * 60)) / 1000);
-
-    // For the banner: "2d 4h left"
-    const bannerLabel = isExpired ? 'Plan Expired' :
-      isGrace ? `Grace: ${hours}h ${mins}m` :
-        `${days > 0 ? `${days}d ` : ''}${hours}h remaining`;
-
-    // For the large UI: "02d 14:30:15"
-    const timerString = isExpired ? '00:00:00' :
-      `${days > 0 ? `${days}d ` : ''}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-
-    setSubStatus({
-      label: bannerLabel,
-      timer: timerString,
-      color: (isWarning || isExpired) ? '#dc3545' : '#28a745',
-      isGrace,
-      isExpired,
-      isWarning,
-      remainingMs: diff
-    });
-
-    return { isExpired, isWarning };
-  };
 
   useEffect(() => {
     if (location) {
@@ -603,25 +522,6 @@ const HomeScreen = () => {
   );
 
   const handleAccept = async (rideId: string) => {
-    const expiryString = await AsyncStorage.getItem('subscriptionExpiry');
-    const now = new Date();
-    const expiry = expiryString ? new Date(expiryString) : null;
-
-    // Logic: Active if (now < expiry) OR (now < expiry + 12h)
-    const graceExpiry = expiry ? new Date(expiry.getTime() + 12 * 60 * 60 * 1000) : null;
-    const isWithinValidPeriod = expiry && (now < expiry || (graceExpiry && now < graceExpiry));
-
-    if (!isWithinValidPeriod) {
-      Alert.alert(
-        'Subscription Required',
-        'Your plan has expired and the grace period has ended. Please renew to continue.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Subscribe', onPress: () => navigation.navigate('Subscriptions') }
-        ]
-      );
-      return;
-    }
 
     try {
       await stopAlert(); // Stop sound immediately
@@ -1044,14 +944,9 @@ const HomeScreen = () => {
       <View style={[styles.statusCard, { flexDirection: 'column', alignItems: 'stretch' }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 }}>
           <View style={styles.statusCardLeft}>
-            <Text style={styles.statusCardLabel}>
-              {subStatus?.isGrace ? 'Grace Period' : 'Subscription'}
-            </Text>
-            <Text style={[
-              styles.statusCardTimer,
-              (subStatus?.isWarning || subStatus?.isExpired) && { color: '#dc3545' }
-            ]}>
-              {subStatus?.timer || '--:--'}
+            <Text style={styles.statusCardLabel}>Challo Captain</Text>
+            <Text style={[styles.statusCardTimer, { color: isOnline ? '#15803d' : '#64748b', fontSize: 18 }]}>
+              {isOnline ? 'Online & Ready' : 'Offline'}
             </Text>
             <View style={styles.statusPill}>
               <View style={[styles.statusPillDot, { backgroundColor: isOnline ? '#22c55e' : '#94a3b8' }]} />
@@ -1114,7 +1009,7 @@ const HomeScreen = () => {
         {[
           { label: 'Wallet', icon: 'wallet', screen: 'Wallet', color: '#ff8c00' },
           { label: 'My Rides', icon: 'history', screen: 'MyRides', color: '#6366f1' },
-          { label: 'Plans', icon: 'card-account-details-outline', screen: 'Subscriptions', color: '#10b981' },
+          { label: 'Settlements', icon: 'cash-sync', screen: 'SettlementHistory', color: '#10b981' },
         ].map((item) => (
           <TouchableOpacity
             key={item.label}
@@ -1172,11 +1067,17 @@ const HomeScreen = () => {
             <Ionicons name="close" size={28} color="#4a5568" />
           </TouchableOpacity>
 
-          <View style={[styles.drawerHeader, { paddingTop: 50, paddingBottom: 20 }]}>
+          <View style={[styles.drawerHeader, { paddingTop: 45, paddingBottom: 20, alignItems: 'center' }]}>
             <Image 
-              source={require('../../assets/splash-icon.png')} 
-              style={{ width: 170, height: 48, resizeMode: 'contain' }} 
+              source={require('../../assets/icon.png')} 
+              style={{ width: 100, height: 100, resizeMode: 'contain', borderRadius: 20 }} 
             />
+            <Text style={{ fontSize: 17, fontWeight: '800', color: '#1E293B', marginTop: 12, letterSpacing: 0.5 }}>
+              CHALLO CAPTAIN
+            </Text>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: '#D97706', marginTop: 2 }}>
+              Pilot Command Center
+            </Text>
           </View>
           <ScrollView>
             <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('Profile'); }}>
@@ -1186,10 +1087,6 @@ const HomeScreen = () => {
             <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('MyRides'); }}>
               <Ionicons name="time-outline" size={24} color={COLORS.primary} />
               <Text style={styles.drawerItemText}>Ride History</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('Subscriptions'); }}>
-              <Ionicons name="card-outline" size={24} color={COLORS.primary} />
-              <Text style={styles.drawerItemText}>Subscriptions</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.drawerItem} onPress={() => { toggleDrawer(); navigation.navigate('Wallet'); }}>
               <Ionicons name="wallet-outline" size={24} color={COLORS.primary} />
@@ -1216,25 +1113,7 @@ const HomeScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {subStatus && (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('Subscriptions')}
-              style={[styles.subTimerBanner, { backgroundColor: subStatus.color }]}
-            >
-              <View style={styles.subTimerContent}>
-                <MaterialCommunityIcons
-                  name={subStatus.isGrace ? "clock-alert-outline" : "clock-outline"}
-                  size={20}
-                  color="#fff"
-                />
-                <Text style={styles.subTimerText}>
-                  {subStatus.isGrace ? "Grace Period: " : "Plan: "}{subStatus.label}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#fff" />
-            </TouchableOpacity>
-          )}
+
 
 
 
@@ -1533,36 +1412,7 @@ const HomeScreen = () => {
 
         <RegionalRestrictionModal isVisible={!isInsideAP && !!location} />
 
-        {/* Subscription Ended Modal */}
-        <Modal transparent visible={subModalVisible} animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { borderTopWidth: 6, borderTopColor: '#dc3545' }]}>
-              <View style={[styles.iconCircle, { backgroundColor: '#fee2e2', width: 60, height: 60, borderRadius: 30, marginBottom: 15 }]}>
-                <MaterialCommunityIcons name="alert-decagram" size={32} color="#dc3545" />
-              </View>
-              <Text style={styles.modalTitle}>Plan Expired!</Text>
-              <Text style={styles.modalSubtitle}>
-                Your subscription and grace period have ended. You must renew to keep accepting rides.
-              </Text>
 
-              <Button
-                mode="contained"
-                buttonColor="#fe7009"
-                onPress={() => {
-                  setSubModalVisible(false);
-                  navigation.navigate('Subscriptions');
-                }}
-                style={{ width: '100%', borderRadius: 12, paddingVertical: 4, marginBottom: 12 }}
-              >
-                Renew Now
-              </Button>
-
-              <TouchableOpacity onPress={() => setSubModalVisible(false)} style={{ padding: 10 }}>
-                <Text style={{ color: '#94a3b8', fontWeight: 'bold' }}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
       </View>
     </SafeAreaView>
   );

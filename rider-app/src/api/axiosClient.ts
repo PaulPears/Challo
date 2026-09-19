@@ -10,6 +10,7 @@ const BASE_URL = API_URL;
 
 const axiosClient = axios.create({
   baseURL: BASE_URL,
+  timeout: 15000, // 15-second request timeout to prevent hanging requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -24,37 +25,13 @@ axiosClient.interceptors.request.use(async (config) => {
       const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
       const storedToken = await AsyncStorage.getItem('accessToken');
       token = storedToken || undefined; // Convert null to undefined
-      if (token) {
-        console.log('   📦 Retrieved token from AsyncStorage as fallback');
-      }
     } catch (error) {
-      console.error('   ❌ Failed to get token from AsyncStorage:', error);
+      console.error('Failed to get token from AsyncStorage:', error);
     }
   }
 
-  console.log('🔍 Axios Request Interceptor:');
-  console.log('   URL:', config.url);
-  console.log('   Method:', config.method);
-  console.log('   Token exists:', !!token);
-
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-
-    // Prominent log for simulation
-    console.log('--------------------------------------------------');
-    console.log('🚀 SIMULATION_TOKEN:', token);
-    console.log('Use this token with: node simulate-ride.js --token=' + token);
-    console.log('--------------------------------------------------');
-
-    try {
-      const decoded: any = jwtDecode(token);
-      console.log('   Decoded Token:', JSON.stringify(decoded, null, 2));
-      console.log('   Roles in token:', decoded.roles);
-    } catch (error) {
-      console.error('   Failed to decode token:', error);
-    }
-  } else {
-    console.log('   ⚠️ No token found in userStore or AsyncStorage!');
   }
 
   return config;

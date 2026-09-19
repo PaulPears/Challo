@@ -13,7 +13,6 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './health/health.module';
 import { AdminModule } from './admin/admin.module';
 import { StorageModule } from './common/storage/storage.module';
-import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { IncentivesModule } from './incentives/incentives.module';
 import { AppConfigModule } from './config/config.module';
@@ -67,7 +66,6 @@ import { AppConfigModule } from './config/config.module';
     HealthModule,
     AdminModule,
     StorageModule,
-    SubscriptionsModule,
     RatingsModule,
     IncentivesModule,
     AppConfigModule,

@@ -341,7 +341,31 @@ const HomeScreen = ({ navigation }: any) => {
       )}
 
       {/* Floating Bottom Action */}
-      <View style={[styles.bottomActionContainer, { bottom: Math.max(insets.bottom, 24) }]}>
+      <View style={[styles.bottomActionContainer, { bottom: Math.max(insets.bottom, 20) }]}>
+        {/* Quick Vehicle Type Selector matching the new Challo Logo */}
+        <View style={styles.quickVehicleStrip}>
+          {[
+            { label: 'Auto', icon: require('../../../assets/auto_icon.png'), type: 'auto' },
+            { label: 'Bike', icon: require('../../../assets/bike_icon.png'), type: 'bike' },
+            { label: 'Cab', icon: require('../../../assets/cab_icon.png'), type: 'cab' },
+            { label: 'Ambulance', icon: require('../../../assets/ambulance_icon.png'), type: 'ambulance', isEmergency: true },
+          ].map((v) => (
+            <TouchableOpacity
+              key={v.type}
+              style={[styles.quickVehicleBtn, v.isEmergency && styles.quickAmbulanceBtn]}
+              onPress={() => navigation.navigate('Search', { preferredVehicle: v.type })}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.quickVehicleIconWrap, v.isEmergency && { backgroundColor: '#FEE2E2' }]}>
+                <Image source={v.icon} style={styles.quickVehicleImg} resizeMode="contain" />
+              </View>
+              <Text style={[styles.quickVehicleLabel, v.isEmergency && { color: '#DC2626', fontWeight: '800' }]}>
+                {v.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <TouchableOpacity
           style={styles.bookRideButton}
           onPress={() => navigation.navigate('Search')}
@@ -546,10 +570,54 @@ const styles = StyleSheet.create({
   },
   bottomActionContainer: {
     position: 'absolute',
-    left: 24,
-    right: 24,
+    left: 20,
+    right: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  quickVehicleStrip: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 12,
+    gap: 8,
+  },
+  quickVehicleBtn: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  quickAmbulanceBtn: {
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FFF5F5',
+  },
+  quickVehicleIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  quickVehicleImg: {
+    width: 46,
+    height: 46,
+  },
+  quickVehicleLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1E293B',
   },
   bookRideButton: {
     backgroundColor: '#E5A915',
@@ -557,13 +625,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    paddingVertical: 18,
-    borderRadius: 30,
+    paddingVertical: 16,
+    borderRadius: 20,
     shadowColor: '#E5A915',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
-    elevation: 10,
+    elevation: 8,
   },
   bookRideIcon: {
     marginRight: 10,

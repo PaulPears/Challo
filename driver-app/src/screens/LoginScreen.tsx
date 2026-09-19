@@ -131,12 +131,9 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
               styles.content,
               { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
             ]}>
-              <View style={styles.logoContainer}>
-                <Image
-                  source={require('../assets/Ridenew.png')}
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
+              <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                <Text style={styles.title}>Welcome, Captain!</Text>
+                <Text style={styles.subtitle}>Enter your mobile number to sign in or register</Text>
               </View>
 
 
@@ -207,14 +204,16 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    height: height * 0.38, // Stabilized height
+    height: height * 0.35,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#E5A915',
+    paddingBottom: 25,
   },
   bannerImage: {
-    width: '100%',
-    height: '100%',
+    width: 150,
+    height: 150,
+    borderRadius: 30,
   },
   content: {
     flex: 1,

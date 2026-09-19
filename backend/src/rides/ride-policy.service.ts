@@ -48,16 +48,7 @@ export class RidePolicyService {
       throw new ConflictException(RideLawViolation.INVALID_TRANSITION);
     }
 
-    // --- Subscription & Grace Period Law ---
-    const expiry = driver.subscription_expiry;
-    const graceExpiry = expiry ? new Date(expiry.getTime() + this.GRACE_PERIOD_HOURS * 60 * 60 * 1000) : null;
-
-    const isWithinGrace = graceExpiry && now <= graceExpiry;
-    
-    // Admin manual access takes precedence or acts as a normal subscription
-    if (!expiry || (now > expiry && !isWithinGrace)) {
-        throw new ForbiddenException(RideLawViolation.NO_SUBSCRIPTION);
-    }
+    // Subscriptions have been removed platform-wide. Drivers can accept pending rides without subscription restrictions.
   }
 
   private validateStart(ride: Ride | null, driver: DriverProfile) {
@@ -106,11 +97,6 @@ export class RidePolicyService {
    * Check if a driver is currently in grace period
    */
   isGracePeriod(driver: DriverProfile): boolean {
-    const now = new Date();
-    const expiry = driver.subscription_expiry;
-    if (!expiry) return false;
-    
-    const graceExpiry = new Date(expiry.getTime() + this.GRACE_PERIOD_HOURS * 60 * 60 * 1000);
-    return now > expiry && now <= graceExpiry;
+    return false;
   }
 }

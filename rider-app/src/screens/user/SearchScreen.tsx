@@ -15,7 +15,7 @@ interface LocationData {
   longitude: number;
 }
 
-const SearchScreen = ({ navigation }: any) => {
+const SearchScreen = ({ navigation, route }: any) => {
   const [pickup, setPickup] = useState<LocationData | null>(null);
   const [dropoff, setDropoff] = useState<LocationData | null>(null);
   const [pickupQuery, setPickupQuery] = useState('');
@@ -281,7 +281,8 @@ const SearchScreen = ({ navigation }: any) => {
             if (pickup && dropoff) {
               navigation.navigate('Booking', {
                 pickup: { lat: pickup.latitude, lng: pickup.longitude, address: pickup.address },
-                dropoff: { lat: dropoff.latitude, lng: dropoff.longitude, address: dropoff.address }
+                dropoff: { lat: dropoff.latitude, lng: dropoff.longitude, address: dropoff.address },
+                preferredVehicle: route?.params?.preferredVehicle
               });
             }
           }}

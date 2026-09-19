@@ -38,6 +38,21 @@ export class AdminController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @Get('riders/search')
+  async searchRiders(
+    @Query('q') query: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+  ) {
+    return this.adminService.searchRiders(
+      query, 
+      page ? parseInt(page) : 1, 
+      limit ? parseInt(limit) : 10
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Patch('drivers/:userId/suspend')
   async suspendDriver(@Param('userId') userId: string) {
     return this.adminService.suspendDriver(userId);

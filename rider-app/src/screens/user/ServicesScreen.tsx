@@ -15,8 +15,7 @@ const services = [
 
 const ServicesScreen = ({ navigation }: any) => {
   const handleServicePress = (serviceName: string) => {
-    console.log(`Selected ${serviceName} service`);
-    navigation.navigate('Search');
+    navigation.navigate('Search', { preferredVehicle: serviceName.toLowerCase() });
   };
 
   return (
@@ -48,7 +47,9 @@ const ServicesScreen = ({ navigation }: any) => {
             ]} 
             onPress={() => handleServicePress(service.name)}
           >
-            <Image source={service.image} style={styles.vehicleImage} resizeMode="contain" />
+            <View style={[styles.vehicleImageWrapper, service.isEmergency && { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}>
+              <Image source={service.image} style={styles.vehicleImage} resizeMode="contain" />
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.serviceText, service.isEmergency && { color: '#DC2626', fontWeight: '800' }]}>
                 {service.name}
@@ -59,7 +60,7 @@ const ServicesScreen = ({ navigation }: any) => {
                 </Text>
               )}
             </View>
-            <Text style={{ fontSize: 18, color: service.isEmergency ? '#DC2626' : '#9CA3AF' }}>›</Text>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: service.isEmergency ? '#DC2626' : '#9CA3AF' }}>›</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -127,22 +128,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 15,
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 14,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  vehicleImageWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   vehicleImage: {
     width: 50,
     height: 50,
-    marginRight: 20,
   },
   serviceText: {
     fontSize: 18,

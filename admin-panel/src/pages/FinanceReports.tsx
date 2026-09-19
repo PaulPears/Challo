@@ -69,7 +69,7 @@ const FinanceReports = () => {
     <div className="animate-fade-in">
       <div style={{ marginBottom: '40px' }}>
         <h1>Financial & Tax Reporting</h1>
-        <p className="subtitle">Track revenue, subscriptions, and automatically calculated taxes.</p>
+        <p className="subtitle">Track ride revenue, platform commissions, and automatically calculated taxes.</p>
       </div>
 
       {loading && data.recentRides.items.length === 0 ? (
@@ -85,10 +85,10 @@ const FinanceReports = () => {
                 <Activity size={24} />
               </div>
               <div>
-                <p className="stat-label">Total Valid Rides Revenue</p>
+                <p className="stat-label">Total Completed Rides Volume</p>
                 <h3 className="stat-value" style={{ color: 'var(--success)' }}>{formatCurrency(data.overview.totalRideRevenue)}</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                   Ride Tax (5% cut): <strong style={{ color: 'white' }}>{formatCurrency(data.overview.rideTaxTotal)}</strong>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                   Gross Merchandise Value (GMV)
                 </p>
               </div>
             </div>
@@ -98,10 +98,10 @@ const FinanceReports = () => {
                 <Wallet size={24} />
               </div>
               <div>
-                <p className="stat-label">Subscription Sales</p>
-                <h3 className="stat-value" style={{ color: 'var(--primary)' }}>{formatCurrency(data.overview.totalSubscriptionRevenue)}</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                   Subscription Tax (18% cut): <strong style={{ color: 'white' }}>{formatCurrency(data.overview.subscriptionTaxTotal)}</strong>
+                <p className="stat-label">Platform Fee & Tax (5%)</p>
+                <h3 className="stat-value" style={{ color: 'var(--primary)' }}>{formatCurrency(data.overview.rideTaxTotal)}</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                   Retained platform commission
                 </p>
               </div>
             </div>
@@ -111,10 +111,10 @@ const FinanceReports = () => {
                 <CreditCard size={24} />
               </div>
               <div>
-                <p className="stat-label">Subscriptions Sold</p>
-                <h3 className="stat-value" style={{ color: '#a855f7' }}>{data.overview.totalSubscriptionsSold} <span style={{fontSize: '1rem'}}>pilots</span></h3>
+                <p className="stat-label">Driver Earnings Share (95%)</p>
+                <h3 className="stat-value" style={{ color: '#a855f7' }}>{formatCurrency(data.overview.totalRideRevenue * 0.95)}</h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-                   Total active & historical passes
+                   Total distributed to pilots
                 </p>
               </div>
             </div>
@@ -122,14 +122,14 @@ const FinanceReports = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '40px' }}>
              <div className="glass-card" style={{ background: 'rgba(20, 20, 24, 0.6)', border: '1px solid rgba(255,255,255,0.05)', padding: '24px' }}>
-                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}><IndianRupee size={20} color="var(--success)" /> Platform Earnings (Taxes Only)</h4>
-                 <h2 style={{ fontSize: '3rem', fontWeight: 200, color: 'white', marginBottom: '4px' }}>{formatCurrency(data.overview.rideTaxTotal + data.overview.subscriptionTaxTotal)}</h2>
+                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}><IndianRupee size={20} color="var(--success)" /> Net Platform Revenue</h4>
+                 <h2 style={{ fontSize: '3rem', fontWeight: 200, color: 'white', marginBottom: '4px' }}>{formatCurrency(data.overview.rideTaxTotal)}</h2>
                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Net Revenue retained by platform</p>
              </div>
              
              <div className="glass-card" style={{ background: 'rgba(20, 20, 24, 0.6)', border: '1px solid rgba(255,255,255,0.05)', padding: '24px' }}>
                  <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}><Receipt size={20} color="var(--primary)" /> Total Platform Volume</h4>
-                 <h2 style={{ fontSize: '3rem', fontWeight: 200, color: 'white', marginBottom: '4px' }}>{formatCurrency(data.overview.totalRideRevenue + data.overview.totalSubscriptionRevenue)}</h2>
+                 <h2 style={{ fontSize: '3rem', fontWeight: 200, color: 'white', marginBottom: '4px' }}>{formatCurrency(data.overview.totalRideRevenue)}</h2>
                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Gross Merchandise Value (GMV)</p>
              </div>
           </div>
