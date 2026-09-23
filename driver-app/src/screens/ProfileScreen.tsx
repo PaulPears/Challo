@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Share, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PhoneIcon from '../components/PhoneIcon';
 import HelpCircleIcon from '../components/HelpCircleIcon';
@@ -104,11 +104,64 @@ const ProfileScreen = () => {
     }
   };
 
+  const handleWhatsAppInvite = async () => {
+    const inviteText =
+      'Hello! Join Challo Captain and earn more with 0% commission on Auto, Bike, Cab, and Ambulance rides. Be your own boss! Download Challo Captain: https://challo.in/download or https://play.google.com/store/apps/details?id=com.rideandhra.driverapp';
+    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(inviteText)}`;
+    const webFallbackUrl = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
+
+    try {
+      const supported = await Linking.canOpenURL(whatsappUrl);
+      if (supported) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        await Linking.openURL(webFallbackUrl);
+      }
+    } catch (error) {
+      try {
+        await Share.share({
+          message: inviteText,
+          title: 'Invite Captains to Challo',
+        });
+      } catch (e: any) {
+        Alert.alert('Error', e?.message || 'Unable to open WhatsApp.');
+      }
+    }
+  };
+
+  const handleShareApp = async () => {
+    try {
+      await Share.share({
+        title: 'Challo Captain - Drive & Earn',
+        message:
+          'Join Challo Captain! Drive Auto, Bike, Cab, or Ambulance with 0% commission and get instant daily earnings. Download the Captain app: https://challo.in/download (or on Google Play: https://play.google.com/store/apps/details?id=com.rideandhra.driverapp)',
+      });
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Unable to share the app.');
+    }
+  };
+
   const menuItems = [
-    { icon: PhoneIcon, text: 'Contact Us', onPress: () => navigation.navigate('ContactUs') },
-    { icon: HelpCircleIcon, text: 'Help', onPress: () => navigation.navigate('Help') },
-    { icon: LockIcon, text: 'Privacy Policy', onPress: () => navigation.navigate('PrivacyPolicy') },
-    { icon: BriefcaseIcon, text: 'Terms of Service', onPress: () => navigation.navigate('TermsOfService') },
+    {
+      icon: ({ color, size }: { color?: string; size?: number }) => (
+        <Ionicons name="logo-whatsapp" size={size || 24} color={color || '#25D366'} />
+      ),
+      text: 'Invite Captains on WhatsApp',
+      iconColor: '#25D366',
+      onPress: handleWhatsAppInvite,
+    },
+    {
+      icon: ({ color, size }: { color?: string; size?: number }) => (
+        <Ionicons name="share-social" size={size || 24} color={color || '#E5A915'} />
+      ),
+      text: 'Share App',
+      iconColor: '#E5A915',
+      onPress: handleShareApp,
+    },
+    { icon: PhoneIcon, text: 'Contact Us', onPress: () => navigation.navigate('ContactUs'), iconColor: '#333' },
+    { icon: HelpCircleIcon, text: 'Help', onPress: () => navigation.navigate('Help'), iconColor: '#333' },
+    { icon: LockIcon, text: 'Privacy Policy', onPress: () => navigation.navigate('PrivacyPolicy'), iconColor: '#333' },
+    { icon: BriefcaseIcon, text: 'Terms of Service', onPress: () => navigation.navigate('TermsOfService'), iconColor: '#333' },
   ];
 
   const handleLogout = async () => {
@@ -167,7 +220,7 @@ const ProfileScreen = () => {
             return (
               <TouchableOpacity key={index} style={styles.menuItem} onPress={item.onPress}>
                 <View style={styles.menuItemIcon}>
-                  <Icon color="#333" size={24} />
+                  <Icon color={item.iconColor || "#333"} size={24} />
                 </View>
                 <Text style={styles.menuItemText}>{item.text}</Text>
                 <Text style={styles.arrow}>›</Text>

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Linking, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useUserStore from '../../store/userStore';
 import { FontAwesome } from '@expo/vector-icons';
@@ -15,12 +15,13 @@ interface ProfileRowProps {
   icon: React.ComponentProps<typeof FontAwesome>['name'];
   onPress: () => void;
   isLast?: boolean;
+  iconColor?: string;
 }
 
-const ProfileRow = ({ label, icon, onPress, isLast }: ProfileRowProps) => (
+const ProfileRow = ({ label, icon, onPress, isLast, iconColor }: ProfileRowProps) => (
   <TouchableOpacity onPress={onPress} style={[styles.profileRow, !isLast && styles.profileRowBorder]}>
     <View style={styles.profileRowLeft}>
-      <FontAwesome name={icon} size={20} color="#4b5563" />
+      <FontAwesome name={icon} size={20} color={iconColor || "#4b5563"} />
       <Text style={styles.profileLabel}>{label}</Text>
     </View>
     <FontAwesome name="chevron-right" size={16} color="#9ca3af" />
@@ -46,6 +47,43 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
 
   const handleBecomeDriver = () => {
     Linking.openURL('https://challo.app');
+  };
+
+  const handleWhatsAppInvite = async () => {
+    const inviteText =
+      'Hey! Try Challo for fast, affordable, and safe rides (Auto, Bike, Cab & 24/7 Ambulance) with 0% surge pricing! Download the app: https://challo.app or https://play.google.com/store/apps/details?id=com.rideandhra.rider';
+    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(inviteText)}`;
+    const webFallbackUrl = `https://wa.me/?text=${encodeURIComponent(inviteText)}`;
+
+    try {
+      const supported = await Linking.canOpenURL(whatsappUrl);
+      if (supported) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        await Linking.openURL(webFallbackUrl);
+      }
+    } catch (error) {
+      try {
+        await Share.share({
+          message: inviteText,
+          title: 'Invite Friends to Challo',
+        });
+      } catch (e: any) {
+        Alert.alert('Error', e?.message || 'Unable to open WhatsApp.');
+      }
+    }
+  };
+
+  const handleShareApp = async () => {
+    try {
+      await Share.share({
+        title: 'Challo - Ride with Pride',
+        message:
+          'Join me on Challo! Book Auto, Bike, Cab, and Ambulance with reliable drivers and zero surge pricing. Download the app now: https://challo.app (or on Google Play: https://play.google.com/store/apps/details?id=com.rideandhra.rider)',
+      });
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Unable to share the app.');
+    }
   };
 
   return (
@@ -85,6 +123,18 @@ const ProfileScreen = ({ navigation }: { navigation: ProfileScreenNavigationProp
         </View>
 
         <View style={styles.optionsCard}>
+          <ProfileRow
+            icon="whatsapp"
+            label="Invite via WhatsApp"
+            iconColor="#25D366"
+            onPress={handleWhatsAppInvite}
+          />
+          <ProfileRow
+            icon="share-alt"
+            label="Share App"
+            iconColor="#E5A915"
+            onPress={handleShareApp}
+          />
           <ProfileRow icon="shield" label="Emergency & Safety (SOS)" onPress={() => (navigation as any).navigate('Sos')} />
           <ProfileRow icon="gift" label="Super Rewards" onPress={() => (navigation as any).navigate('Rewards')} />
           <ProfileRow icon="lock" label="Privacy Policy" onPress={() => (navigation as any).navigate('PrivacyPolicy')} />

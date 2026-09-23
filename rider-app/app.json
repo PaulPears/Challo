@@ -24,7 +24,7 @@
       "googleServicesFile": "./src/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#E5A915"
+        "backgroundColor": "#F6ECD9"
       },
       "config": {
         "googleMaps": {

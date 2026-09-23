@@ -123,7 +123,7 @@ module.exports = applyAllPlugins({
             googleServicesFile: "./android/app/google-services.json",
             adaptiveIcon: {
                 foregroundImage: "./assets/adaptive-icon.png",
-                backgroundColor: "#E5A915"
+                backgroundColor: "#E7DCC6"
             },
             config: {
                 googleMaps: {

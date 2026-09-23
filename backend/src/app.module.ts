@@ -16,6 +16,7 @@ import { StorageModule } from './common/storage/storage.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { IncentivesModule } from './incentives/incentives.module';
 import { AppConfigModule } from './config/config.module';
+import { MapsModule } from './maps/maps.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { AppConfigModule } from './config/config.module';
     RatingsModule,
     IncentivesModule,
     AppConfigModule,
+    MapsModule,
   ],
 })
 export class AppModule { }
