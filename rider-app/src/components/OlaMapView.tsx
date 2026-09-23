@@ -1,6 +1,7 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { StyleSheet, View, ViewStyle, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
+import axios from 'axios';
 
 export interface OlaMarker {
   id: string;
@@ -18,10 +19,10 @@ interface OlaMapViewProps {
   routeCoordinates?: Array<[number, number] | { latitude: number; longitude: number }>;
   onMapClick?: (coords: { latitude: number; longitude: number }) => void;
   style?: ViewStyle;
-  apiKey?: string;
 }
 
-const DEFAULT_API_KEY = '6IW2TPoUXEP4gvTf1R3qxhrx5FxdqE1yRTEpwPYj';
+const OLA_CLIENT_ID = '62a94778-18eb-4d86-bd0f-38c0530e8498';
+const OLA_CLIENT_SECRET = '643e5601fd314e27bf1d1b81150214a9';
 
 export const OlaMapView: React.FC<OlaMapViewProps> = ({
   center = { latitude: 14.6824, longitude: 77.6017 },
@@ -30,9 +31,39 @@ export const OlaMapView: React.FC<OlaMapViewProps> = ({
   routeCoordinates,
   onMapClick,
   style,
-  apiKey = DEFAULT_API_KEY,
 }) => {
   const webViewRef = useRef<WebView>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isTokenLoaded, setIsTokenLoaded] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchToken = async () => {
+      try {
+        const params = new URLSearchParams();
+        params.append('grant_type', 'client_credentials');
+        params.append('scope', 'openid');
+        params.append('client_id', OLA_CLIENT_ID);
+        params.append('client_secret', OLA_CLIENT_SECRET);
+
+        const res = await axios.post('https://api.olamaps.io/auth/v1/token', params.toString(), {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          timeout: 8000,
+        });
+
+        if (isMounted && res.data?.access_token) {
+          setToken(res.data.access_token);
+        }
+      } catch (err) {
+        console.log('[OlaMapView] Token fetch error, using fallback layer:', err);
+      } finally {
+        if (isMounted) setIsTokenLoaded(true);
+      }
+    };
+
+    fetchToken();
+    return () => { isMounted = false; };
+  }, []);
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -44,7 +75,7 @@ export const OlaMapView: React.FC<OlaMapViewProps> = ({
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" />
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
   <style>
-    body, html, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    body, html, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #e5e7eb; }
     .user-marker {
       width: 18px;
       height: 18px;
@@ -59,53 +90,73 @@ export const OlaMapView: React.FC<OlaMapViewProps> = ({
       70% { box-shadow: 0 0 0 14px rgba(37, 99, 235, 0); }
       100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
     }
-    .custom-marker {
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      cursor: pointer;
-    }
     .pin-pickup {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       background: #16A34A;
       border: 2px solid #FFFFFF;
       border-radius: 50%;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
     .pin-dropoff {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       background: #DC2626;
       border: 2px solid #FFFFFF;
       border-radius: 50%;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
     .vehicle-marker {
-      width: 36px;
-      height: 36px;
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
+      width: 34px;
+      height: 34px;
+      background: #E5A915;
+      border-radius: 50%;
+      border: 2.5px solid #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <script>
-    const OLA_KEY = '${apiKey}';
+    const OLA_TOKEN = '${token || ''}';
     let map;
     let currentMarkers = {};
 
     function initMap() {
+      const styleUrl = OLA_TOKEN 
+        ? 'https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json'
+        : {
+            version: 8,
+            sources: {
+              'voyager': {
+                type: 'raster',
+                tiles: ['https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png'],
+                tileSize: 256
+              }
+            },
+            layers: [{ id: 'voyager-layer', type: 'raster', source: 'voyager', minzoom: 0, maxzoom: 19 }]
+          };
+
       map = new maplibregl.Map({
         container: 'map',
-        style: 'https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json',
+        style: styleUrl,
         center: [${center.longitude}, ${center.latitude}],
         zoom: ${zoom},
         transformRequest: function(url, resourceType) {
-          const sep = url.indexOf('?') !== -1 ? '&' : '?';
-          return { url: url + sep + 'api_key=' + OLA_KEY };
+          if (OLA_TOKEN && url.indexOf('api.olamaps.io') !== -1) {
+            return {
+              url: url,
+              headers: {
+                'Authorization': 'Bearer ' + OLA_TOKEN
+              }
+            };
+          }
+          return { url: url };
         }
       });
 
@@ -125,11 +176,14 @@ export const OlaMapView: React.FC<OlaMapViewProps> = ({
         updateMarkers(${JSON.stringify(markers)});
         ${routeCoordinates ? `updateRoute(${JSON.stringify(routeCoordinates)});` : ''}
       });
+
+      map.on('error', function(err) {
+        console.log('MapLibre internal error:', err);
+      });
     }
 
     function updateMarkers(markers) {
       if (!map) return;
-      // Remove old markers
       Object.keys(currentMarkers).forEach(function(id) {
         currentMarkers[id].remove();
         delete currentMarkers[id];
@@ -145,9 +199,8 @@ export const OlaMapView: React.FC<OlaMapViewProps> = ({
           el.className = 'pin-dropoff';
         } else {
           el.className = 'vehicle-marker';
-          el.style.backgroundColor = '#E5A915';
-          el.style.borderRadius = '50%';
-          el.style.border = '2px solid white';
+          const type = (m.vehicleType || '').toLowerCase();
+          el.innerText = type.includes('auto') ? '🛺' : (type.includes('ambulance') ? '🚑' : (type.includes('bike') ? '🏍️' : '🚗'));
         }
 
         const marker = new maplibregl.Marker({ element: el })
@@ -167,7 +220,7 @@ export const OlaMapView: React.FC<OlaMapViewProps> = ({
     function updateRoute(coords) {
       if (!map) return;
       const formatted = coords.map(function(c) {
-        if (Array.isArray(c)) return [c[1], c[0]]; // [lng, lat]
+        if (Array.isArray(c)) return [c[1], c[0]];
         return [c.longitude, c.latitude];
       });
 
@@ -219,7 +272,6 @@ export const OlaMapView: React.FC<OlaMapViewProps> = ({
 </html>
   `;
 
-  // Dynamically update map center without reloading webview
   useEffect(() => {
     if (webViewRef.current && center) {
       const script = `if (typeof setCenter === 'function') { setCenter(${center.latitude}, ${center.longitude}, ${zoom}); } true;`;
@@ -227,7 +279,6 @@ export const OlaMapView: React.FC<OlaMapViewProps> = ({
     }
   }, [center.latitude, center.longitude, zoom]);
 
-  // Dynamically update markers
   useEffect(() => {
     if (webViewRef.current && markers) {
       const script = `if (typeof updateMarkers === 'function') { updateMarkers(${JSON.stringify(markers)}); } true;`;
@@ -235,7 +286,6 @@ export const OlaMapView: React.FC<OlaMapViewProps> = ({
     }
   }, [markers]);
 
-  // Dynamically update route
   useEffect(() => {
     if (webViewRef.current && routeCoordinates) {
       const script = `if (typeof updateRoute === 'function') { updateRoute(${JSON.stringify(routeCoordinates)}); } true;`;
@@ -252,12 +302,20 @@ export const OlaMapView: React.FC<OlaMapViewProps> = ({
     } catch (err) {}
   };
 
+  if (!isTokenLoaded) {
+    return (
+      <View style={[styles.container, styles.loading, style]}>
+        <ActivityIndicator size="large" color="#E5A915" />
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, style]}>
       <WebView
         ref={webViewRef}
         originWhitelist={['*']}
-        source={{ html: htmlContent }}
+        source={{ html: htmlContent, baseUrl: 'https://api.olamaps.io' }}
         onMessage={handleMessage}
         javaScriptEnabled={true}
         domStorageEnabled={true}
