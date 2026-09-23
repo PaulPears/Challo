@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Button, Alert } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -103,11 +103,16 @@ const MapSelectionScreen = ({ route, navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <MapView
-        provider={PROVIDER_GOOGLE}
         style={styles.map}
         onPress={handleMapPress}
         region={region}
       >
+        <UrlTile
+          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maximumZ={19}
+          flipY={false}
+          zIndex={-1}
+        />
         {pickup && (
           <Marker
             coordinate={{ latitude: pickup.lat, longitude: pickup.lng }}

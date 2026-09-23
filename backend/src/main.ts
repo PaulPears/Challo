@@ -1,3 +1,6 @@
+// Allow self-signed certs for Railway PostgreSQL SSL
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';

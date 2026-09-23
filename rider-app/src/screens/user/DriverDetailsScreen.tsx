@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Linking, Alert } 
 import { rideAPI } from '../../api/rideAPI';
 import { CommonActions } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import { FontAwesome } from '@expo/vector-icons';
 import useRideStore from '../../store/rideStore';
 

@@ -25,7 +25,12 @@ import { MapsModule } from './maps/maps.module';
       type: 'postgres',
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
-      synchronize: process.env.DB_SYNC === 'true', // Use true ONLY for initial deployment or carefully in non-prod environments
+      synchronize: process.env.DB_SYNC !== 'false', // Auto-create tables on Railway PostgreSQL
+      ssl: (process.env.DATABASE_URL?.includes('localhost') || process.env.DB_SSL === 'false')
+        ? false
+        : {
+            rejectUnauthorized: false,
+          },
 
       // Connection Pooling
       extra: {

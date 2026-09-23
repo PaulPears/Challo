@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Switch, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import { GOOGLE_MAPS_API_KEY } from '../../config/constants';
 import { rideAPI } from '../../api/rideAPI';
@@ -221,7 +221,6 @@ const BookingScreen = ({ navigation, route }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <MapView
-        provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={{
           latitude: pickup.lat,
@@ -230,6 +229,12 @@ const BookingScreen = ({ navigation, route }: any) => {
           longitudeDelta: 0.0421,
         }}
       >
+        <UrlTile
+          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maximumZ={19}
+          flipY={false}
+          zIndex={-1}
+        />
         <Marker coordinate={{ latitude: pickup.lat, longitude: pickup.lng }} title="Pick-up" />
         <Marker coordinate={{ latitude: dropoff.lat, longitude: dropoff.lng }} title="Drop-off" />
         <MapViewDirections

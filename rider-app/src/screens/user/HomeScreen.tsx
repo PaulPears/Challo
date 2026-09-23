@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, StyleSheet, Modal, Dimensions, TextInput, Image, BackHandler, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { Feather } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
 import ProfileDrawer from '../../components/ProfileDrawer';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -160,29 +160,30 @@ const HomeScreen = ({ navigation }: any) => {
   );
 
   useEffect(() => {
+    let isMounted = true;
     (async () => {
       try {
         if (locationStatus === 'denied' || locationStatus === 'permanently_denied') {
           setRationaleVisible(true);
-          setIsLocationReady(true);
+          if (isMounted) setIsLocationReady(true);
           return;
         }
 
-        if (locationStatus === 'undetermined') {
-          // Wait for usePermissions to finish the initial check
-          return;
-        }
+        // Set location ready immediately so map renders without waiting
+        if (isMounted) setIsLocationReady(true);
 
-        let location = await Location.getCurrentPositionAsync({
+        let loc = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
-        setLocation(location);
-        setIsLocationReady(true);
+        if (isMounted && loc) {
+          setLocation(loc);
+        }
       } catch (error) {
         console.log('Location error:', error);
-        setIsLocationReady(true);
+        if (isMounted) setIsLocationReady(true);
       }
     })();
+    return () => { isMounted = false; };
   }, [locationStatus]);
 
   useEffect(() => {
@@ -256,17 +257,20 @@ const HomeScreen = ({ navigation }: any) => {
 
       {isLocationReady ? (
         <MapView
-          provider={PROVIDER_GOOGLE}
           style={styles.map}
           initialRegion={getInitialRegion()}
           showsUserLocation={true}
           showsMyLocationButton={true}
           showsCompass={true}
           showsScale={true}
-          loadingEnabled={true}
-          loadingIndicatorColor="#666666"
-          loadingBackgroundColor="#eeeeee"
         >
+          <UrlTile
+            urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maximumZ={19}
+            flipY={false}
+            zIndex={-1}
+          />
+
           {location && (
             <Marker
               coordinate={{

@@ -24,11 +24,11 @@ const getApiUrl = () => {
     }
 
     // 3. Fallback to production cloud backend
-    return process.env.EXPO_PUBLIC_API_URL || 'https://sy5b8p7tug.us-east-1.awsapprunner.com';
+    return process.env.EXPO_PUBLIC_API_URL || 'https://challo-production.up.railway.app';
   }
 
   // Production
-  return process.env.EXPO_PUBLIC_API_URL || 'https://sy5b8p7tug.us-east-1.awsapprunner.com';
+  return process.env.EXPO_PUBLIC_API_URL || 'https://challo-production.up.railway.app';
 };
 
 const API_BASE_URL = getApiUrl();
