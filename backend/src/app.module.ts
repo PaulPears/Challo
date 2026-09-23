@@ -34,10 +34,12 @@ import { MapsModule } from './maps/maps.module';
         idleTimeoutMillis: 30000, // Close idle connections after 30s
         connectionTimeoutMillis: 10000, // Timeout for acquiring connection
 
-        // SSL Configuration for production
-        ssl: process.env.NODE_ENV === 'production' ? {
-          rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
-        } : false,
+        // SSL Configuration for cloud databases (Railway, Render, Supabase, etc.)
+        ssl: (process.env.DATABASE_URL?.includes('localhost') || process.env.DB_SSL === 'false')
+          ? false
+          : {
+              rejectUnauthorized: false,
+            },
       },
 
       // Query timeout
