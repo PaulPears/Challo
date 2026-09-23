@@ -2,9 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Switch, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
-import MapViewDirections from 'react-native-maps-directions';
-import { GOOGLE_MAPS_API_KEY } from '../../config/constants';
+import OlaMapView, { OlaMarker } from '../../components/OlaMapView';
+import api from '../../api/axiosClient';
 import { rideAPI } from '../../api/rideAPI';
 import useRideStore from '../../store/rideStore';
 import useUserStore from '../../store/userStore';
@@ -66,20 +65,34 @@ const BookingScreen = ({ navigation, route }: any) => {
   const riderDistance = 4; // km
   const averageRiderSpeed = 50; // km/h
 
-  // Standard distance/duration update from MapViewDirections
+  // Fetch road distance/duration from Ola Maps backend
   React.useEffect(() => {
-    // If MapViewDirections fails or takes too long, use a direct estimate
-    const timer = setTimeout(() => {
-      if (distance === 0) {
-        console.log('Directions API timeout, using fallback...');
+    let isMounted = true;
+    const fetchDirections = async () => {
+      try {
+        const res = await api.get(`/maps/directions?origin=${pickup.lat},${pickup.lng}&destination=${dropoff.lat},${dropoff.lng}`);
+        const route = res.data?.routes?.[0];
+        if (route) {
+          const distKm = (route.legs?.[0]?.distance?.value || route.distance || 0) / 1000;
+          const durMin = (route.legs?.[0]?.duration?.value || route.duration || 0) / 60;
+          if (isMounted && distKm > 0) {
+            setDistance(distKm);
+            setDuration(durMin || distKm * 2);
+            return;
+          }
+        }
+      } catch (err) {
+        console.log('Ola Maps directions error, using fallback:', err);
+      }
+      if (isMounted) {
         const directDist = calculateDirectDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng);
         setDistance(directDist);
-        setDuration(directDist * 2); // Simple estimate: 1km = 2 mins
+        setDuration(directDist * 2);
       }
-    }, 4000); // Wait 4 seconds for Google Maps
-
-    return () => clearTimeout(timer);
-  }, [distance]);
+    };
+    fetchDirections();
+    return () => { isMounted = false; };
+  }, [pickup.lat, pickup.lng, dropoff.lat, dropoff.lng]);
 
   React.useEffect(() => {
     if (distance > 0 && duration > 0) {
@@ -220,40 +233,30 @@ const BookingScreen = ({ navigation, route }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <MapView
+      <OlaMapView
         style={styles.map}
-        initialRegion={{
-          latitude: pickup.lat,
-          longitude: pickup.lng,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
-      >
-        <UrlTile
-          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maximumZ={19}
-          flipY={false}
-          zIndex={-1}
-        />
-        <Marker coordinate={{ latitude: pickup.lat, longitude: pickup.lng }} title="Pick-up" />
-        <Marker coordinate={{ latitude: dropoff.lat, longitude: dropoff.lng }} title="Drop-off" />
-        <MapViewDirections
-          origin={{ latitude: pickup.lat, longitude: pickup.lng }}
-          destination={{ latitude: dropoff.lat, longitude: dropoff.lng }}
-          apikey={GOOGLE_MAPS_API_KEY}
-          strokeWidth={3}
-          strokeColor="hotpink"
-          onReady={(result) => {
-            console.log('Directions API Ready:', result.distance);
-            setDistance(result.distance);
-            setDuration(result.duration);
-          }}
-          onError={(errorMessage) => {
-            console.log('Directions API Error:', errorMessage);
-            // Fallback is handled by the useEffect timer
-          }}
-        />
-      </MapView>
+        center={{ latitude: pickup.lat, longitude: pickup.lng }}
+        markers={[
+          {
+            id: 'pickup',
+            latitude: pickup.lat,
+            longitude: pickup.lng,
+            title: 'Pick-up',
+            type: 'pickup' as const,
+          },
+          {
+            id: 'dropoff',
+            latitude: dropoff.lat,
+            longitude: dropoff.lng,
+            title: 'Drop-off',
+            type: 'dropoff' as const,
+          },
+        ]}
+        routeCoordinates={[
+          [pickup.lat, pickup.lng],
+          [dropoff.lat, dropoff.lng],
+        ]}
+      />
       <View style={[styles.detailsContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
         <Text style={styles.distanceText}>Distance: {distance ? distance.toFixed(2) : '0.00'} km</Text>
         <ScrollView 

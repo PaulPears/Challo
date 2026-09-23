@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Button, Alert } from 'react-native';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { usePermissions } from '../../hooks/usePermissions';
-import { GOOGLE_MAPS_API_KEY } from '../../config/constants';
+import api from '../../api/axiosClient';
 import PermissionRationaleModal from '../../components/PermissionRationaleModal';
+import OlaMapView, { OlaMarker } from '../../components/OlaMapView';
 
 const MapSelectionScreen = ({ route, navigation }: any) => {
   const { pickup: initialPickup, dropoff: initialDropoff } = route.params;
@@ -51,9 +50,8 @@ const MapSelectionScreen = ({ route, navigation }: any) => {
   console.log('Dropoff:', dropoff);
   console.log('CurrentLocation state:', currentLocation);
 
-  const handleMapPress = (event: any) => {
-    const { coordinate } = event.nativeEvent;
-    const newLocation = { lat: coordinate.latitude, lng: coordinate.longitude };
+  const handleMapClick = (coords: { latitude: number; longitude: number }) => {
+    const newLocation = { lat: coords.latitude, lng: coords.longitude };
     if (!pickup) {
       setPickup(newLocation);
       setRegion({
@@ -74,64 +72,62 @@ const MapSelectionScreen = ({ route, navigation }: any) => {
   const handleConfirm = async () => {
     if (pickup && dropoff) {
       try {
-        // Reverse geocode both points to get addresses
         const [pickupRes, dropoffRes] = await Promise.all([
-          fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${pickup.lat},${pickup.lng}&key=${GOOGLE_MAPS_API_KEY}`),
-          fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${dropoff.lat},${dropoff.lng}&key=${GOOGLE_MAPS_API_KEY}`)
+          api.get(`/maps/reverse-geocode?lat=${pickup.lat}&lng=${pickup.lng}`).catch(() => null),
+          api.get(`/maps/reverse-geocode?lat=${dropoff.lat}&lng=${dropoff.lng}`).catch(() => null),
         ]);
 
-        const pickupData = await pickupRes.json();
-        const dropoffData = await dropoffRes.json();
-
-        const pickupAddress = pickupData.results[0]?.formatted_address || `${pickup.lat.toFixed(4)}, ${pickup.lng.toFixed(4)}`;
-        const dropoffAddress = dropoffData.results[0]?.formatted_address || `${dropoff.lat.toFixed(4)}, ${dropoff.lng.toFixed(4)}`;
+        const pickupAddress =
+          pickupRes?.data?.results?.[0]?.formatted_address ||
+          pickupRes?.data?.formatted_address ||
+          `${pickup.lat.toFixed(4)}, ${pickup.lng.toFixed(4)}`;
+        const dropoffAddress =
+          dropoffRes?.data?.results?.[0]?.formatted_address ||
+          dropoffRes?.data?.formatted_address ||
+          `${dropoff.lat.toFixed(4)}, ${dropoff.lng.toFixed(4)}`;
 
         navigation.navigate('Booking', {
           pickup: { ...pickup, address: pickupAddress },
-          dropoff: { ...dropoff, address: dropoffAddress }
+          dropoff: { ...dropoff, address: dropoffAddress },
         });
       } catch (error) {
         console.error('Reverse geocoding error:', error);
         navigation.navigate('Booking', {
           pickup: { ...pickup, address: 'Selected Point' },
-          dropoff: { ...dropoff, address: 'Selected Point' }
+          dropoff: { ...dropoff, address: 'Selected Point' },
         });
       }
     }
   };
 
+  const mapMarkers: OlaMarker[] = [];
+  if (pickup) {
+    mapMarkers.push({
+      id: 'pickup',
+      latitude: pickup.lat,
+      longitude: pickup.lng,
+      title: 'Pick-up',
+      type: 'pickup',
+    });
+  }
+  if (dropoff) {
+    mapMarkers.push({
+      id: 'dropoff',
+      latitude: dropoff.lat,
+      longitude: dropoff.lng,
+      title: 'Drop-off',
+      type: 'dropoff',
+    });
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <MapView
+      <OlaMapView
         style={styles.map}
-        onPress={handleMapPress}
-        region={region}
-      >
-        <UrlTile
-          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maximumZ={19}
-          flipY={false}
-          zIndex={-1}
-        />
-        {pickup && (
-          <Marker
-            coordinate={{ latitude: pickup.lat, longitude: pickup.lng }}
-            title="Pick-up"
-            draggable
-            onDragEnd={(e) => setPickup({ lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude })}
-            pinColor="green"
-          />
-        )}
-        {dropoff && (
-          <Marker
-            coordinate={{ latitude: dropoff.lat, longitude: dropoff.lng }}
-            title="Drop-off"
-            draggable
-            onDragEnd={(e) => setDropoff({ lat: e.nativeEvent.coordinate.latitude, lng: e.nativeEvent.coordinate.longitude })}
-            pinColor="red"
-          />
-        )}
-      </MapView>
+        center={{ latitude: region.latitude, longitude: region.longitude }}
+        markers={mapMarkers}
+        onMapClick={handleMapClick}
+      />
       <View style={styles.buttonContainer}>
         <Button title="Confirm Locations" onPress={handleConfirm} disabled={!pickup || !dropoff} />
       </View>

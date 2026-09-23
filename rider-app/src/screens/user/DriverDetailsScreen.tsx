@@ -5,6 +5,7 @@ import { CommonActions } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import useRideStore from '../../store/rideStore';
+import OlaMapView from '../../components/OlaMapView';
 
 const { width, height } = Dimensions.get('window');
 
@@ -79,26 +80,24 @@ const DriverDetailsScreen = ({ route, navigation }: any) => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Map */}
-      <MapView
-        provider={PROVIDER_GOOGLE}
+      <OlaMapView
         style={styles.map}
-        initialRegion={{
+        center={{
           latitude: driverLocation.latitude,
           longitude: driverLocation.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
         }}
-      >
-        <Marker
-          coordinate={driverLocation}
-          title="Driver Location"
-          tracksViewChanges={false}
-        >
-          <View style={styles.driverMarker}>
-            <Text style={{ fontSize: 24 }}>{getVehicleEmoji(activeRide?.driver?.vehicle_model || 'cab')}</Text>
-          </View>
-        </Marker>
-      </MapView>
+        zoom={15}
+        markers={[
+          {
+            id: 'driver',
+            latitude: driverLocation.latitude,
+            longitude: driverLocation.longitude,
+            title: 'Driver Location',
+            type: 'driver',
+            vehicleType: activeRide?.driver?.vehicle_model || 'cab',
+          },
+        ]}
+      />
 
       {/* Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>

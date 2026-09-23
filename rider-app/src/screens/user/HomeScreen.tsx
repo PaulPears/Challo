@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, StyleSheet, Modal, Dimensions, TextInput, Image, BackHandler, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
+import OlaMapView, { OlaMarker } from '../../components/OlaMapView';
 import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
 import { SvgXml } from 'react-native-svg';
@@ -256,57 +256,48 @@ const HomeScreen = ({ navigation }: any) => {
       </Modal>
 
       {isLocationReady ? (
-        <MapView
+        <OlaMapView
           style={styles.map}
-          initialRegion={getInitialRegion()}
-          showsUserLocation={true}
-          showsMyLocationButton={true}
-          showsCompass={true}
-          showsScale={true}
-        >
-          <UrlTile
-            urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maximumZ={19}
-            flipY={false}
-            zIndex={-1}
-          />
-
-          {location && (
-            <Marker
-              coordinate={{
-                latitude: location.coords.latitude,
-                longitude: location.coords.longitude,
-              }}
-              title="Your Location"
-              description="You are here"
-            />
-          )}
-
-          {driverLocation && (
-            <VehicleMarker
-              coordinate={{
-                latitude: driverLocation.latitude,
-                longitude: driverLocation.longitude,
-              }}
-              vehicleType={currentRide?.vehicle_type}
-              size={40}
-              title="Your Driver"
-            />
-          )}
-
-          {nearbyDrivers.map((driver) => (
-            <VehicleMarker
-              key={driver.user_id}
-              coordinate={{
-                latitude: driver.current_latitude,
-                longitude: driver.current_longitude,
-              }}
-              vehicleType={driver.vehicle_type}
-              size={35}
-              title={driver.vehicle_model}
-            />
-          ))}
-        </MapView>
+          center={
+            location
+              ? { latitude: location.coords.latitude, longitude: location.coords.longitude }
+              : { latitude: 14.6824, longitude: 77.6017 }
+          }
+          zoom={14}
+          markers={[
+            ...(location
+              ? [
+                  {
+                    id: 'user',
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                    title: 'Your Location',
+                    type: 'user' as const,
+                  },
+                ]
+              : []),
+            ...(driverLocation
+              ? [
+                  {
+                    id: 'assigned-driver',
+                    latitude: driverLocation.latitude,
+                    longitude: driverLocation.longitude,
+                    title: 'Your Driver',
+                    type: 'driver' as const,
+                    vehicleType: currentRide?.vehicle_type,
+                  },
+                ]
+              : []),
+            ...nearbyDrivers.map((d) => ({
+              id: `driver-${d.user_id}`,
+              latitude: d.current_latitude,
+              longitude: d.current_longitude,
+              title: d.vehicle_model,
+              type: 'driver' as const,
+              vehicleType: d.vehicle_type,
+            })),
+          ]}
+        />
       ) : (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading map...</Text>
