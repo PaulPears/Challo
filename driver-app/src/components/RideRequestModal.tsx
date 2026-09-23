@@ -151,11 +151,12 @@ const RideRequestModal: React.FC<Props> = ({ onAccepted }) => {
     cancelRideAlertNotification();
     Vibration.cancel();
 
+    const isDemo = await AsyncStorage.getItem('isDemo');
     const expiryString = await AsyncStorage.getItem('subscriptionExpiry');
     const now = new Date();
     const expiry = expiryString ? new Date(expiryString) : null;
     const graceExpiry = expiry ? new Date(expiry.getTime() + 12 * 60 * 60 * 1000) : null;
-    const isValid = expiry && (now < expiry || (graceExpiry && now < graceExpiry));
+    const isValid = isDemo === 'true' || (expiry && (now < expiry || (graceExpiry && now < graceExpiry)));
 
     if (!isValid) {
       triggerShake();

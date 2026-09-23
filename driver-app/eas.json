@@ -16,7 +16,7 @@
                 "buildType": "apk"
             },
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://sy5b8p7tug.us-east-1.awsapprunner.com"
+                "EXPO_PUBLIC_API_URL": "https://challo-production.up.railway.app"
             }
         },
         "production": {
@@ -24,7 +24,7 @@
                 "buildType": "app-bundle"
             },
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://sy5b8p7tug.us-east-1.awsapprunner.com"
+                "EXPO_PUBLIC_API_URL": "https://challo-production.up.railway.app"
             }
         },
         "production-apk": {
@@ -32,7 +32,7 @@
                 "buildType": "apk"
             },
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://sy5b8p7tug.us-east-1.awsapprunner.com"
+                "EXPO_PUBLIC_API_URL": "https://challo-production.up.railway.app"
             }
         }
     },

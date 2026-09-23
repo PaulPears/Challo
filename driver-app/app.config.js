@@ -72,7 +72,7 @@ module.exports = applyAllPlugins({
         extra: {
             widgetId: process.env.EXPO_PUBLIC_WIDGET_ID || "356b7a674c4f303137353939",
             tokenAuth: process.env.EXPO_PUBLIC_TOKEN_AUTH || "479641TYKLykX9U6926afd1P1",
-            apiUrl: process.env.EXPO_PUBLIC_API_URL || "http://127.0.0.1:3000",
+            apiUrl: process.env.EXPO_PUBLIC_API_URL || "https://challo-production.up.railway.app",
             eas: {
                 projectId: "dbf4ec01-e2ad-45ae-b1a0-36769a9397b0",
                 appVersionSource: "remote"

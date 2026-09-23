@@ -11,7 +11,7 @@
         "preview": {
             "distribution": "internal",
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://sy5b8p7tug.us-east-1.awsapprunner.com"
+                "EXPO_PUBLIC_API_URL": "https://challo-production.up.railway.app"
             },
             "android": {
                 "buildType": "apk"
@@ -24,7 +24,7 @@
         },
         "production-apk": {
             "env": {
-                "EXPO_PUBLIC_API_URL": "https://sy5b8p7tug.us-east-1.awsapprunner.com"
+                "EXPO_PUBLIC_API_URL": "https://challo-production.up.railway.app"
             },
             "android": {
                 "buildType": "apk"

@@ -46,6 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (token.startsWith('demo_')) {
         const storedUser = await AsyncStorage.getItem('user');
         setUser(storedUser ? JSON.parse(storedUser) : DEMO_CAPTAIN);
+        const demoExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        await AsyncStorage.setItem('subscriptionExpiry', demoExpiry);
         setDriverStatus('APPROVED');
         return;
       }
@@ -53,6 +55,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await api.get('/profile');
       const userData = response.data;
       setUser(userData);
+
+      if (userData.subscriptionExpiry) {
+        await AsyncStorage.setItem('subscriptionExpiry', userData.subscriptionExpiry);
+      } else {
+        // Fallback: Default active grace period so driver is not hard-locked out
+        const defaultExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+        await AsyncStorage.setItem('subscriptionExpiry', defaultExpiry);
+      }
 
       const hasDriverRole = userData.roles && userData.roles.includes('driver');
       const hasDriverRecord = userData.driver_id !== null;
@@ -87,6 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await AsyncStorage.setItem('token', demoToken);
     await AsyncStorage.setItem('user', JSON.stringify(demoUser));
     await AsyncStorage.setItem('isDemo', 'true');
+    const demoExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await AsyncStorage.setItem('subscriptionExpiry', demoExpiry);
     setUser(demoUser);
     setDriverStatus('APPROVED');
   };
@@ -95,6 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('user');
     await AsyncStorage.removeItem('isDemo');
+    await AsyncStorage.removeItem('subscriptionExpiry');
     setUser(null);
     setDriverStatus('UNAUTHENTICATED');
   };

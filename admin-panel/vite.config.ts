@@ -7,12 +7,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://sy5b8p7tug.us-east-1.awsapprunner.com',
+        target: 'https://challo-production.up.railway.app',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/uploads': {
-        target: 'https://sy5b8p7tug.us-east-1.awsapprunner.com',
+        target: 'https://challo-production.up.railway.app',
         changeOrigin: true
       }
     }

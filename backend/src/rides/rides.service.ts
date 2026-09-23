@@ -186,22 +186,27 @@ export class RidesService {
         }
       }
 
-      console.log(`[Matching] Searching for drivers within 2km of (${newRide.pickup_latitude}, ${newRide.pickup_longitude})`);
+      console.log(`[Matching] Searching for drivers within 6km of (${newRide.pickup_latitude}, ${newRide.pickup_longitude})`);
       const nearbyDriverIds = await this.matchingService.getNearbyDriverUserIds(
         newRide.pickup_latitude,
         newRide.pickup_longitude,
         newRide.vehicle_type,
-        2, // 2km radius
+        6, // 6km radius (0 API fees, pure Postgres Haversine query)
       );
       console.log(`[Matching] Found ${nearbyDriverIds.length} nearby drivers: ${nearbyDriverIds.join(', ') || 'None'}`);
 
-      nearbyDriverIds.forEach(driverId => {
-        // Only notify if not already notified as a favorite
-        if (!favorites.some(f => f.driver?.id === driverId)) {
-          console.log(`[Matching] Notifying nearby driver: ${driverId}`);
-          this.notificationsService.sendNewRideToDriver(driverId, newRide);
-        }
-      });
+      if (nearbyDriverIds.length > 0) {
+        nearbyDriverIds.forEach(driverId => {
+          if (!favorites.some(f => f.driver?.id === driverId)) {
+            console.log(`[Matching] Notifying nearby driver: ${driverId}`);
+            this.notificationsService.sendNewRideToDriver(driverId, newRide);
+          }
+        });
+      } else {
+        // Fallback broadcast: Notify all available online drivers so ride is not stranded
+        console.log(`[Matching] No drivers within 6km, broadcasting to all online drivers: ${newRide.id}`);
+        this.notificationsService.sendNewRideToAll(newRide);
+      }
 
       this.notificationsService.sendRideUpdate(newRide.id, RideStatus.PENDING, newRide);
       return newRide;
