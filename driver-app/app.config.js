@@ -74,7 +74,7 @@ module.exports = applyAllPlugins({
             tokenAuth: process.env.EXPO_PUBLIC_TOKEN_AUTH || "479641TYKLykX9U6926afd1P1",
             apiUrl: process.env.EXPO_PUBLIC_API_URL || "https://challo-production.up.railway.app",
             eas: {
-                projectId: "dbf4ec01-e2ad-45ae-b1a0-36769a9397b0",
+                projectId: "f45afac6-59a0-4904-86e5-c574b567776f",
                 appVersionSource: "remote"
             }
         },
@@ -155,6 +155,6 @@ module.exports = applyAllPlugins({
             fallbackToCacheTimeout: 0
         },
         runtimeVersion: "1.0.0",
-        owner: "praweenx356"
+        owner: "mpaulpears"
     }
 });
