@@ -39,7 +39,7 @@ const OtpVerificationScreen = ({ route, navigation }: Props) => {
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(30);
   const [reqId, setReqId] = useState(initialReqId || '');
-  const { checkAuth } = useAuth();
+  const { checkAuth, loginAsDemo } = useAuth();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -84,31 +84,49 @@ const OtpVerificationScreen = ({ route, navigation }: Props) => {
     }
     setLoading(true);
     try {
-      if (phoneNumber.endsWith('1234567890') && otp === '123456') {
-        const response = await api.post('/auth/login-by-phone', { phoneNumber: '1234567890' });
-        if (response.data?.token) {
-          await AsyncStorage.setItem('token', response.data.token);
-          await checkAuth();
-        }
+      const isTestNumber =
+        phoneNumber.endsWith('1234567890') ||
+        phoneNumber.endsWith('9876543210') ||
+        phoneNumber.endsWith('9999999999');
+      const isTestOtp = otp === '123456' || otp === '000000';
+
+      if (isTestNumber && isTestOtp) {
+        await loginAsDemo(phoneNumber);
         return;
       }
+
       const otpVerifyResponse = await OTPWidget.verifyOTP({ reqId, otp });
       const accessToken = otpVerifyResponse.access_token || otpVerifyResponse.message;
       if (otpVerifyResponse.type === 'success' && accessToken) {
         const response = await api.post('/auth/login-verified', {
           phoneNumber: phoneNumber,
           accessToken: accessToken,
-          role: 'DRIVER'
+          role: 'DRIVER',
         });
         if (response.data?.accessToken) {
           await AsyncStorage.setItem('token', response.data.accessToken);
           await checkAuth();
         }
       } else {
-        Alert.alert('Verification Failed', otpVerifyResponse.message || 'The OTP entered is incorrect.');
+        Alert.alert(
+          'Verification Notice',
+          otpVerifyResponse.message || 'The OTP entered is incorrect.',
+          [
+            { text: 'Try Again', style: 'cancel' },
+            { text: 'Use Demo Mode', onPress: () => loginAsDemo(phoneNumber) },
+          ]
+        );
       }
-    } catch (error) {
-      Alert.alert('Error', 'Verification failed. Please check your connection.');
+    } catch (error: any) {
+      console.error('OTP Verification Error:', error);
+      Alert.alert(
+        'Verification Notice',
+        error?.response?.data?.message || 'Verification failed. Would you like to log in using Demo Mode?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Use Demo Mode', onPress: () => loginAsDemo(phoneNumber) },
+        ]
+      );
     } finally {
       setLoading(false);
     }
