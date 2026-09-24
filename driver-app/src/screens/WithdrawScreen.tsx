@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   balanceRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
   subBalanceLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
   subBalanceValue: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  divider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.2)', mx: 20, marginHorizontal: 20 },
+  divider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.2)', marginHorizontal: 20 },
   section: { marginBottom: 25 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 12 },

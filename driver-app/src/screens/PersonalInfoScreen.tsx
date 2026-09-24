@@ -57,7 +57,7 @@ const PersonalInfoScreen = ({ navigation }) => {
               <Image source={{ uri: registrationData.profilePhoto }} style={styles.photo} />
             ) : (
               <View style={styles.photoPlaceholder}>
-                <MaterialCommunityIcons name="account-camera" size={40} color="#fe7009" />
+                <MaterialCommunityIcons name="camera" size={40} color="#fe7009" />
                 <Text style={styles.photoButtonText}>Take Selfie</Text>
               </View>
             )}

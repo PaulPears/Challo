@@ -66,6 +66,7 @@ interface Ride {
   company_payable?: number;
   super_km_discount?: number;
   driver_earnings?: number;
+  final_fare?: number;
 }
 
 const { width } = Dimensions.get('window');
@@ -245,7 +246,6 @@ const HomeScreen = () => {
       } catch (_) { /* GPS not ready yet */ }
     };
     fetchInitialLocation();
-    return () => clearInterval(interval);
   }, []);
 
   useFocusEffect(
@@ -645,8 +645,8 @@ const HomeScreen = () => {
     }
   };
 
-  const calculateDuration = (minutes?: number) => minutes ? `${minutes} min` : '--';
-  const calculateDistance = (km?: number) => km ? `${km} km` : '--';
+  const formatDurationMin = (minutes?: number) => minutes ? `${minutes} min` : '--';
+  const formatDistanceKm = (km?: number) => km ? `${km} km` : '--';
 
   const renderActiveRide = () => (
     <View style={styles.activeRideCard}>
@@ -1325,11 +1325,11 @@ const HomeScreen = () => {
                         <Text style={{ fontSize: 13, color: '#0369a1', fontWeight: '800' }}>PLATFORM REWARD</Text>
                         <Text style={{ fontSize: 10, color: '#0ea5e9' }}>Added to Rewards Wallet</Text>
                       </View>
-                      <Text style={{ fontSize: 24, fontWeight: '900', color: '#0ea5e9' }}>₹{Number(completedRideDetails.company_payable).toFixed(2)}</Text>
+                      <Text style={{ fontSize: 24, fontWeight: '900', color: '#0ea5e9' }}>₹{Number(completedRideDetails?.company_payable || 0).toFixed(2)}</Text>
                     </View>
                   )}
 
-                  <View style={{ paddingHorizontal: 5, paddingVertical: 10, borderTopWidth: 1, borderTopStyle: 'dashed', borderTopColor: '#cbd5e1', flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <View style={{ paddingHorizontal: 5, paddingVertical: 10, borderTopWidth: 1, borderStyle: 'dashed', borderTopColor: '#cbd5e1', flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#1e293b' }}>Total Trip Value (Tab)</Text>
                     <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1e293b' }}>₹{Number(completedRideDetails?.final_fare || 0).toFixed(2)}</Text>
                   </View>

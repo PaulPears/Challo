@@ -22,43 +22,6 @@ const searchXml = `<svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 48 48" 
 
 const { height } = Dimensions.get('window');
 
-// Resolve vehicle image from vehicle_type string
-const getVehicleImage = (vehicleType?: string) => {
-  const type = vehicleType?.toLowerCase() || '';
-  if (type.includes('ambulance') || type.includes('hospital') || type.includes('medical')) return require('../../../assets/ambulance_icon.png');
-  if (type.includes('cab') || type.includes('car')) return require('../../../assets/cab_icon.png');
-  if (type.includes('bike-lite') || type.includes('bike_lite')) return require('../../../assets/bike_lite_icon.png');
-  if (type.includes('luxury_bike') || type.includes('luxury bike') || type.includes('premium')) return require('../../../assets/premium_bike.png');
-  if (type.includes('bike')) return require('../../../assets/bike_icon.png');
-  if (type.includes('auto')) return require('../../../assets/auto_icon.png');
-  if (type.includes('parcel')) return require('../../../assets/parcel_icon.png');
-  return require('../../../assets/cab_icon.png');
-};
-
-// Stable marker component: renders image once, then stops tracking view changes to prevent flicker
-const VehicleMarker = React.memo(({ coordinate, vehicleType, size = 35, title }: {
-  coordinate: { latitude: number; longitude: number };
-  vehicleType?: string;
-  size?: number;
-  title?: string;
-}) => {
-  const [tracksViewChanges, setTracksViewChanges] = useState(true);
-  return (
-    <Marker
-      coordinate={coordinate}
-      title={title}
-      tracksViewChanges={tracksViewChanges}
-      flat={true}
-    >
-      <Image
-        source={getVehicleImage(vehicleType)}
-        style={{ width: size, height: size }}
-        resizeMode="contain"
-        onLoad={() => setTracksViewChanges(false)}
-      />
-    </Marker>
-  );
-});
 
 const HomeScreen = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();

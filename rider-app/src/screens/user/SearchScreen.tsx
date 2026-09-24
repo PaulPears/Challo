@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, TouchableOpacity, TextInput, ScrollView, Alert 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { GOOGLE_MAPS_API_KEY } from '../../config/constants';
+import api from '../../api/axiosClient';
 import { usePermissions } from '../../hooks/usePermissions';
 import useLocationStore from '../../store/locationStore';
 import PermissionRationaleModal from '../../components/PermissionRationaleModal';
@@ -32,7 +32,9 @@ const SearchScreen = ({ navigation, route }: any) => {
     (async () => {
       try {
         if (locationStatus === 'granted') {
-          const location = await Location.getCurrentPositionAsync({});
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
           setCurrentCoords({
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
@@ -47,7 +49,7 @@ const SearchScreen = ({ navigation, route }: any) => {
   const fetchCurrentLocation = async () => {
     if (currentLocation) {
       setPickup({
-        name: currentLocation.name,
+        name: currentLocation.name || 'Current Location',
         address: currentLocation.address,
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
@@ -59,36 +61,70 @@ const SearchScreen = ({ navigation, route }: any) => {
 
     try {
       if (locationStatus !== 'granted') {
-        setRationaleVisible(true);
-        return;
+        const granted = await requestLocation();
+        if (!granted) {
+          setRationaleVisible(true);
+          return;
+        }
       }
 
-      const location = await Location.getCurrentPositionAsync({});
-      setCurrentCoords({
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+      const coords = {
         latitude: location.coords.latitude,
-        longitude: location.coords.longitude
-      }); // Update global coords too
+        longitude: location.coords.longitude,
+      };
+      setCurrentCoords(coords);
 
-      // Reverse geocode use Google Maps API
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.coords.latitude},${location.coords.longitude}&key=${GOOGLE_MAPS_API_KEY}`
-      );
-      const data = await response.json();
+      let formattedAddress = `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`;
 
-      if (data.results && data.results[0]) {
-        const address = data.results[0].formatted_address;
-        setPickup({
-          name: "Current Location",
-          address: address,
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-        setPickupQuery(address);
-        setPickupSuggestions([]);
+      // 1. Instant native Android OS geocoding (100% offline-ready, no API keys needed)
+      try {
+        const nativeAddresses = await Location.reverseGeocodeAsync(coords);
+        if (nativeAddresses && nativeAddresses.length > 0) {
+          const n = nativeAddresses[0];
+          const parts = [
+            n.name && n.name !== n.street ? n.name : null,
+            n.street,
+            n.district || n.subregion,
+            n.city || n.region,
+          ].filter(Boolean);
+          if (parts.length > 0) {
+            formattedAddress = parts.join(', ');
+          }
+        }
+      } catch (nativeErr) {
+        console.warn('Native reverse geocode:', nativeErr);
       }
+
+      // 2. Attempt Ola Maps reverse geocoding via backend
+      try {
+        const res = await api.get(`/maps/reverse-geocode?lat=${coords.latitude}&lng=${coords.longitude}`);
+        const olaAddr =
+          res.data?.results?.[0]?.formatted_address ||
+          res.data?.formatted_address ||
+          res.data?.results?.[0]?.name;
+        if (olaAddr) {
+          formattedAddress = olaAddr;
+        }
+      } catch (olaErr) {
+        // Retain native address fallback
+      }
+
+      const locationData: LocationData = {
+        name: 'Current Location',
+        address: formattedAddress,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      };
+
+      setPickup(locationData);
+      setPickupQuery(formattedAddress);
+      setPickupSuggestions([]);
     } catch (error) {
       console.error('Error fetching current location:', error);
-      Alert.alert('Error', 'Could not fetch current location');
+      Alert.alert('Location Error', 'Unable to fetch current location. Please verify GPS is enabled.');
     }
   };
 
@@ -100,68 +136,105 @@ const SearchScreen = ({ navigation, route }: any) => {
     }
 
     try {
-      let baseUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}&components=country:in`;
-
-      // Add location bias and origin if coordinates available
+      // 1. Try Ola Maps Autocomplete via backend
+      let locParam = '';
       if (currentCoords) {
-        baseUrl += `&location=${currentCoords.latitude},${currentCoords.longitude}&radius=50000&origin=${currentCoords.latitude},${currentCoords.longitude}`;
+        locParam = `&location=${currentCoords.latitude},${currentCoords.longitude}&radius=50000`;
       }
+      const response = await api.get(`/maps/autocomplete?input=${encodeURIComponent(query)}${locParam}`);
+      const predictions = response.data?.predictions || response.data?.results || [];
 
-      const response = await fetch(baseUrl);
-      const data = await response.json();
-
-      if (data.predictions) {
-        // Sort by distance (distance_meters) if available
-        const sortedPredictions = data.predictions.sort((a: any, b: any) => {
-          if (a.distance_meters && b.distance_meters) {
-            return a.distance_meters - b.distance_meters;
-          }
-          return 0; // Maintain original order if distance is missing
-        });
-
+      if (predictions.length > 0) {
+        const mapped = predictions.map((p: any) => ({
+          place_id: p.place_id || p.id || p.reference || Math.random().toString(),
+          description: p.description || p.formatted_address || p.name,
+          structured_formatting: p.structured_formatting || {
+            main_text: p.name || p.description,
+            secondary_text: p.secondary_text || '',
+          },
+          geometry: p.geometry,
+        }));
         if (type === 'pickup') {
-          setPickupSuggestions(sortedPredictions);
+          setPickupSuggestions(mapped);
         } else {
-          setDropoffSuggestions(sortedPredictions);
+          setDropoffSuggestions(mapped);
         }
+        return;
       }
-    } catch (error) {
-      console.error('Places API error:', error);
+    } catch (err) {
+      // Backend / Ola Maps offline or failed, fallback to native geocoder
+    }
+
+    // 2. Native device geocode fallback
+    try {
+      const results = await Location.geocodeAsync(query);
+      if (results && results.length > 0) {
+        const mapped = results.slice(0, 5).map((r, i) => ({
+          place_id: `native_${r.latitude}_${r.longitude}_${i}`,
+          description: query,
+          structured_formatting: {
+            main_text: query,
+            secondary_text: `${r.latitude.toFixed(4)}, ${r.longitude.toFixed(4)}`,
+          },
+          geometry: {
+            location: {
+              lat: r.latitude,
+              lng: r.longitude,
+            },
+          },
+        }));
+        if (type === 'pickup') setPickupSuggestions(mapped);
+        else setDropoffSuggestions(mapped);
+      }
+    } catch (nativeErr) {
+      console.warn('Native geocode error:', nativeErr);
     }
   };
 
-  const getPlaceDetails = async (placeId: string, type: 'pickup' | 'dropoff') => {
-    try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=${GOOGLE_MAPS_API_KEY}`
-      );
-      const data = await response.json();
+  const handleSuggestionPress = async (suggestion: any, type: 'pickup' | 'dropoff') => {
+    if (suggestion.geometry?.location) {
+      const location: LocationData = {
+        name: suggestion.structured_formatting?.main_text || suggestion.description,
+        address: suggestion.description,
+        latitude: suggestion.geometry.location.lat,
+        longitude: suggestion.geometry.location.lng,
+      };
 
-      if (data.result) {
+      if (type === 'pickup') {
+        setPickup(location);
+        setPickupQuery(location.address);
+        setPickupSuggestions([]);
+      } else {
+        setDropoff(location);
+        setDropoffQuery(location.address);
+        setDropoffSuggestions([]);
+      }
+      return;
+    }
+
+    try {
+      const results = await Location.geocodeAsync(suggestion.description);
+      if (results && results.length > 0) {
         const location: LocationData = {
-          name: data.result.name,
-          address: data.result.formatted_address,
-          latitude: data.result.geometry.location.lat,
-          longitude: data.result.geometry.location.lng,
+          name: suggestion.structured_formatting?.main_text || suggestion.description,
+          address: suggestion.description,
+          latitude: results[0].latitude,
+          longitude: results[0].longitude,
         };
 
         if (type === 'pickup') {
           setPickup(location);
-          setPickupQuery(data.result.formatted_address);
+          setPickupQuery(location.address);
           setPickupSuggestions([]);
         } else {
           setDropoff(location);
-          setDropoffQuery(data.result.formatted_address);
+          setDropoffQuery(location.address);
           setDropoffSuggestions([]);
         }
       }
     } catch (error) {
-      console.error('Place details error:', error);
+      console.error('Geocoding suggestion error:', error);
     }
-  };
-
-  const handleSuggestionPress = (suggestion: any, type: 'pickup' | 'dropoff') => {
-    getPlaceDetails(suggestion.place_id, type);
   };
 
   const formatDistance = (meters: number) => {
